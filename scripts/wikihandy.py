@@ -97,7 +97,7 @@ class wikihandy(object):
 
 
 if __name__ == '__main__':
-    wikidata_site = pywikibot.Site("wikidata", "wikidata")
+    wikidata_site = pywikibot.Site("en", "iyp")
     wh = wikihandy(wikidata_site)
 
     import IPython
