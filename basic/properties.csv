@@ -1,0 +1,7 @@
+instance of,that class of which this subject is a particular example and member, is a|is an|has class|has type|is a particular|is a specific|is an individual,wikibase-item
+part of, "object of which the subject is a part (if this subject is already part of object A which is a part of object B then please only make the subject part of object A). Inverse property of 'has part'",component of|in|within|is part of|subgroup of|element of,wikibase-item
+registered country, "country in delegated files",,wikibase-item
+wikidata qid,Identifier in wikidata.org,,external-id
+autonomous system number, "unique identifier for a collection of connected Internet Protocol (IP) routing prefixes under the control of one or more network operators",ASN,external-id
+reg-id, "This is an in-series identifier which uniquely identifies a single organisation (an Internet number resource holder). The reg-id is not guaranteed to be constant between different versions of the database.",,external-id
+

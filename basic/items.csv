@@ -1,0 +1,13 @@
+#label, statements
+Autonomous System, 
+IP routing Prefix, 
+IPv4,
+IPv6, 
+Regional Internet Registry,
+RIPE, instance of:Regional Internet Registry
+APNIC, instance of:Regional Internet Registry
+ARIN, instance of:Regional Internet Registry
+LACNIC, instance of:Regional Internet Registry
+AFRINIC, instance of:Regional Internet Registry
+
+
