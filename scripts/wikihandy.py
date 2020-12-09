@@ -4,10 +4,12 @@ from pywikibot.data import api
 from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
 
+DEFAULT_WIKI_SPARQL = 'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
+DEFAULT_WIKI_DATA_SITE = 'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
 
 class wikihandy(object):
 
-    def __init__(self, wikidata_site, sparql="https://query.wikidata.org/sparql"):
+    def __init__(self, wikidata_site, sparql=DEFAULT_WIKI_SPARQL):
         self._label_pid = {}
         self._label_qid = {}
         self._asn2qid = None
@@ -69,7 +71,7 @@ class wikihandy(object):
             SELECT ?item ?asn
             WHERE 
             {
-                    # ?item wdt:%s wdt:%s .
+                    ?item wdt:%s wdt:%s .
                     ?item wdt:%s ?asn .
             } 
             """ % (
