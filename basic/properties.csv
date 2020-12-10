@@ -4,4 +4,3 @@ registered country, "country in delegated files",,wikibase-item
 wikidata qid,Identifier in wikidata.org,,external-id
 autonomous system number, "unique identifier for a collection of connected Internet Protocol (IP) routing prefixes under the control of one or more network operators",ASN,external-id
 reg-id, "This is an in-series identifier which uniquely identifies a single organisation (an Internet number resource holder). The reg-id is not guaranteed to be constant between different versions of the database.",,external-id
-

@@ -6,15 +6,17 @@ import logging
 
 DEFAULT_WIKI_SPARQL = 'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
+DEFAULT_LANG = 'en'
 
 class Wikihandy(object):
 
-    def __init__(self, wikidata_project=DEFAULT_WIKI_PROJECT, sparql=DEFAULT_WIKI_SPARQL):
+    def __init__(self, wikidata_project=DEFAULT_WIKI_PROJECT, lang=DEFAULT_LANG, 
+            sparql=DEFAULT_WIKI_SPARQL):
         self._label_pid = {}
         self._label_qid = {}
         self._asn2qid = None
-        self.site = pywikibot.Site("en", wikidata_project)
-        self.repo = pywikibot.DataSite("en", wikidata_project)
+        self.site = pywikibot.Site(lang, wikidata_project)
+        self.repo = pywikibot.DataSite(lang, wikidata_project)
 
         self.sparql = SPARQLWrapper(sparql)
 
@@ -30,21 +32,21 @@ class Wikihandy(object):
         return self.get_items(label)[0]['id']
 
 
-    def get_items(self, label):
+    def get_items(self, label, lang='en'):
         """ Return the list of items for the given label"""
         params = {'action': 'wbsearchentities', 'format': 'json',
-                'language': 'en', 'type': 'item', 
+                'language': lang, 'type': 'item', 
                 'search': label}
-        request = api.Request(site=self.site, parameters=params)
+        request = api.Request(site=self.repo, parameters=params)
         result = request.submit()
         return result['search'] 
 
-    def get_properties(self, label):
+    def get_properties(self, label, lang='en'):
         """ Return the list of properties for the given label"""
         params = {'action': 'wbsearchentities', 'format': 'json',
-                'language': 'en', 'type': 'property', 
+                'language': lang, 'type': 'property', 
                 'search': label}
-        request = api.Request(site=self.site, parameters=params)
+        request = api.Request(site=self.repo, parameters=params)
         result = request.submit()
         return result['search']
 
@@ -62,33 +64,49 @@ class Wikihandy(object):
         new_prop.editDescriptions({'en': description})
         return new_prop.getID()
 
-    def add_item(self, label, description, aliases):
+    def add_item(self, label=None, description=None, aliases=None, sitelinks=None):
         """Create new item if it doesn't already exists. Return the item QID"""
+
+        print('Adding item: ', label, description, aliases, sitelinks)
 
         items = self.get_items(label)
         if len(items) > 0:
+            print('!!! item already exists')
+            print (items)
             return items[0]['id']
         
         new_item = pywikibot.ItemPage(self.repo) 
-        new_item.editLabels(labels={'en':label}, summary="Setting labels")
-        new_item.editAliases({'en': aliases})
-        new_item.editDescriptions({'en': description})
+        if label is not None:
+            new_item.editLabels(labels={'en':label}, summary="Setting labels")
+        if aliases is not None:
+            new_item.editAliases({'en': aliases}, summary="Setting aliases")
+        if description is not None:
+            new_item.editDescriptions({'en': description}, summary="Setting descriptions")
+        if False and sitelinks is not None:
+            #FIXME: always raising exception?
+            new_item.setSitelinks(sitelinks, summary="Setting sitelinks")
         return new_item.getID()
+
 
     def upsert_statement(self, item_id, property_id, target, datatype='wikibase-item', summary='upsert claim'):
         """Update statement value if the property is already assigned to the item,
         create it otherwise.
-        If the property datatype is 'wikibase-item' then the target is expected to be the
-        item PID. For properties with a different datatype the value of target
-        is used as is."""
+
+        Notices:
+        - If the property datatype is 'wikibase-item' then the target is expected 
+        to be the item PID. For properties with a different datatype the value 
+        of target is used as is.
+        - If the item has multiple times the given property only the first one
+        is modified."""
         
         item = pywikibot.ItemPage(self.repo, item_id)
         claims = item.get(u'claims') 
 
         if property_id in claims['claims']:
-            claim = claims['claims'][property_id]
+            claim = claims['claims'][property_id][0]
+            print(claim)
 
-            if datatype == 'item': 
+            if datatype == 'wikibase-item': 
                 target_value = pywikibot.ItemPage(self.repo, target)
                 if target_value.getID() != claim.getTarget().id:
                     claim.changeTarget(target_value)
@@ -109,23 +127,10 @@ class Wikihandy(object):
         item = pywikibot.ItemPage(self.repo, item_id)
         claim = pywikibot.Claim(self.repo, property_id)
         target_value = target
-        if datatype == 'item': 
-            target_value = pywikibot.ItemPage(self.repo, target_id)
+        if datatype == 'wikibase-item': 
+            target_value = pywikibot.ItemPage(self.repo, target)
         claim.setTarget(target_value)
         item.addClaim(claim, summary=summary)
-
-
-
-        items = get_items(label)
-        if len(items) > 0:
-            return items[0]['id']
-        
-        new_item = pywikibot.ItemPage(self.repo) 
-        new_item.editLabels(labels={'en':label}, summary="Setting labels")
-        new_item.editAliases({'en': aliases})
-        new_item.editDescriptions({'en': description})
-        return new_item.getID()
-
 
     def label2qid(self, label):
         """Retrieve item id based on the given label"""
@@ -177,7 +182,6 @@ class Wikihandy(object):
                   )
 
             print(QUERY)
-            import requests
 
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
@@ -191,6 +195,43 @@ class Wikihandy(object):
                 self._asn2qid[res_asn] = res_qid
 
         return self._asn2qid.get(int(asn),None)
+
+
+    def _delete_all_items(self):
+        QUERY="""SELECT ?item ?itemLabel
+            WHERE { 
+            ?item rdfs:label ?itemLabel. 
+            } """
+
+        self.sparql.setQuery(QUERY)
+        self.sparql.setReturnFormat(JSON)
+        results = self.sparql.query().convert()
+        
+        for res in results['results']['bindings']:
+            qid = res['item']['value'].rpartition('/')[2]
+            if qid.startswith('Q'):
+                item = pywikibot.ItemPage(self.repo, qid)
+                item.delete()
+
+
+    def get_all_entities(self):
+        QUERY="""SELECT ?item ?itemLabel
+            WHERE { 
+            ?item rdfs:label ?itemLabel. 
+            } """
+
+        self.sparql.setQuery(QUERY)
+        self.sparql.setReturnFormat(JSON)
+        results = self.sparql.query().convert()
+        
+        entities = []
+        for res in results['results']['bindings']:
+            id = res['item']['value'].rpartition('/')[2]
+            label = res['itemLabel']['value']
+            entities.append([id,label])
+
+
+        return entities
 
 
 if __name__ == '__main__':
