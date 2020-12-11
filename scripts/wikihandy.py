@@ -50,7 +50,7 @@ class Wikihandy(object):
         result = request.submit()
         return result['search']
 
-    def add_property(self, label, description, aliases, data_type):
+    def add_property(self, summary, label, description, aliases, data_type):
         """Create new property if it doesn't already exists. Return the property
         PID."""
 
@@ -59,12 +59,15 @@ class Wikihandy(object):
             return properties[0]['id']
 
         new_prop = pywikibot.PropertyPage(self.repo, datatype=data_type)
-        new_prop.editLabels(labels={'en':label}, summary="Setting labels")
-        new_prop.editAliases({'en': aliases})
-        new_prop.editDescriptions({'en': description})
+        data = {
+                'labels': {'en':label},
+                'aliases': {'en': aliases},
+                'descriptions': {'en': description}
+                }
+        new_prop.editEntity(data, summary=summary)
         return new_prop.getID()
 
-    def add_item(self, label=None, description=None, aliases=None, sitelinks=None):
+    def add_item(self, summary, label=None, description=None, aliases=None, sitelinks=None):
         """Create new item if it doesn't already exists. Return the item QID"""
 
         print('Adding item: ', label, description, aliases, sitelinks)
@@ -75,16 +78,18 @@ class Wikihandy(object):
             print (items)
             return items[0]['id']
         
+        data = {}
         new_item = pywikibot.ItemPage(self.repo) 
         if label is not None:
-            new_item.editLabels(labels={'en':label}, summary="Setting labels")
+            data['labels'] = {'en':label}
         if aliases is not None:
-            new_item.editAliases({'en': aliases}, summary="Setting aliases")
+            data['aliases'] = {'en':aliases}
         if description is not None:
-            new_item.editDescriptions({'en': description}, summary="Setting descriptions")
+            data['descriptions'] = {'en':description}
         if False and sitelinks is not None:
             #FIXME: always raising exception?
-            new_item.setSitelinks(sitelinks, summary="Setting sitelinks")
+            data['sitelinks'] = sitelinks
+        new_item.editEntity(data, summary=summary)
         return new_item.getID()
 
 
@@ -198,6 +203,9 @@ class Wikihandy(object):
 
 
     def _delete_all_items(self):
+        # Reduce throttling delay
+        wh.site.throttle.setDelays(0,1)
+
         QUERY="""SELECT ?item ?itemLabel
             WHERE { 
             ?item rdfs:label ?itemLabel. 
@@ -211,7 +219,7 @@ class Wikihandy(object):
             qid = res['item']['value'].rpartition('/')[2]
             if qid.startswith('Q'):
                 item = pywikibot.ItemPage(self.repo, qid)
-                item.delete()
+                item.delete(reason='delete all', prompt=False)
 
 
     def get_all_entities(self):
