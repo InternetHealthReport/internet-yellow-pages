@@ -7,15 +7,16 @@ BASIC_PROPERTY_FNAME = 'basic/properties.csv'
 BASIC_ITEMS_FNAME = 'basic/items.csv'
 
 wh = wikihandy.Wikihandy() 
-repo = wh.repo
+# Reduce throttling delay
+wh.site.throttle.setDelays(0,1)
 
 properties = {}
 items = {}
 
 def decomment(csvfile):
+    """Ignore lines with comments"""
     for row in csvfile:
-        raw = row.split('#')[0].strip()
-        if raw: yield row
+        if not '#' in row: yield row
 
 # Fetch existing entities
 for id, label in wh.get_all_entities():
@@ -27,7 +28,7 @@ for id, label in wh.get_all_entities():
 
 print('Adding properties')
 with open(BASIC_PROPERTY_FNAME, 'r') as fp:
-    csvdata = csv.reader(decomment(fp))
+    csvdata = csv.reader(decomment(fp), skipinitialspace=True)
 
     for row in csvdata:
         if not row:    
@@ -35,7 +36,7 @@ with open(BASIC_PROPERTY_FNAME, 'r') as fp:
 
         label, description, aliases, data_type = [col.strip() for col in row]
         if label not in properties:
-            properties[label] = wh.add_property(label, description, aliases, data_type)
+            properties[label] = wh.add_property('bootstrap', label, description, aliases, data_type)
 
 
 print('Adding items')
@@ -43,13 +44,14 @@ statements=defaultdict(list)
 wikidata = wikihandy.Wikihandy(wikidata_project='wikidata', lang='wikidata')
 
 with open(BASIC_ITEMS_FNAME, 'r') as fp:
-    csvdata = csv.reader(decomment(fp))
+    csvdata = csv.reader(decomment(fp),  skipinitialspace=True)
 
     for row in csvdata:
         if not row:    
             continue
 
-        label, statements = [col.strip() for col in row]
+        print(row)
+        label, description, aliases, statements = [col.strip() for col in row]
         print(label)
         if label in items:
             continue
@@ -66,6 +68,7 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
             description = wikidata_item['descriptions'].get('en','')
 
             items[label] = wh.add_item(
+                "bootstrap",
                 label,
                 description,
                 aliases,
@@ -80,9 +83,11 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
         else:
             # Label not found in wikidata
             items[label] = wh.add_item(
-                label
+                "bootstrap",
+                label,
+                description,
+                aliases
                 )
-
 
         # Add statements from the csv file
         # Assume all properties have the 'wikidata-item' datatype

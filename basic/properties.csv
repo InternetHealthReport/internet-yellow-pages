@@ -1,3 +1,4 @@
+#label, description, aliases, datatype
 instance of,that class of which this subject is a particular example and member, is a|is an|has class|has type|is a particular|is a specific|is an individual,wikibase-item
 part of, "object of which the subject is a part (if this subject is already part of object A which is a part of object B then please only make the subject part of object A). Inverse property of 'has part'",component of|in|within|is part of|subgroup of|element of,wikibase-item
 registered country, "country in delegated files",,wikibase-item
