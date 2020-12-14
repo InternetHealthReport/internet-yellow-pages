@@ -78,7 +78,7 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
 
             # Keep track of wikidata QID
             pid = properties['wikidata qid']
-            wh.upsert_statement(items[label], pid,  wikidata_qid, 'external-id' )
+            wh.upsert_statement('bootstrap', items[label], pid,  wikidata_qid, 'external-id' )
 
         else:
             # Label not found in wikidata
@@ -99,5 +99,5 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
                 continue
 
             pid = properties[property.strip()]
-            wh.upsert_statement(items[label], pid, items[target]) 
+            wh.upsert_statement('bootstrap', items[label], pid, items[target]) 
 

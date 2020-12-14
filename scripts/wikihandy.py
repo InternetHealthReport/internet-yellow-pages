@@ -31,7 +31,7 @@ class Wikihandy(object):
 
         return self.get_items(label)[0]['id']
 
-
+    #TODO implement a different way to find entities
     def get_items(self, label, lang='en'):
         """ Return the list of items for the given label"""
         params = {'action': 'wbsearchentities', 'format': 'json',
@@ -48,6 +48,7 @@ class Wikihandy(object):
                 'search': label}
         request = api.Request(site=self.repo, parameters=params)
         result = request.submit()
+        print(result)
         return result['search']
 
     def add_property(self, summary, label, description, aliases, data_type):
@@ -93,7 +94,7 @@ class Wikihandy(object):
         return new_item.getID()
 
 
-    def upsert_statement(self, item_id, property_id, target, datatype='wikibase-item', summary='upsert claim'):
+    def upsert_statement(self, summary, item_id, property_id, target, datatype='wikibase-item'):
         """Update statement value if the property is already assigned to the item,
         create it otherwise.
 
@@ -121,9 +122,9 @@ class Wikihandy(object):
                     claim.changeTarget(target_value)
 
         else:
-            self.add_statement(item_id, property_id, target, datatype, summary)
+            self.add_statement(summary, item_id, property_id, target, datatype)
 
-    def add_statement(self, item_id, property_id, target, datatype='wikibase-item', summary='adding claim'):
+    def add_statement(self, summary, item_id, property_id, target, datatype='wikibase-item'):
         """Create new property if it doesn't already exists. 
         If the property datatype is 'wikibase-item' then the target is expected to be the
         item PID. For properties with a different datatype the value of target
@@ -241,6 +242,22 @@ class Wikihandy(object):
 
         return entities
 
+    def get_all_properties_items(self):
+        """Return two dictionaries (properties and items) with labels as keys
+        and Q/P IDs as values. For entities that have the same label only the
+        first entity found is given, the other are ignored."""
+        properties = {}
+        items = {}
+        # Fetch existing entities
+        for id, label in self.get_all_entities():
+            if id.startswith('P'):
+                if label not in properties:
+                    properties[label]=id
+            elif id.startswith('Q'):
+                if label not in items:
+                    items[label]=id
+
+        return properties, items
 
 if __name__ == '__main__':
     wh = Wikihandy()
