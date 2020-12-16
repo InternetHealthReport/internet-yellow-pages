@@ -7,6 +7,7 @@ import iso3166
 URL_RIPE_AS_NAME = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 
 wh = wikihandy.Wikihandy()
+wh.repo.throttle.setDelays(0,1)
 #TODO create function to efficiently get properties?
 properties, items = wh.get_all_properties_items()
 exotic_cc = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
