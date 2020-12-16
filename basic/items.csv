@@ -9,4 +9,5 @@ LACNIC, "regional Internet registry for the Latin American and Caribbean regions
 AFRINIC, "regional Internet registry for Africa", , instance of:Regional Internet Registry
 IPv4, "Internet Protocol version 4",ipv4,
 IPv6, "Internet Protocol version 6",ipv6,
+PeeringDB, "PeeringDB is a freely available, user-maintained, database of networks, and the go-to location for interconnection data.",peeringdb|peeringDB,
 

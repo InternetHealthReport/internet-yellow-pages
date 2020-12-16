@@ -8,7 +8,7 @@ BASIC_ITEMS_FNAME = 'basic/items.csv'
 
 wh = wikihandy.Wikihandy() 
 # Reduce throttling delay
-wh.site.throttle.setDelays(0,1)
+wh.repo.throttle.setDelays(0,1)
 
 properties = {}
 items = {}

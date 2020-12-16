@@ -15,11 +15,17 @@ class Wikihandy(object):
         self._label_pid = {}
         self._label_qid = {}
         self._asn2qid = None
-        self.site = pywikibot.Site(lang, wikidata_project)
         self.repo = pywikibot.DataSite(lang, wikidata_project)
 
         self.sparql = SPARQLWrapper(sparql)
+        self.properties, self.items = self.get_all_properties_items()
 
+    def today(self):
+        """Return a wikibase time object with current date."""
+
+        now = self.repo.server_time()
+        return pywikibot.WbTime(year=now.year, month=now.month, day=now.day,
+            calendarmodel="http://www.wikidata.org/entity/Q1985727")
 
     def get_pid(self, label):
         """ Return the PID of the first property found with the given label"""
@@ -31,9 +37,13 @@ class Wikihandy(object):
 
         return self.get_items(label)[0]['id']
 
-    #TODO implement a different way to find entities
+    #TODO implement a different way to find entities?
     def get_items(self, label, lang='en'):
         """ Return the list of items for the given label"""
+        if label in self.items:
+            return [{'id':self.items[label]}]
+        else:
+            return []
         params = {'action': 'wbsearchentities', 'format': 'json',
                 'language': lang, 'type': 'item', 
                 'search': label}
@@ -43,6 +53,10 @@ class Wikihandy(object):
 
     def get_properties(self, label, lang='en'):
         """ Return the list of properties for the given label"""
+        if label in self.properties:
+            return [{'id': self.properties[label]}]
+        else:
+            return []
         params = {'action': 'wbsearchentities', 'format': 'json',
                 'language': lang, 'type': 'property', 
                 'search': label}
@@ -66,7 +80,10 @@ class Wikihandy(object):
                 'descriptions': {'en': description}
                 }
         new_prop.editEntity(data, summary=summary)
-        return new_prop.getID()
+        pid = new_prop.getID()
+        self.properties[label] = pid
+
+        return pid 
 
     def add_item(self, summary, label=None, description=None, aliases=None, sitelinks=None):
         """Create new item if it doesn't already exists. Return the item QID"""
@@ -91,12 +108,21 @@ class Wikihandy(object):
             #FIXME: always raising exception?
             data['sitelinks'] = sitelinks
         new_item.editEntity(data, summary=summary)
-        return new_item.getID()
+        qid = new_item.getID()
+        self.items[label] = qid
+
+        return qid
 
 
-    def upsert_statement(self, summary, item_id, property_id, target, datatype='wikibase-item'):
+    def upsert_statement(self, summary, item_id, property_id, target, qualifiers={}):
         """Update statement value if the property is already assigned to the item,
         create it otherwise.
+        Qualifiers is a list of pairs (PID, value (e.g QID, string, URL)).
+        If an existing claim has the same 'reference URL' has the one given in 
+        the qualifiers then this claim value and qualifiers will be updated.
+        Otherwise the first claim will be updated.
+
+        TODO: shall we keep history if 'point in time' is given?
 
         Notices:
         - If the property datatype is 'wikibase-item' then the target is expected 
@@ -104,15 +130,24 @@ class Wikihandy(object):
         of target is used as is.
         - If the item has multiple times the given property only the first one
         is modified."""
+
+        ref_url_pid = self.properties['reference URL']
+        given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
         
         item = pywikibot.ItemPage(self.repo, item_id)
         claims = item.get(u'claims') 
 
         if property_id in claims['claims']:
-            claim = claims['claims'][property_id][0]
-            print(claim)
+            claims = claims['claims'][property_id]
+            selected_claim = claims[0]
+            for claim in claims:
+                if ref_url_pid in claim.qualifiers: 
+                    for qualifier in claim.qualifiers[ref_url_pid]:
+                        if qualifier.getTarget() == given_ref_urls:
+                            selected_claim = claim
+                            break
 
-            if datatype == 'wikibase-item': 
+            if claim.type == 'wikibase-item': 
                 target_value = pywikibot.ItemPage(self.repo, target)
                 if target_value.getID() != claim.getTarget().id:
                     claim.changeTarget(target_value)
@@ -121,22 +156,47 @@ class Wikihandy(object):
                 if target_value != claim.getTarget():
                     claim.changeTarget(target_value)
 
-        else:
-            self.add_statement(summary, item_id, property_id, target, datatype)
+            # remove old qualifiers
+            old_qualifiers = [qualifier 
+                    for qual_list in claim.qualifiers.values()
+                        for qualifier in qual_list ]
+            claim.removeQualifiers(old_qualifiers, summary=summary)
 
-    def add_statement(self, summary, item_id, property_id, target, datatype='wikibase-item'):
+            # add new qualifiers
+            for pid, value in qualifiers:
+                qualifier = pywikibot.Claim(self.repo, pid)
+                target = value
+                if qualifier.type == 'wikibase-item':
+                    target = pywikibot.ItemPage(self.repo, value)
+                qualifier.setTarget(target)
+                claim.addQualifier(qualifier, summary=summary)
+
+        else:
+            self.add_statement(summary, item_id, property_id, target, qualifiers)
+
+    def add_statement(self, summary, item_id, property_id, target, qualifiers=[]):
         """Create new property if it doesn't already exists. 
         If the property datatype is 'wikibase-item' then the target is expected to be the
         item PID. For properties with a different datatype the value of target
-        is used as is."""
+        is used as is.
+        Qualifiers is a list of pairs (PID, value (e.g QID, string, URL))
+        """
 
         item = pywikibot.ItemPage(self.repo, item_id)
         claim = pywikibot.Claim(self.repo, property_id)
         target_value = target
-        if datatype == 'wikibase-item': 
+        if claim.type == 'wikibase-item': 
             target_value = pywikibot.ItemPage(self.repo, target)
         claim.setTarget(target_value)
         item.addClaim(claim, summary=summary)
+
+        for pid, value in qualifiers:
+            qualifier = pywikibot.Claim(self.repo, pid)
+            target = value
+            if qualifier.type == 'wikibase-item':
+                target = pywikibot.ItemPage(self.repo, value)
+            qualifier.setTarget(target)
+            claim.addQualifier(qualifier, summary=summary)
 
     def label2qid(self, label):
         """Retrieve item id based on the given label"""
@@ -168,6 +228,43 @@ class Wikihandy(object):
 
         return self._label_pid[label]
 
+    def extid2qid(self, extid_qid):
+        """Find items that have an external ID for the given type of IDs.
+        return: dict where keys are the external ids and values are the QIDs
+
+        warning: assumes there is only one item per external IDs
+        """
+
+        QUERY = """
+        #Items that have a pKa value set
+        SELECT ?item ?extid
+        WHERE 
+        {
+                ?item p:%s ?extidStatement .
+                ?extidStatement ps:%s ?extid .
+                ?extidStatement pq:%s ?%s .
+        } 
+        """ % (
+                self.label2pid('external ID'), 
+                self.label2pid('external ID'), 
+                self.label2pid('instance of'), 
+                extid_qid
+                )
+
+
+        self.sparql.setQuery(QUERY)
+        self.sparql.setReturnFormat(JSON)
+        results = self.sparql.query().convert()
+        
+        extid2qid = {}
+        for res in results['results']['bindings']:
+            res_qid = res['item']['value'].rpartition('/')[2]
+            res_extid = res['extid']['value']
+
+            extid2qid[res_extid] = res_qid
+
+        return extid2qid
+        
 
     def asn2qid(self, asn):
         """Retrive QID of items assigned with the given Autonomous System Number"""
@@ -187,8 +284,6 @@ class Wikihandy(object):
                     self.label2pid('autonomous system number')
                   )
 
-            print(QUERY)
-
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()
@@ -205,7 +300,7 @@ class Wikihandy(object):
 
     def _delete_all_items(self):
         # Reduce throttling delay
-        wh.site.throttle.setDelays(0,1)
+        wh.repo.throttle.setDelays(0,1)
 
         QUERY="""SELECT ?item ?itemLabel
             WHERE { 
