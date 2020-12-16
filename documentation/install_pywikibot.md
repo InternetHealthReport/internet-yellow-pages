@@ -28,3 +28,10 @@ cd ~/.pywikibot/core_stable/
 sudo python3 setup.py install
 ```
 
+# Tweaks
+- no throttle: add the following in user-config.py:
+```
+# Slow down the robot such that it never makes a second page edit within
+# 'put_throttle' seconds.
+put_throttle = 0
+```
