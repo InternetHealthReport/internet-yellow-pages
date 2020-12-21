@@ -1,6 +1,7 @@
 import sys
 import datetime
 import requests
+import cgi
 import wikihandy 
 import iso3166
 from concurrent.futures import ThreadPoolExecutor
@@ -42,7 +43,7 @@ class ASNames(object):
         # Get ASN, name, and country code
         asn, _, name_cc = one_line.partition(' ')
         name, _, cc = name_cc.rpartition(', ')
-        name = name.encode("ascii", "xmlcharrefreplace")  # Needed for wiki API
+        name = cgi.escape(name)     # Needed for wiki API
 
         asn_qid = self.asn_qid(asn)
         cc_qid = self.country_qid(cc)
