@@ -1,5 +1,6 @@
 #label, description, aliases, statements
 Autonomous System, "network or group of networks that has a unified routing policy", AS, 
+country, "sovereign state of this item",sovereign state|state|land|host country,
 IP routing prefix, "part of an IP address that identifies a network often expressed using Classless Inter-Domain Routing (CIDR) notation.", prefix|subnet|IP prefix|address prefix|network prefix,
 Regional Internet Registry, "organization that manages the allocation and registration of Internet number resources within a region of the world", RIR,
 RIPE NCC, "regional Internet registry for Europe, West Asia, and the former USSR", RIPE,instance of:Regional Internet Registry
@@ -10,4 +11,3 @@ AFRINIC, "regional Internet registry for Africa", , instance of:Regional Interne
 IPv4, "Internet Protocol version 4",ipv4,
 IPv6, "Internet Protocol version 6",ipv6,
 PeeringDB, "PeeringDB is a freely available, user-maintained, database of networks, and the go-to location for interconnection data.",peeringdb|peeringDB,
-
