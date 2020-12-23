@@ -3,6 +3,8 @@ from pywikibot import pagegenerators as pg
 from pywikibot.data import api
 from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
+import iso3166
+
 
 DEFAULT_WIKI_SPARQL = 'http://localhost:8989/bigdata/namespace/wdq/sparql' #'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'local'
@@ -10,8 +12,11 @@ DEFAULT_WIKI_PROJECT = 'local'
 # DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
 
+EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
+
 #TODO add method to efficiently get countries
 #TODO add method to efficiently get prefixes
+#TODO label2QID should not include AS, prefixes, countries
 
 class Wikihandy(object):
 
@@ -112,24 +117,25 @@ class Wikihandy(object):
 
         return pid 
 
-    def add_item(self, summary, label=None, description=None, aliases=None, sitelinks=None):
+    def add_item(self, summary, label, description=None, aliases=None, statements=None):
         """Create new item if it doesn't already exists. Return the item QID"""
 
         qid = self.get_qid(label)
         if qid is not None:
+            self.upsert_statements(summary, qid, statements)
             return qid
         
         data = {}
         new_item = pywikibot.ItemPage(self.repo) 
         if label is not None:
-            data['labels'] = {'en':label}
+            data['labels'] = {'en':label.strip()}
         if aliases is not None:
             data['aliases'] = {'en':aliases}
         if description is not None:
             data['descriptions'] = {'en':description}
-        if False and sitelinks is not None:
-            #FIXME: always raising exception?
-            data['sitelinks'] = sitelinks
+        if statements is not None:
+            data['claims'] = self.upsert_statements(summary,new_item,statements,commit=False)['claims']
+
         new_item.editEntity(data, summary=summary)
         qid = new_item.getID()
 
@@ -140,18 +146,31 @@ class Wikihandy(object):
         return qid
 
     def _update_statement_local(self, claims, target, ref_urls=None):
+        """Update a statement locally (changed are not pushed to wikibase). 
+        If a reference URL is given, then it will update the statement that have
+        the same reference URL. Otherwise it will update the first statement that
+        has no reference URL."""
 
         ref_url_pid = self.label_pid['reference URL']
-        selected_claim = claims[0]
+        selected_claim = None
 
         # search for a claim with the same reference url
         if ref_urls is not None:
             for claim in claims:
-                if ref_url_pid in claim.qualifiers: 
-                    for qualifier in claim.qualifiers[ref_url_pid]:
-                        if qualifier.getTarget() == ref_urls:
-                            selected_claim = claim
-                            break
+                for qualifier in claim.qualifiers.get(ref_url_pid,[]):
+                    if qualifier.getTarget() in ref_urls:
+                        selected_claim = claim
+                        break
+        # search for the first claim without a reference url
+        else:
+            for claim in claims:
+                if ref_url_pid not in claim.qualifiers: 
+                    selected_claim = claim
+                    break
+
+        if selected_claim is None:
+            # Couldn't find a matching claim
+            return None
 
         if selected_claim.type == 'wikibase-item': 
             target_value = self.get_item(qid=target)
@@ -168,15 +187,16 @@ class Wikihandy(object):
 
 
 
-    def upsert_statement(self, summary, item_id, property_id, target, qualifiers={}):
-        """Update statement value if the property is already assigned to the item,
-        create it otherwise.
+    def upsert_statements(self, summary, item_id, statements, commit=True):
+        """Update statements values if the property are already assigned to the item
+        and create them if they don't exist. All of this in one API call.
+        
+        The statements parameter is a list of statement where each statement 
+        is a list in the form ['pid', 'target', 'qualifiers'].
         Qualifiers is a list of pairs (PID, value (e.g QID, string, URL)).
         If an existing claim has the same 'reference URL' has the one given in 
         the qualifiers then this claim value and qualifiers will be updated.
         Otherwise the first claim will be updated.
-
-        TODO: shall we keep history if 'point in time' is given?
 
         Notices:
         - If the property datatype is 'wikibase-item' then the target is expected 
@@ -185,55 +205,79 @@ class Wikihandy(object):
         - If the item has multiple times the given property only the first one
         is modified."""
 
-        ref_url_pid = self.label_pid['reference URL']
-        given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
-        
-        item = self.get_item(qid=item_id)
-        claims = item.get(u'claims')['claims']
+        updates = {'claims':[]}
 
-        selected_claim = None
-        if property_id in claims:
-            # update the main statement value
-            selected_claim = self._update_statement_local(claims[property_id], target, given_ref_urls)
+        # Retrieve item and claims objects
+        item = None
+        if isinstance(item_id, pywikibot.ItemPage):
+            item = item_id
         else:
-            # create a new claim
-            selected_claim = pywikibot.Claim(self.repo, property_id)
-            target_value = target
-            if selected_claim.type == 'wikibase-item': 
-                target_value = self.get_item(qid=target)
-            selected_claim.setTarget(target_value)
+            item = self.get_item(qid=item_id)
 
-        # update qualifiers
-        claims = selected_claim.qualifiers 
-        new_qualifiers = [] 
-        for pid, value in qualifiers:
-            if pid in claims:
-                self._update_statement_local(claims[pid], value)
+        for statement in statements:
+
+            qualifiers = []
+            if len(statement) == 2:
+                property_id, target = statement
             else:
-                new_qualifiers.append( [pid, value] )
+                property_id, target, qualifiers = statement
 
-        # Add new qualifiers
-        updated_claim = selected_claim.toJSON()
-        for pid, value in new_qualifiers:
-            qualifier = pywikibot.Claim(self.repo, pid)
-            target_value = value
-            if qualifier.type == 'wikibase-item':
-                target_value = self.get_item(qid=target_value)
-            qualifier.setTarget(target_value)
-            updated_claim['qualifiers'][pid] = [qualifier.toJSON()['mainsnak']]
+            ref_url_pid = self.label_pid['reference URL']
+            given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
+            
+            # Retrieve claims objects
+            if item.getID() != '-1':
+                claims = item.get(u'claims')['claims']
+            else:
+                claims = {}
+
+            # Find the matching claim or create a new one
+            selected_claim = None
+            if property_id in claims:
+                # update the main statement value
+                selected_claim = self._update_statement_local(claims[property_id], target, given_ref_urls)
+
+            if selected_claim is None:
+                # create a new claim
+                selected_claim = pywikibot.Claim(self.repo, property_id)
+                target_value = target
+                if selected_claim.type == 'wikibase-item': 
+                    target_value = self.get_item(qid=target)
+                selected_claim.setTarget(target_value)
+
+            # update qualifiers
+            claims = selected_claim.qualifiers 
+            new_qualifiers = [] 
+            for pid, value in qualifiers:
+                if pid in claims:
+                    self._update_statement_local(claims[pid], value)
+                else:
+                    new_qualifiers.append( [pid, value] )
+
+            # Add new qualifiers
+            updated_claim = selected_claim.toJSON()
+            if 'qualifiers' not in updated_claim and new_qualifiers:
+                updated_claim['qualifiers'] = {}
+
+            for pid, value in new_qualifiers:
+                qualifier = pywikibot.Claim(self.repo, pid)
+                target_value = value
+                if qualifier.type == 'wikibase-item':
+                    target_value = self.get_item(qid=target_value)
+                qualifier.setTarget(target_value)
+                updated_claim['qualifiers'][pid] = [qualifier.toJSON()['mainsnak']]
+
+            updates['claims'].append(updated_claim)
 
         # Commit changes
-        item.editEntity({'claims':[updated_claim]},
-                asynchronous=True, callback=self.on_delivery)
+        if commit and item is not None:
+            item.editEntity(updates)# , asynchronous=True, callback=self.on_delivery)
 
-
-    # TODO: add a upsert_statements to add multiple statements with only one
-    # API call?
-
+        return updates
 
 
     def on_delivery(self, entity, error):
-        """"""
+        """Print errors if a commit didn't succeed"""
 
         if error is not None:
             print('!!! ERROR (on_delivery)!!!')
@@ -263,11 +307,25 @@ class Wikihandy(object):
             qualifier.setTarget(target_value)
             claim.addQualifier(qualifier, summary=summary)
 
-    def get_qid(self, label):
+    def get_qid(self, label, create=None):
         """Retrieve item id based on the given label. Returns None if the label
-        is unknown."""
+        is unknown or create it with values passed in the create parameter.
+        The create parameter is a dictionary with keys:
+            - summary (mandatory)
+            - label (optional, reusing the label parameter is not given)
+            - description (optional)
+            - aliases (optional)
+            - statements (optional)
+        """
 
-        return self.label_qid.get(label, None)
+        qid = self.label_qid.get(label, None)
+        if qid is None and create is not None:
+            # Create the item 
+            if 'label' not in create:
+                create['label'] = label
+            qid = self.add_item(**create)
+
+        return qid
 
     def get_pid(self, label):
         """Retrieve property id based on the given label. Returns None if the label
@@ -284,7 +342,7 @@ class Wikihandy(object):
 
         extid_qid = qid
         if qid is None and label is not None:
-            ext_qid = self.get_qid(label)
+            extid_qid = self.get_qid(label)
 
         if extid_qid is None:
             print('Error: could not find the item corresponding to this external ID')
@@ -320,10 +378,17 @@ class Wikihandy(object):
         return extid2qid
         
 
-    def asn2qid(self, asn):
-        """Retrive QID of items assigned with the given Autonomous System Number"""
+    def asn2qid(self, asn, create=False):
+        """Retrive QID of items assigned with the given Autonomous System Number.
+
+        param: asn (int)"""
+
+        if int(asn) < 0:
+            print('Error: ASN value should be positive.')
+            return None
 
         if self._asn2qid is None:
+            # Bootstrap : retrieve all existing ASN/QID pairs
             QUERY = """
             #Items that have a pKa value set
             SELECT ?item ?asn
@@ -334,7 +399,7 @@ class Wikihandy(object):
             } 
             """ % (
                     self.get_pid('instance of'), 
-                    self.get_qid('Autonomous System') , 
+                    self.get_qid('autonomous system') , 
                     self.get_pid('autonomous system number')
                   )
 
@@ -349,7 +414,46 @@ class Wikihandy(object):
 
                 self._asn2qid[res_asn] = res_qid
 
-        return self._asn2qid.get(int(asn),None)
+        # Find the AS QID or add it to wikibase
+        qid = self._asn2qid.get(int(asn), None)
+        if create and qid is None:
+            # if this AS is unknown, create corresponding item
+            qid = self.add_item('AS found in RIPE names', f'AS{asn}',
+                    statements=[
+                        [self.get_pid('instance of'), self.get_qid('autonomous system'), []],
+                        [self.get_pid('autonomous system number'), str(asn), []]
+                    ])
+
+        return qid
+        
+
+    def country2qid(self, cc, create=True):
+        """Find a country QID or add the country to wikibase if it doesn't exist
+        and create is set to True.
+
+        param: cc (string) Two-character country code.
+
+        Notice: the label of a created country is the country name as defined 
+        by iso3166)."""
+
+        # Check if country page exists
+        cc_label = 'unknown country'
+        if cc in EXOTIC_CC:
+            cc_label = EXOTIC_CC[cc]
+        elif cc in iso3166.countries_by_alpha2:
+            cc_label = iso3166.countries_by_alpha2[cc].name
+        else:
+            return None
+
+        # Create the country page if it doesn't exists
+        cc_qid = self.get_qid(cc_label)
+        if create and cc_qid is None:
+            cc_qid = self.add_item('add new country', cc_label, aliases=cc,
+                statements=[[self.get_pid('instance of'), self.get_qid('country'),[]]])
+
+        return cc_qid
+
+
 
 
     def _delete_all_items(self):

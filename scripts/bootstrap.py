@@ -65,16 +65,10 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
 
         # else:
 
-        # Label not found in wikidata
-        wh.add_item(
-            "bootstrap",
-            label,
-            description,
-            aliases
-            )
 
-        # Add statements from the csv file
+        # Retrive statements from the csv file
         # Assume all properties have the 'wikidata-item' datatype
+        claims = []
         for statement in statements.split('|'):
             try:
                 property, target = statement.split(':')
@@ -82,5 +76,12 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
                 # skip lines with no statement
                 continue
 
-            wh.upsert_statement('bootstrap', wh.get_qid(label), wh.get_pid(property.strip()), wh.get_qid(target)) 
+            claims.append( [ wh.get_pid(property.strip()), wh.get_qid(target), [] ] ) 
 
+        wh.add_item(
+            "bootstrap",
+            label,
+            description,
+            aliases,
+            claims
+            )

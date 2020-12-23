@@ -11,4 +11,9 @@ country, "sovereign state of this item",sovereign state|state|land|host country,
 managed by,"organization, person, or profession that operates the equipment, facility, or service",service operator|facility operator|operated by|administrator|operator|webmaster|administrated by,wikibase-item
 external ID,Identifier from an external project or service,id|ID,external-id
 autonomous system number, "unique identifier for a collection of connected Internet Protocol (IP) routing prefixes under the control of one or more network operators",ASN,external-id
-reg-id, "This is an in-series identifier which uniquely identifies a single organisation (an Internet number resource holder). The reg-id is not guaranteed to be constant between different versions of the database.",,external-id
+reg-id, "this is an in-series identifier which uniquely identifies a single organisation (an Internet number resource holder). The reg-id is not guaranteed to be constant between different versions of the database.",,external-id
+member of, "organization to which the subject belongs",membership,wikibase-item
+implements, "implementation of a standard, program, specification, or protocol",implementation of,wikibase-item
+appeared in, "this entity appears in that work, study, or event. Use 'reported in' for malicious activities",,wikibase-item
+reported in, "this entity is reported by a blocklist or stated as implied in malicious activities. Use 'appeared in' for appearance in reports that are not security related",,wikibase-item
+
