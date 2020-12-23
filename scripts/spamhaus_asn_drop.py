@@ -82,7 +82,9 @@ class SpamhausAD(object):
 
         # set countries
         if len(cc) == 2:
-            statements.append([ self.wh.get_pid('country'), self.wh.country2qid(cc), self.reference])
+            cc_qid = self.wh.country2qid(cc)
+            if cc_qid is not None:
+                statements.append([ self.wh.get_pid('country'), cc_qid, self.reference])
 
         # Commit to wikibase
         # Get the AS QID (create if AS is not yet registered) and commit changes

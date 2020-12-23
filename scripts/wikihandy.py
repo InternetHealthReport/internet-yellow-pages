@@ -437,6 +437,7 @@ class Wikihandy(object):
         by iso3166)."""
 
         # Check if country page exists
+        cc = cc.upper()
         cc_label = 'unknown country'
         if cc in EXOTIC_CC:
             cc_label = EXOTIC_CC[cc]
