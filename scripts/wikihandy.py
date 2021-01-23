@@ -29,6 +29,7 @@ class Wikihandy(object):
         self.label_pid, self.label_qid = self._label2id()
         # TODO this is not neded?? already cached by pywikibot
         self.cache = {}
+        self.already_selected_claims = []
 
         if preload:
             self.asn2qid(1)
@@ -131,7 +132,7 @@ class Wikihandy(object):
             data['labels'] = {'en':label.strip()}
         if aliases is not None:
             data['aliases'] = {'en':aliases}
-        if description is not None:
+        if description is not None and label != description:
             data['descriptions'] = {'en':description}
         if statements is not None:
             data['claims'] = self.upsert_statements(summary,new_item,statements,commit=False)['claims']
@@ -157,20 +158,25 @@ class Wikihandy(object):
         # search for a claim with the same reference url
         if ref_urls is not None:
             for claim in claims:
-                for qualifier in claim.qualifiers.get(ref_url_pid,[]):
-                    if qualifier.getTarget() in ref_urls:
-                        selected_claim = claim
+                if claim not in self.already_selected_claims:
+                    for qualifier in claim.qualifiers.get(ref_url_pid,[]):
+                        if qualifier.getTarget() in ref_urls:
+                            selected_claim = claim
                         break
         # search for the first claim without a reference url
         else:
             for claim in claims:
-                if ref_url_pid not in claim.qualifiers: 
+                if( claim not in self.already_selected_claims and 
+                        ref_url_pid not in claim.qualifiers ): 
                     selected_claim = claim
                     break
 
         if selected_claim is None:
             # Couldn't find a matching claim
             return None
+
+        # Remove the claim from the list, so we won't select it anymore
+        self.already_selected_claims.append(selected_claim)
 
         if selected_claim.type == 'wikibase-item': 
             target_value = self.get_item(qid=target)
@@ -206,6 +212,7 @@ class Wikihandy(object):
         is modified."""
 
         updates = {'claims':[]}
+        self.already_selected_claims = []
 
         # Retrieve item and claims objects
         item = None
@@ -227,7 +234,7 @@ class Wikihandy(object):
             
             # Retrieve claims objects
             if item.getID() != '-1':
-                claims = item.get(u'claims')['claims']
+                claims = dict(item.get(u'claims')['claims'])
             else:
                 claims = {}
 
@@ -355,7 +362,7 @@ class Wikihandy(object):
         {
                 ?item p:%s ?extidStatement .
                 ?extidStatement ps:%s ?extid .
-                ?extidStatement pq:%s ?%s .
+                ?extidStatement pq:%s wd:%s .
         } 
         """ % (
                 self.get_pid('external ID'), 

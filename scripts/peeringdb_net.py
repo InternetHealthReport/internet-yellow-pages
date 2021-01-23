@@ -11,6 +11,8 @@ URL_PDB_NETS = 'https://peeringdb.com/api/net'
 NETID_LABEL = 'PeeringDB network ID' 
 # Label used for the class/item representing the organization IDs
 ORGID_LABEL = 'PeeringDB organization ID' 
+# Label used for the class/item representing the exchange point IDs
+IXID_LABEL = 'PeeringDB IX ID' 
 
 class PDBNetworks(object):
     def __init__(self):
@@ -32,6 +34,8 @@ class PDBNetworks(object):
         self.netid2qid = self.wh.extid2qid(qid=netid_qid)
         # Load the QIDs for peeringDB organizations
         self.orgid2qid = self.wh.extid2qid(label=ORGID_LABEL)
+        # Load the QIDs for peeringDB IXs
+        self.ixid2qid = self.wh.extid2qid(label=IXID_LABEL)
 
         # Added properties will have this reference information
         today = self.wh.today()
@@ -76,6 +80,30 @@ class PDBNetworks(object):
         # set property website
         if network['website']:
             statements.append([ self.wh.get_pid('website'), network['website'], self.reference])
+
+        # Update IX membership
+        # Fetch membership for this network
+        netixlan_url = URL_PDB_NETS+f'/{network["id"]}'
+        req = requests.get(netixlan_url)
+        if req.status_code != 200:
+            sys.exit(f'Error while fetching network data (id={network["id"]})')
+        net_details = json.loads(req.text)['data']
+        if len(net_details)>1:
+            print(net_details)
+
+        net_details = net_details[0]
+
+        # Push membership to wikidata
+        today = self.wh.today()
+        netixlan_ref = [
+                (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB')),
+                (self.wh.get_pid('reference URL'), netixlan_url),
+                (self.wh.get_pid('point in time'), today)
+                ]
+
+        for ixlan in net_details['netixlan_set']:
+            ix_qid = self.ixid2qid[str(ixlan['ix_id'])]
+            statements.append( [self.wh.get_pid('member of'), ix_qid, netixlan_ref] )
 
         # Update name, website, and organization for this network
         net_qid = self.net_qid(network) 

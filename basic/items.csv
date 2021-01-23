@@ -3,6 +3,7 @@
 #basic item, "Fundamental item for this wikibase",,
 autonomous system, "network or group of networks that has a unified routing policy", AS, 
 organization, "social entity (not necessarily commercial) uniting people into a structured group managing shared means to meet some needs, or to pursue collective goals", org|organisation|organizations|organisations,
+Internet exchange point, "", ix|IX|ixp|IXP|exchange point|internet exchange,
 country, "sovereign state of this item",sovereign state|state|land|host country,
 IP routing prefix, "part of an IP address that identifies a network often expressed using Classless Inter-Domain Routing (CIDR) notation.", prefix|subnet|IP prefix|address prefix|network prefix,
 regional Internet registry, "organization that manages the allocation and registration of Internet number resources within a region of the world", RIR,instance of:organization
@@ -16,4 +17,5 @@ IPv6, "Internet Protocol version 6",ipv6,
 PeeringDB, "PeeringDB is a freely available, user-maintained, database of networks, and the go-to location for interconnection data.",peeringdb|peeringDB,instance of:organization
 Internet exchange point, "An Internet exchange point is the physical infrastructure through which Internet service providers and content delivery networks (CDNs) exchange Internet traffic between their networks",IXP|IX|ix|ixp,
 MANRS, "MANRS is an Internet Society-supported activity aimed at securing global Internet routing",Mutually Agreed Norms for Routing Security,instance of:organization
+traffic statistics, "URL for public traffic data",traffic data|statistics page,
 
