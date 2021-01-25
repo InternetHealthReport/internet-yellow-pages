@@ -12,7 +12,7 @@ class MANRS(object):
         wikibase)."""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy(preload=True)
+        self.wh = wikihandy.Wikihandy()
 
         # Actions defined by MANRS
         self.actions = [

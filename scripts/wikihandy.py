@@ -146,6 +146,17 @@ class Wikihandy(object):
 
         return qid
 
+    def __dict2quantity(self, target):
+        """Transform a dictionnary representing a quantity (value, unit: a QID
+        to the item representing the unit, lowerBound, upperBound) to a wikibase 
+        quantity object."""
+
+        target_tmp = dict(target)
+        target_tmp['unit'] = self.get_item(qid=target['unit'])
+        target_tmp['site'] = self.repo
+        return pywikibot.WbQuantity(**target_tmp)
+
+
     def _update_statement_local(self, claims, target, ref_urls=None):
         """Update a statement locally (changed are not pushed to wikibase). 
         If a reference URL is given, then it will update the statement that have
@@ -182,6 +193,10 @@ class Wikihandy(object):
             target_value = self.get_item(qid=target)
             if target_value.getID() != selected_claim.getTarget().id:
                 # selected_claim.changeTarget(target_value)                    # API access
+                selected_claim.setTarget(target_value)                    # no API access!
+        elif selected_claim.type == 'quantity': 
+            target_value = self.__dict2quantity(target)
+            if target_value != selected_claim.getTarget():
                 selected_claim.setTarget(target_value)                    # no API access!
         else:
             target_value = target
@@ -250,6 +265,8 @@ class Wikihandy(object):
                 target_value = target
                 if selected_claim.type == 'wikibase-item': 
                     target_value = self.get_item(qid=target)
+                elif selected_claim.type == 'quantity': 
+                    target_value = self.__dict2quantity(target)
                 selected_claim.setTarget(target_value)
 
             # update qualifiers
@@ -271,6 +288,8 @@ class Wikihandy(object):
                 target_value = value
                 if qualifier.type == 'wikibase-item':
                     target_value = self.get_item(qid=target_value)
+                elif qualifier.type == 'quantity': 
+                    target_value = self.__dict2quantity(target)
                 qualifier.setTarget(target_value)
                 updated_claim['qualifiers'][pid] = [qualifier.toJSON()['mainsnak']]
 

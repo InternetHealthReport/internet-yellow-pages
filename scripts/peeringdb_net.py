@@ -52,7 +52,7 @@ class PDBNetworks(object):
 
         req = requests.get(URL_PDB_NETS)
         if req.status_code != 200:
-            sys.exit('Error while fetching AS names')
+            sys.exit('Error while fetching data from API')
         networks = json.loads(req.text)['data']
 
         self.wh.login() # Login once for all threads
