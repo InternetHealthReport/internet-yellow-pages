@@ -63,7 +63,7 @@ class SpamhausAD(object):
                 continue
 
             self.update_net(row)
-            sys.stderr.write(f'\rProcessed {i} ASes')
+            sys.stderr.write(f'\rProcessed {i+1} ASes')
 
 
     def update_net(self, one_line):
