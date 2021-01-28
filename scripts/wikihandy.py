@@ -517,8 +517,6 @@ class Wikihandy(object):
         self.sparql.setReturnFormat(JSON)
         results = self.sparql.query().convert()
         
-        print(QUERY)
-        print(results)
         entities = []
         for res in results['results']['bindings']:
             id = res['item']['value'].rpartition('/')[2]
