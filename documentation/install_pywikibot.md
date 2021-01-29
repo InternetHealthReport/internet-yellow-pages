@@ -29,11 +29,11 @@ sudo python3 setup.py install
 ```
 
 # Tweaks to ~/.pywikibot/user-config.py
-- no throttle: add the following in user-config.py:
+- no/less throttling: add the following in user-config.py:
 ```
 # Slow down the robot such that it never makes a second page edit within
 # 'put_throttle' seconds.
-put_throttle = 0
+put_throttle = 0.1
 ```
 - add your OAuth credentials
 ```
