@@ -28,9 +28,6 @@ class PDBIxs(object):
                     'description': 'Identifier for an exchange point in the PeeringDB database' # Description
                     })
 
-        print("############## IXID's QID #############")
-        print(ixid_qid)
-
         # Load the QIDs for ix already available in the wikibase
         self.ixid2qid = self.wh.extid2qid(qid=ixid_qid)
         # Load the QIDs for peeringDB organizations
@@ -43,9 +40,6 @@ class PDBIxs(object):
                 (self.wh.get_pid('reference URL'), URL_PDB_IXS),
                 (self.wh.get_pid('point in time'), today)
                 ]
-
-        print("############## already registered IX #############")
-        print(self.ixid2qid)
 
     def run(self):
         """Fetch ixs information from PeeringDB and push to wikibase. 
@@ -60,7 +54,7 @@ class PDBIxs(object):
 
         pool = ThreadPoolExecutor()
         for i, res in enumerate(pool.map(self.update_ix, ixs)):
-            sys.stderr.write(f'\rProcessing... {i}/{len(ixs)}')
+            sys.stderr.write(f'\rProcessing... {i+1}/{len(ixs)}')
         pool.shutdown()
 
 

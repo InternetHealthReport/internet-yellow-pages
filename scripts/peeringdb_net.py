@@ -59,7 +59,7 @@ class PDBNetworks(object):
 
         pool = ThreadPoolExecutor()
         for i, res in enumerate(pool.map(self.update_net, networks)):
-            sys.stderr.write(f'\rProcessing... {i}/{len(networks)}')
+            sys.stderr.write(f'\rProcessing... {i+1}/{len(networks)}')
         pool.shutdown()
 
 

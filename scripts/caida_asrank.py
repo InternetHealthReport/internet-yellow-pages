@@ -48,7 +48,7 @@ class ASRank(object):
             has_next = ranking['pageInfo']['hasNextPage']
 
             for res in pool.map(self.update_net, ranking['edges']):
-                sys.stderr.write(f'\rProcessing... {i}/{ranking["totalCount"]}')
+                sys.stderr.write(f'\rProcessing... {i+1}/{ranking["totalCount"]}')
                 i+=1
 
         pool.shutdown()
