@@ -57,7 +57,9 @@ class PDBOrganizations(object):
         """Add the organization to wikibase if it's not there and update properties"""
 
         # set property name
-        statements = [ [self.wh.get_pid('name'), organization['name'].strip(), self.reference] ] 
+        statements = [ 
+                [self.wh.get_pid('instance of'), self.wh.get_qid('organization')],
+                [self.wh.get_pid('name'), organization['name'].strip(), self.reference] ] 
 
         # set property website
         if organization['website']:
@@ -83,7 +85,6 @@ class PDBOrganizations(object):
         if str(organization['id']) not in self.orgid2qid :
             # Set properties for this new organization
             org_qualifiers = [
-                    (self.wh.get_pid('instance of'), self.wh.get_qid('organization')),
                     (self.wh.get_pid('instance of'), self.wh.get_qid(ORGID_LABEL)),
                     (self.wh.get_pid('reference URL'), URL_PDB_ORGS),
                     (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB'))
