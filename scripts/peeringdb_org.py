@@ -24,7 +24,7 @@ class PDBOrganizations(object):
         orgid_qid = self.wh.get_qid(ORGID_LABEL,
                 create={                                     # Create it if it doesn't exist
                     'summary': 'add PeeringDB org IDs',      # Commit message
-                    'descirption': 'Identifier for an organization in the PeeringDB database'
+                    'description': 'Identifier for an organization in the PeeringDB database'
                     })
 
         # Load the QIDs for organizations already available in the wikibase
@@ -50,7 +50,7 @@ class PDBOrganizations(object):
 
         pool = ThreadPoolExecutor()
         for i, res in enumerate(pool.map(self.update_org, organizations)):
-            sys.stderr.write(f'\rProcessing... {i}/{len(organizations)}')
+            sys.stderr.write(f'\rProcessing... {i+1}/{len(organizations)}')
         pool.shutdown()
 
     def update_org(self, organization):

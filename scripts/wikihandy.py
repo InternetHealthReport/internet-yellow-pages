@@ -23,7 +23,8 @@ class Wikihandy(object):
     def __init__(self, wikidata_project=DEFAULT_WIKI_PROJECT, lang=DEFAULT_LANG, 
             sparql=DEFAULT_WIKI_SPARQL, preload=True):
         self._asn2qid = None
-        self.repo = pywikibot.DataSite(lang, wikidata_project)
+        self.repo = pywikibot.DataSite(lang, wikidata_project, 
+                user=pywikibot.config.usernames[wikidata_project][lang])
 
         self.sparql = SPARQLWrapper(sparql)
         self.label_pid, self.label_qid = self._label2id()

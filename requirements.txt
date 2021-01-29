@@ -1,3 +1,5 @@
 SPARQLWrapper
 iso3166
 progressbar2
+requests-oauthlib
+mwoauth

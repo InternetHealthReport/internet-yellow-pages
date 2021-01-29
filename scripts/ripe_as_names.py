@@ -26,9 +26,9 @@ class ASNames(object):
         if req.status_code != 200:
             sys.exit('Error while fetching AS names')
 
-        self.wh.login() # Login once for all threads
+        self.wh.login() # Login once for all threads, not needed with OAuth
         
-        pool = ThreadPoolExecutor(max_workers=32)
+        pool = ThreadPoolExecutor()
         for i, res in enumerate(pool.map(self.update_asn, req.text.splitlines())):
             sys.stderr.write(f'\rProcessed {i} ASes')
         pool.shutdown()
