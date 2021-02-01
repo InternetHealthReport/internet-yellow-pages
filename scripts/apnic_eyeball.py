@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import wikihandy
 import iso3166
 
-# URL to ASRank API
+# URL to APNIC API
 URL_API = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
 MIN_POP_PERC = 0.01 # ASes with less population will be ignored
 
@@ -19,7 +19,6 @@ class APNICeyeball(object):
         # Added properties will have this additional information
         today = self.wh.today()
         self.apnic_qid = self.wh.get_qid('APNIC')
-
         self.url = URL_API  # url will change for each country
         self.reference = [
                 (self.wh.get_pid('source'), self.apnic_qid),
@@ -30,14 +29,14 @@ class APNICeyeball(object):
         self.countries = iso3166.countries_by_alpha2
 
     def run(self):
-        """Fetch networks information from ASRank and push to wikibase. """
+        """Fetch data from APNIC and push to wikibase. """
 
         self.wh.login() # Login once for all threads
         pool = ThreadPoolExecutor()
 
         for cc, country in self.countries.items():
 
-            # Get the QID for the country ranking
+            # Get the QID of the selected country / create this country if needed
             self.countryrank_qid = self.wh.get_qid(f'APNIC eyeball estimates ({cc})',
                 create={                        # Create it if it doesn't exist
                     'summary': 'add APNIC eyeball estimates for '+cc,       
