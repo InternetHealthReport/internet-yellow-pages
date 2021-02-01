@@ -10,6 +10,7 @@ sudo pip3 install -r requirements.txt
 ```
 python scripts/spamhaus_asn_drop.py
 ```
+- You can also use this script ([scripts/spamhaus_asn_drop.py](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/scripts/spamhaus_asn_drop.py)) as a template to create your own.
 
 ## Useful ressources
 - Example using python library: https://www.wikidata.org/wiki/Wikidata:Pywikibot_-_Python_3_Tutorial
