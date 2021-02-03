@@ -13,7 +13,9 @@ python scripts/spamhaus_asn_drop.py
 - You can also use this script ([scripts/spamhaus_asn_drop.py](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/scripts/spamhaus_asn_drop.py)) as a template to create your own.
 
 ### Tips and Tricks
-- Revert last changes: https://www.mediawiki.org/wiki/Manual:Pywikibot/revertbot.py
+- Revert changes: 
+  - if there is only a few modifications to revert, click on 'contributions' on the right-top of the wiki page and then rollback
+  - for reverting the x last changes see:https://www.mediawiki.org/wiki/Manual:Pywikibot/revertbot.py
 
 ## Useful ressources
 - Example using python library: https://www.wikidata.org/wiki/Wikidata:Pywikibot_-_Python_3_Tutorial
