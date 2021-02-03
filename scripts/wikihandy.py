@@ -8,7 +8,7 @@ import iso3166
 
 # DEFAULT_WIKI_SPARQL = 'http://localhost:8989/bigdata/namespace/wdq/sparql' #'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
 # DEFAULT_WIKI_PROJECT = 'local'
-DEFAULT_WIKI_SPARQL = 'http://iyp-query.iijlab.net/proxy/wdqs/bigdata/namespace/wdq/sparql'
+DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
 
