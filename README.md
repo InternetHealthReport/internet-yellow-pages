@@ -12,6 +12,9 @@ python scripts/spamhaus_asn_drop.py
 ```
 - You can also use this script ([scripts/spamhaus_asn_drop.py](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/scripts/spamhaus_asn_drop.py)) as a template to create your own.
 
+### Tips and Tricks
+- Revert last changes: https://www.mediawiki.org/wiki/Manual:Pywikibot/revertbot.py
+
 ## Useful ressources
 - Example using python library: https://www.wikidata.org/wiki/Wikidata:Pywikibot_-_Python_3_Tutorial
 - Create new property: https://marc.info/?l=pywikipediabot-users&m=145893355707437&w=2 
