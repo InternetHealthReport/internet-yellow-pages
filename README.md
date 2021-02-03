@@ -16,7 +16,7 @@ python scripts/spamhaus_asn_drop.py
 - Revert changes: 
   - if there is only a few modifications to revert, click on 'contributions' on the right-top of the wiki page and then rollback
   - for reverting the x last changes see: https://www.mediawiki.org/wiki/Manual:Pywikibot/revertbot.py
-  (make sure your bot has the 'Rollback changes to pages' selected in its OAuth permissions)Rollback changes to pages
+  (make sure your bot has the 'Rollback changes to pages' selected in its OAuth permissions)
 
 
 
