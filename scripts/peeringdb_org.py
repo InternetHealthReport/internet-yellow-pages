@@ -17,6 +17,8 @@ class PDBOrganizations(object):
         doesn't already exist. And fetch QIDs for organizations already in the
         wikibase."""
     
+        sys.stderr.write('Initialization...\n')
+
         # Helper for wiki access
         self.wh = wikihandy.Wikihandy()
 
@@ -41,6 +43,7 @@ class PDBOrganizations(object):
     def run(self):
         """Fetch organizations information from PeeringDB and push to wikibase"""
 
+        sys.stderr.write('Fetching PeeringDB data...\n')
         req = requests.get(URL_PDB_ORGS)
         if req.status_code != 200:
             sys.exit('Error while fetching AS names')
