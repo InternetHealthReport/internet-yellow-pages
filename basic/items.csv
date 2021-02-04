@@ -20,5 +20,6 @@ Internet exchange point, "An Internet exchange point is the physical infrastruct
 MANRS, "MANRS is an Internet Society-supported activity aimed at securing global Internet routing",Mutually Agreed Norms for Routing Security,instance of:organization
 CAIDA, "Center for Applied Internet Data Analysis",,instance of:organization
 Internet Health Report, "IIJ's Internet Health Report",,instance of:organization
+Route Views, "project founded by Advanced Network Technology Center at the University of Oregon to allow Internet users to view global Border Gateway Protocol routing information",routeviews|Routeviews|RouteViews,instance of:organization
 traffic statistics, "URL for public traffic data",traffic data|statistics page,
 
