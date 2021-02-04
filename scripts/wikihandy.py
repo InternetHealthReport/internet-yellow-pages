@@ -15,7 +15,6 @@ DEFAULT_LANG = 'en'
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
 #TODO add method to efficiently get countries
-#TODO add method to efficiently get prefixes
 #TODO label2QID should not include AS, prefixes, countries
 
 class Wikihandy(object):
@@ -23,6 +22,7 @@ class Wikihandy(object):
     def __init__(self, wikidata_project=DEFAULT_WIKI_PROJECT, lang=DEFAULT_LANG, 
             sparql=DEFAULT_WIKI_SPARQL, preload=True):
         self._asn2qid = None
+        self._prefix2qid = None
         self.repo = pywikibot.DataSite(lang, wikidata_project, 
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
@@ -445,10 +445,63 @@ class Wikihandy(object):
         qid = self._asn2qid.get(int(asn), None)
         if create and qid is None:
             # if this AS is unknown, create corresponding item
-            qid = self.add_item('AS found in RIPE names', f'AS{asn}',
+            qid = self.add_item('new AS', f'AS{asn}',
                     statements=[
                         [self.get_pid('instance of'), self.get_qid('autonomous system'), []],
                         [self.get_pid('autonomous system number'), str(asn), []]
+                    ])
+
+        return qid
+        
+    def prefix2qid(self, prefix, create=False):
+        """Retrive QID of items assigned with the given routing IP prefix.
+
+        param: asn (int)"""
+
+        prefix = prefix.strip()
+
+        # TODO use a proper regex
+        if ('.' not in prefix and ':' not in prefix) or '/' not in prefix:
+            print('Error: wrong format: ', prefix)
+            return None
+
+        # IP version
+        af=4
+        if ':' in prefix:
+            af=6
+
+        if self._prefix2qid is None:
+            # Bootstrap : retrieve all existing ASN/QID pairs
+            QUERY = """
+            #Items that have a pKa value set
+            SELECT ?item ?itemLabel
+            WHERE 
+            {
+                    ?item wdt:%s wd:%s .
+            } 
+            """ % (
+                    self.get_pid('instance of'), 
+                    self.get_qid(f'IPv{af} routing prefix') , 
+                  )
+
+            self.sparql.setQuery(QUERY)
+            self.sparql.setReturnFormat(JSON)
+            results = self.sparql.query().convert()
+            
+            self._prefix2qid = {}
+            for res in results['results']['bindings']:
+                res_qid = res['item']['value'].rpartition('/')[2]
+                res_prefix = res['itemLabel']['value']
+
+                self._prefix2qid[res_asn] = res_qid
+
+        # Find the AS QID or add it to wikibase
+        qid = self._prefix2qid.get(int(asn), None)
+        if create and qid is None:
+            # if this AS is unknown, create corresponding item
+            qid = self.add_item('new prefix', prefix,
+                    statements=[
+                        [self.get_pid('instance of'), self.get_qid('IPv{af} routing prefix'), []],
                     ])
 
         return qid
