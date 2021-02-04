@@ -18,9 +18,9 @@ cp conf/pywikibot/families/iyp_family.py ~/.pywikibot/core_stable/pywikibot/fami
 - generate user config file
 ```
 cd ~/.pywikibot/
-python core_stable/pwb.py core_stable/generate_user_files.py
+python3 core_stable/pwb.py core_stable/generate_user_files.py
 # Follow the prompt and select project: iyp
-# You can make botpasswords on the wiki page: special pages -> bot passwords
+# You can make botpasswords on the wiki page (special pages -> bot passwords) but OAuth is preferred
 ```
 - install pywikibot on your system:
 ```
