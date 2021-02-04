@@ -6,9 +6,10 @@ import wikihandy
 import iso3166
 
 # URL to the API
-URL_API = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4&timebin=2021-01-23T00%3A00%3A00Z&format=json'
+URL_API = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4'
 # Name of the organization providing the data
 ORG = 'Internet Health Report'
+MIN_HEGE = 0.01
 
 class Crawler(object):
     def __init__(self):
@@ -58,7 +59,8 @@ class Crawler(object):
 
 
                 # Filter out unnecessary data
-                selected = [r for r in ranking if r['weightscheme']==weight and r['transitonly']==False]
+                selected = [r for r in ranking 
+                        if r['weightscheme']==weight and r['transitonly']==False and r['hege']>MIN_HEGE]
 
                 # Make sure the ranking is sorted and add rank field
                 selected.sort(key=lambda x: x['hege'], reverse=True)

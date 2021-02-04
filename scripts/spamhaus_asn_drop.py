@@ -1,12 +1,12 @@
 import sys
 import requests
-import csv
+import pybgpstream
 import wikihandy
 
-# URL to Spamhaus ASN DROP list
-URL_ASN_DROP = 'https://www.spamhaus.org/drop/asndrop.txt'
+# URL to Routeview's WIDE collector
+URL = 'https://www.spamhaus.org/drop/asndrop.txt'
 
-class SpamhausAD(object):
+class Crawler(object):
     def __init__(self):
         """
         """
@@ -44,7 +44,7 @@ class SpamhausAD(object):
         today = self.wh.today()
         self.reference = [
                 (self.wh.get_pid('source'), self.spamhaus_qid),
-                (self.wh.get_pid('reference URL'), URL_ASN_DROP),
+                (self.wh.get_pid('reference URL'), URL),
                 (self.wh.get_pid('point in time'), today)
                 ]
 
@@ -53,7 +53,7 @@ class SpamhausAD(object):
     def run(self):
         """Fetch blocklist from Spamhaus and push to wikibase. """
 
-        req = requests.get(URL_ASN_DROP)
+        req = requests.get(URL)
         if req.status_code != 200:
             sys.exit('Error while fetching the blocklist')
 
@@ -93,5 +93,5 @@ class SpamhausAD(object):
         
 # Main program
 if __name__ == '__main__':
-    sad = SpamhausAD()
-    sad.run()
+    crawler = Crawler()
+    crawler.run()
