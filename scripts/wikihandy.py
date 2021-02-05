@@ -158,13 +158,14 @@ class Wikihandy(object):
         return pywikibot.WbQuantity(**target_tmp)
 
 
-    def _update_statement_local(self, claims, target, ref_urls=None):
+    def _update_statement_local(self, claims, target, ref_urls=None, sources=None):
         """Update a statement locally (changed are not pushed to wikibase). 
         If a reference URL is given, then it will update the statement that have
         the same reference URL. Otherwise it will update the first statement that
         has no reference URL."""
 
         ref_url_pid = self.label_pid['reference URL']
+        source_pid = self.label_pid['source']
         selected_claim = None
 
         # search for a claim with the same reference url
@@ -173,6 +174,14 @@ class Wikihandy(object):
                 if claim not in self.already_selected_claims:
                     for qualifier in claim.qualifiers.get(ref_url_pid,[]):
                         if qualifier.getTarget() in ref_urls:
+                            selected_claim = claim
+                        break
+        # search for a claim with the same source
+        elif sources is not None:
+            for claim in claims:
+                if claim not in self.already_selected_claims:
+                    for qualifier in claim.qualifiers.get(source_pid,[]):
+                        if qualifier.getTarget() in sources:
                             selected_claim = claim
                         break
         # search for the first claim without a reference url
@@ -209,16 +218,18 @@ class Wikihandy(object):
 
 
 
-    def upsert_statements(self, summary, item_id, statements, commit=True):
+    def upsert_statements(self, summary, item_id, statements, commit=True, 
+            checkRefURL=True, checkSource=False):
         """Update statements values if the property are already assigned to the item
         and create them if they don't exist. All of this in one API call.
         
-        The statements parameter is a list of statement where each statement 
-        is a list in the form ['pid', 'target', 'qualifiers'].
-        Qualifiers is a list of pairs (PID, value (e.g QID, string, URL)).
-        If an existing claim has the same 'reference URL' has the one given in 
-        the qualifiers then this claim value and qualifiers will be updated.
-        Otherwise the first claim will be updated.
+        The statements parameter is a list of statement where each statement is
+        a list in the form ['pid', 'target', 'qualifiers'].  Qualifiers is a
+        list of pairs (PID, value (e.g QID, string, URL)).  If checkRefURL is
+        True and an existing claim has the same 'reference URL' has the one
+        given in the qualifiers then this claim value and qualifiers will be
+        updated.  If checkSource is True, it will update a claim from the same 
+        source. Otherwise the first claim will be updated.
 
         Notices:
         - If the property datatype is 'wikibase-item' then the target is expected 
@@ -245,8 +256,14 @@ class Wikihandy(object):
             else:
                 property_id, target, qualifiers = statement
 
-            ref_url_pid = self.label_pid['reference URL']
-            given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
+            given_ref_urls = None
+            if checkRefURL:
+                ref_url_pid = self.label_pid['reference URL']
+                given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
+            given_sources = None
+            if checkSource:
+                source_pid = self.label_pid['source']
+                given_sources = [val for pid, val in qualifiers if pid==ref_source_pid]
             
             # Retrieve claims objects
             if item.getID() != '-1':
@@ -258,7 +275,8 @@ class Wikihandy(object):
             selected_claim = None
             if property_id in claims:
                 # update the main statement value
-                selected_claim = self._update_statement_local(claims[property_id], target, given_ref_urls)
+                selected_claim = self._update_statement_local(
+                        claims[property_id], target, given_ref_urls, given_sources)
 
             if selected_claim is None:
                 # create a new claim
