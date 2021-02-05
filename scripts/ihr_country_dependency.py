@@ -31,7 +31,8 @@ class Crawler(object):
         for cc, country in self.countries.items():
             today = self.wh.today()
             self.url = URL_API.format(country=cc)
-            req = requests.get( self.url )
+            self.urltmp = self.url+'&timebin=2021-01-25T00:00'
+            req = requests.get( self.urltmp )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
             data = json.loads(req.text)
@@ -95,7 +96,8 @@ class Crawler(object):
         # Commit to wikibase
         # Get the AS QID (create if AS is not yet registered) and commit changes
         net_qid = self.wh.asn2qid(asn['asn'], create=True) 
-        self.wh.upsert_statements('update from IHR country ranking', net_qid, statements )
+        self.wh.upsert_statements('update from IHR country ranking', net_qid, statements,
+                checkRefURL=False, checkSource=True)
         
 # Main program
 if __name__ == '__main__':

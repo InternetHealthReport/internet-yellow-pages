@@ -260,10 +260,11 @@ class Wikihandy(object):
             if checkRefURL:
                 ref_url_pid = self.label_pid['reference URL']
                 given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
+
             given_sources = None
             if checkSource:
                 source_pid = self.label_pid['source']
-                given_sources = [val for pid, val in qualifiers if pid==ref_source_pid]
+                given_sources = [val for pid, val in qualifiers if pid==source_pid]
             
             # Retrieve claims objects
             if item.getID() != '-1':
@@ -496,6 +497,10 @@ class Wikihandy(object):
             WHERE 
             {
                     ?item wdt:%s wd:%s .
+
+                    SERVICE wikibase:label {
+                        bd:serviceParam wikibase:language "en" .
+                    }
             } 
             """ % (
                     self.get_pid('instance of'), 
@@ -511,15 +516,15 @@ class Wikihandy(object):
                 res_qid = res['item']['value'].rpartition('/')[2]
                 res_prefix = res['itemLabel']['value']
 
-                self._prefix2qid[res_asn] = res_qid
+                self._prefix2qid[res_prefix] = res_qid
 
         # Find the AS QID or add it to wikibase
-        qid = self._prefix2qid.get(int(asn), None)
+        qid = self._prefix2qid.get(prefix, None)
         if create and qid is None:
             # if this AS is unknown, create corresponding item
             qid = self.add_item('new prefix', prefix,
                     statements=[
-                        [self.get_pid('instance of'), self.get_qid('IPv{af} routing prefix'), []],
+                        [self.get_pid('instance of'), self.get_qid(f'IPv{af} routing prefix'), []],
                     ])
 
         return qid
