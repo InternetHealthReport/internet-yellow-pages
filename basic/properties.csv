@@ -18,4 +18,5 @@ appeared in, "this entity appears in that work, study, or event. Use 'reported i
 reported in, "this entity is reported by a blocklist or stated as implied in malicious activities. Use 'appeared in' for appearance in reports that are not security related",,wikibase-item
 ranking, "subject's numbered position within a group", position|rank, quantity
 announced by, "information advertised with BGP by the given Autonomous System",,wikibase-item
-
+IP version, "version of the Internet Protocol. Should point to item IPv4 or IPv6",,wikibase-item
+status, "state or condition of a ressource at a particular time"

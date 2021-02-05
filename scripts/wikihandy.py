@@ -524,7 +524,8 @@ class Wikihandy(object):
             # if this AS is unknown, create corresponding item
             qid = self.add_item('new prefix', prefix,
                     statements=[
-                        [self.get_pid('instance of'), self.get_qid(f'IPv{af} routing prefix'), []],
+                        [self.get_pid('instance of'), self.get_qid('IP routing prefix'), []],
+                        [self.get_pid('IP version'), self.get_qid(f'IPv{af}'), []],
                     ])
 
         return qid

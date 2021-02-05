@@ -64,6 +64,7 @@ class Crawler(object):
 
             self.update_net(row)
             sys.stderr.write(f'\rProcessed {i+1} ASes')
+        sys.stderr.write(f'\n')
 
 
     def update_net(self, one_line):
