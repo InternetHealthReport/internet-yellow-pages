@@ -475,7 +475,7 @@ class Wikihandy(object):
     def prefix2qid(self, prefix, create=False):
         """Retrive QID of items assigned with the given routing IP prefix.
 
-        param: asn (int)"""
+        param: prefix (str)"""
 
         prefix = prefix.strip()
 
@@ -493,14 +493,11 @@ class Wikihandy(object):
             # Bootstrap : retrieve all existing ASN/QID pairs
             QUERY = """
             #Items that have a pKa value set
-            SELECT ?item ?itemLabel
+            SELECT ?item ?prefix
             WHERE 
             {
                     ?item wdt:%s wd:%s .
-
-                    SERVICE wikibase:label {
-                        bd:serviceParam wikibase:language "en" .
-                    }
+                    ?item rdfs:label ?prefix. 
             } 
             """ % (
                     self.get_pid('instance of'), 
@@ -514,14 +511,14 @@ class Wikihandy(object):
             self._prefix2qid = {}
             for res in results['results']['bindings']:
                 res_qid = res['item']['value'].rpartition('/')[2]
-                res_prefix = res['itemLabel']['value']
+                res_prefix = res['prefix']['value']
 
                 self._prefix2qid[res_prefix] = res_qid
 
-        # Find the AS QID or add it to wikibase
+        # Find the prefix QID or add it to wikibase
         qid = self._prefix2qid.get(prefix, None)
         if create and qid is None:
-            # if this AS is unknown, create corresponding item
+            # if this prefix is unknown, create corresponding item
             qid = self.add_item('new prefix', prefix,
                     statements=[
                         [self.get_pid('instance of'), self.get_qid('IP routing prefix'), []],
