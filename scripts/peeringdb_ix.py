@@ -63,7 +63,9 @@ class PDBIxs(object):
         properties."""
 
         # set property name
-        statements = [ [self.wh.get_pid('name'), ix['name'].strip(), self.reference] ] 
+        statements = [ 
+                [self.wh.get_pid('instance of'), self.wh.get_qid('Internet exchange point')],
+                [self.wh.get_pid('name'), ix['name'].strip(), self.reference] ] 
 
         # link to corresponding organization
         org_qid = self.orgid2qid.get(str(ix['org_id']))

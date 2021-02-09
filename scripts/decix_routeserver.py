@@ -1,6 +1,7 @@
 import sys
 import requests
 import json
+from collections import defaultdict
 import wikihandy
 
 # URL to the API
@@ -24,17 +25,18 @@ class Crawler(object):
         self.reference_config = [
             (self.wh.get_pid('source'), self.org_qid),
             (self.wh.get_pid('reference URL'), URL_RS),
-            (self.wh.get_pid('point in time'), today),
+            (self.wh.get_pid('point in time'), self.wh.today()),
             ]
 
         self.rs_config = self.fetch( URL_CONFIG )
-        self.rs_asn_qid = self.asn2qid(self.rs_config['asn'], create=True)
+        self.rs_asn_qid = self.wh.asn2qid(self.rs_config['asn'], create=True)
 
 
     def fetch(self, url):
         req = requests.get( url )
         if req.status_code != 200:
-            sys.exit('Error while fetching data')
+            print('Error while fetching data: ', url)
+            return defaultdict(list)
         return json.loads(req.text)
 
 
@@ -43,17 +45,16 @@ class Crawler(object):
 
         self.wh.login() # Login once for all threads
 
-        today = self.wh.today()
-
         routeservers = self.fetch(URL_RS)['routeservers']
 
         self.reference = [
             (self.wh.get_pid('source'), self.org_qid),
             (self.wh.get_pid('reference URL'), URL_RS),
-            (self.wh.get_pid('point in time'), today),
+            (self.wh.get_pid('point in time'), self.wh.today()),
             ]
 
         for rs in routeservers:
+            sys.stderr.write(f'Processing route server {rs["name"]}\n')
             # Register/update route server 
             self.update_rs(rs)
 
@@ -63,28 +64,28 @@ class Crawler(object):
                 (self.wh.get_pid('source'), self.org_qid),
                 (self.wh.get_pid('managed by'), self.rs_qid),
                 (self.wh.get_pid('reference URL'), self.url_neighbor),
-                (self.wh.get_pid('point in time'), today),
+                (self.wh.get_pid('point in time'), self.wh.today()),
                 ]
 
-            neighbors = self.fetch(url_neighbor)['neighbors']
-            for n in neighbors:
-                self.update_neighbor(n)
+            neighbors = self.fetch(self.url_neighbor)['neighbours']
+            for neighbor in neighbors:
+                sys.stderr.write(f'Processing neighbor {neighbor["id"]}\n')
+                self.update_neighbor(neighbor)
 
-            # 
-            self.url_route = URL_ROUTE.format(rs=rs['id'], neighbor=neighbor['id'])
-            self.reference_route = [
-                (self.wh.get_pid('source'), self.org_qid),
-                (self.wh.get_pid('reference URL'), self.url_route),
-                (self.wh.get_pid('point in time'), today),
-                ]
+                self.url_route = URL_ROUTE.format(rs=rs['id'], neighbor=neighbor['id'])
+                self.reference_route = [
+                    (self.wh.get_pid('source'), self.org_qid),
+                    (self.wh.get_pid('reference URL'), self.url_route),
+                    (self.wh.get_pid('point in time'), self.wh.today()),
+                    ]
 
-            routes = self.fetch(url_route)
-            # Imported routes
-            for route in routes['imported']:
-                self.update_route(route,'imported')
-                sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(selected)}')
+                routes = self.fetch(self.url_route)
+                # Imported routes
+                for i, route in enumerate(routes['imported']):
+                    self.update_route(route,'imported')
+                    sys.stderr.write(f'\rProcessing... {i+1}/{len(routes["imported"])}')
 
-            sys.stderr.write('\n')
+                sys.stderr.write('\n')
 
     def update_route(self, route, status):
         """Update route data"""
@@ -112,23 +113,24 @@ class Crawler(object):
         statements = []
 
         # set ASN
-        statements.append( [ self.wh.get_pid('autonomous system number'), self.rs_config['asn'] , self.reference_config])
+        statements.append( [ self.wh.get_pid('autonomous system number'), str(self.rs_config['asn']) , self.reference_config])
 
         # set org
         statements.append( [ self.wh.get_pid('managed by'), self.org_qid, self.reference])
 
-        # set IXP (assumes the res['group'] is the same as peeringdb ix name)
-        statements.append( [ self.wh.get_pid('part of'), self.wh.get_qid(res['group']), self.reference])
+        # set IXP (assumes the rs['group'] is the same as peeringdb ix name)
+        statements.append( [ self.wh.get_pid('part of'), self.wh.get_qid(rs['group']), self.reference])
 
         # set external id
-        statements.append( [ self.wh.get_pid('external ID'), self.wh.get_qid(res['id']), self.reference])
+        statements.append( [ self.wh.get_pid('external ID'), rs['id'], self.reference])
 
         # Commit to wikibase
-        self.rs_qid = self.wh.get_qid(f"{rs['name']}", create={  
-                'summary': 'add route server from Alice API',
-                'description': f"Route server in {rs['group']}"
-                'statements': [ [self.wh.get_pid('instance of'), self.wh.get_qid('route server')], ]
-                })
+        self.rs_qid = self.wh.get_qid( rs['name'], 
+                create={  
+                 'summary': 'add route server from Alice API',
+                 'description': f"Route server in {rs['group']}",
+                 'statements': [ [self.wh.get_pid('instance of'), self.wh.get_qid('route server')] ]
+                 })
         self.wh.upsert_statements('update from route server API', self.rs_qid, statements)
 
         

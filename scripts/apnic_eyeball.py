@@ -42,8 +42,23 @@ class APNICeyeball(object):
                     'summary': 'add APNIC eyeball estimates for '+cc,       
                     'description': "APNIC's AS population estimates"
                                 +"based on advertisement for "+country.name,
-                    'statements': [[self.wh.get_pid('managed by'), self.apnic_qid]]
+                    'statements': [[self.wh.get_pid('managed by'), self.apnic_qid],
+                                [self.wh.get_pid('website'), URL_API ],
+                                [self.wh.get_pid('country'), self.wh.country2qid(cc) ],
+                                ]
                     })
+
+            self.countrypercent_qid = self.wh.get_qid(f'% of Internet users in {country.name}',
+                create={                        # Create it if it doesn't exist
+                    'summary': 'add APNIC eyeball estimates for '+cc,       
+                    'description': "APNIC's AS population estimates"
+                                +"based on advertisement for "+country.name,
+                    'statements': [[self.wh.get_pid('managed by'), self.apnic_qid],
+                                [self.wh.get_pid('website'), URL_API ],
+                                [self.wh.get_pid('country'), self.wh.country2qid(cc) ],
+                                ]
+                    })
+
 
             self.url = URL_API+f'{cc}/{cc}.asns.json?m={MIN_POP_PERC}'
             req = requests.get( self.url )
@@ -85,6 +100,15 @@ class APNICeyeball(object):
                     { 
                     'amount': asn['rank'], 
                     'unit': self.countryrank_qid,
+                    },
+                    self.reference])
+
+        # set population
+        statements.append(
+                [ self.wh.get_pid('population'), 
+                    { 
+                    'amount': asn['percent'], 
+                    'unit': self.countrypercent_qid,
                     },
                     self.reference])
 
