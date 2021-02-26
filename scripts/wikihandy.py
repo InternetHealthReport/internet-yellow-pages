@@ -627,7 +627,7 @@ class Wikihandy(object):
         return properties, items
 
 if __name__ == '__main__':
-    wh = Wikihandy()
+    wh = Wikihandy(preload=False)
 
     import IPython
     IPython.embed()
