@@ -28,7 +28,7 @@ class Crawler(object):
                 'statements': [
                     [self.wh.get_pid('website'), 'https://tranco-list.eu/'],
                     [self.wh.get_pid('publication'), 'https://tranco-list.eu/assets/tranco-ndss19.pdf'],
-                    [self.wh.get_pid('source code repository'), 'https://tranco-list.eu/assets/tranco-ndss19.pdf'],
+                    [self.wh.get_pid('source code repository'), 'https://github.com/DistriNet/tranco-list'],
                     ]
                 })
 

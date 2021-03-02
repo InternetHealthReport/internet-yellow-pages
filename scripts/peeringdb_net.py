@@ -1,4 +1,5 @@
 import sys
+import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -57,15 +58,17 @@ class PDBNetworks(object):
 
         self.wh.login() # Login once for all threads
 
-        pool = ThreadPoolExecutor()
-        for i, res in enumerate(pool.map(self.update_net, networks)):
+        #pool = ThreadPoolExecutor()
+        for i, res in enumerate(map(self.update_net, networks)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(networks)}')
-        pool.shutdown()
+        #pool.shutdown()
 
 
     def update_net(self, network):
         """Add the network to wikibase if it's not already there and update its
         properties."""
+
+        logging.info(f'Pdb: Enter update_net {network}')
 
         # set property name
         statements = [ [self.wh.get_pid('name'), network['name'].strip(), self.reference] ] 
@@ -109,6 +112,7 @@ class PDBNetworks(object):
         net_qid = self.net_qid(network) 
         self.wh.upsert_statements('update peeringDB networks', net_qid, statements )
         
+        logging.info(f'Pdb: Leave update_net {network}')
         return net_qid
 
 
@@ -119,6 +123,8 @@ class PDBNetworks(object):
         the peeringDB network ID with this item.
 
         Return the network QID."""
+
+        logging.info(f'Pdb: Enter net_qid {network}')
 
         # Check if the network is in the wikibase
         if str(network['id']) not in self.netid2qid :
@@ -138,10 +144,24 @@ class PDBNetworks(object):
             # keep track of this QID
             self.netid2qid[str(network['id'])] = net_qid
 
+        logging.info(f'Pdb: Leave net_qid {network}')
+
         return self.netid2qid[str(network['id'])]
 
 
 # Main program
 if __name__ == '__main__':
+
+    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    logging.basicConfig(
+            format=FORMAT, 
+            filename='log/'+scriptname+'.log',
+            level=logging.DEBUG, 
+            #datefmt='%Y-%m-%d %H:%M:%S'
+            )
+    logging.info("Started: %s" % sys.argv)
+
+
     pdbn = PDBNetworks()
     pdbn.run()
