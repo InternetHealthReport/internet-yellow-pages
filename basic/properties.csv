@@ -19,4 +19,11 @@ reported in, "this entity is reported by a blocklist or stated as implied in mal
 ranking, "subject's numbered position within a group", position|rank, quantity
 announced by, "information advertised with BGP by the given Autonomous System",,wikibase-item
 IP version, "version of the Internet Protocol. Should point to item IPv4 or IPv6",,wikibase-item
-status, "state or condition of a ressource at a particular time"
+status, "state or condition of a ressource at a particular time",,wikibase-item
+population, "number of people inhabiting the place; number of people of subject",inhabitants|human population,quantity
+publication, "research report or technical document providing detailed information on the subject",article|technical report,url
+source code repository, "public source code repository",source|repository URL|repo|git URL,url
+route origin authorization, "a ROA is a cryptographically signed object that states which Autonomous System (AS) is authorized to originate a particular IP address prefix or set of prefixes",,wikibase-item
+start time,"time an item begins to exist or a statement starts being valid",from|starting|from time|from date|starttime|since|start date,time
+end time,"time an item ends to exist or a statement ends being valid",to|ending|to time|to date|endtime|until|end date,time
+maxLength, "the maxLength specifies the maximum length of IP address prefix that the AS is authorized to advertise",,quantity

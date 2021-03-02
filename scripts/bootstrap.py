@@ -6,7 +6,7 @@ from collections import defaultdict
 BASIC_PROPERTY_FNAME = 'basic/properties.csv'
 BASIC_ITEMS_FNAME = 'basic/items.csv'
 
-wh = wikihandy.Wikihandy() 
+wh = wikihandy.Wikihandy(preload=False) 
 
 def decomment(csvfile):
     """Ignore lines with comments"""

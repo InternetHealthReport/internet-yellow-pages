@@ -2,6 +2,7 @@ import pywikibot
 from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
 import iso3166
+import arrow
 
 
 # DEFAULT_WIKI_SPARQL = 'http://localhost:8989/bigdata/namespace/wdq/sparql' #'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
@@ -36,6 +37,7 @@ class Wikihandy(object):
 
         if preload:
             self.asn2qid(1)
+            self.prefix2qid('10.0.0.0/8')
 
         logging.debug('Wikihandy: Leave initialization')
 
@@ -51,6 +53,15 @@ class Wikihandy(object):
         return pywikibot.WbTime(year=now.year, month=now.month, day=now.day,
             calendarmodel="http://www.wikidata.org/entity/Q1985727")
     
+    def to_wbtime(self, datetime):
+        """Convert a string, timestamp, or datetime object to a pywikibot WbTime
+        object"""
+
+        dt = arrow.get(datetime)
+        dtstr = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        return pywikibot.WbTime.fromTimestr(dtstr,
+            calendarmodel="http://www.wikidata.org/entity/Q1985727")
+        
     def get_item(self, label=None, qid=None):
         """ Return the first item with the given label."""
 
@@ -157,7 +168,8 @@ class Wikihandy(object):
         quantity object."""
 
         target_tmp = dict(target)
-        target_tmp['unit'] = self.get_item(qid=target['unit'])
+        if 'unit' in target_tmp:
+            target_tmp['unit'] = self.get_item(qid=target['unit'])
         target_tmp['site'] = self.repo
         return pywikibot.WbQuantity(**target_tmp)
 
@@ -440,6 +452,9 @@ class Wikihandy(object):
 
         param: asn (int)"""
 
+        if isinstance(asn, str) and asn.startswith('AS'):
+            asn = asn[2:]
+
         if int(asn) < 0:
             print('Error: ASN value should be positive.')
             return None
@@ -483,6 +498,7 @@ class Wikihandy(object):
 
         return qid
         
+    # FIXME: decide on a proper type for IP routing prefixes
     def prefix2qid(self, prefix, create=False):
         """Retrive QID of items assigned with the given routing IP prefix.
 
@@ -507,12 +523,15 @@ class Wikihandy(object):
             SELECT ?item ?prefix
             WHERE 
             {
-                    ?item wdt:%s wd:%s .
+                    ?item wdt:%s ?type.
                     ?item rdfs:label ?prefix. 
+                    FILTER(?type IN (wd:%s, wd:%s, wd:%s))
             } 
             """ % (
                     self.get_pid('instance of'), 
-                    self.get_qid(f'IPv{af} routing prefix') , 
+                    self.get_qid(f'IPv4 routing prefix') , 
+                    self.get_qid(f'IPv6 routing prefix') , 
+                    self.get_qid(f'IP routing prefix') , 
                   )
 
             self.sparql.setQuery(QUERY)
@@ -619,7 +638,7 @@ class Wikihandy(object):
         return properties, items
 
 if __name__ == '__main__':
-    wh = Wikihandy()
+    wh = Wikihandy(preload=False)
 
     import IPython
     IPython.embed()
