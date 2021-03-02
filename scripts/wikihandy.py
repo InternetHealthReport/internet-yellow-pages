@@ -1,6 +1,4 @@
 import pywikibot
-from pywikibot import pagegenerators as pg
-from pywikibot.data import api
 from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
 import iso3166
@@ -11,6 +9,7 @@ import iso3166
 DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
+MAX_PENDING_REQUESTS = 1000
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
@@ -21,6 +20,9 @@ class Wikihandy(object):
 
     def __init__(self, wikidata_project=DEFAULT_WIKI_PROJECT, lang=DEFAULT_LANG, 
             sparql=DEFAULT_WIKI_SPARQL, preload=True):
+
+        logging.debug('Wikihandy: Enter initialization')
+
         self._asn2qid = None
         self._prefix2qid = None
         self.repo = pywikibot.DataSite(lang, wikidata_project, 
@@ -34,6 +36,8 @@ class Wikihandy(object):
 
         if preload:
             self.asn2qid(1)
+
+        logging.debug('Wikihandy: Leave initialization')
 
     def login(self):
         """Login to the wikibase."""
@@ -175,7 +179,7 @@ class Wikihandy(object):
                     for qualifier in claim.qualifiers.get(ref_url_pid,[]):
                         if qualifier.getTarget() in ref_urls:
                             selected_claim = claim
-                        break
+                            break
         # search for a claim with the same source
         elif sources is not None:
             for claim in claims:
@@ -183,7 +187,7 @@ class Wikihandy(object):
                     for qualifier in claim.qualifiers.get(source_pid,[]):
                         if qualifier.getTarget() in sources:
                             selected_claim = claim
-                        break
+                            break
         # search for the first claim without a reference url
         else:
             for claim in claims:
@@ -248,6 +252,12 @@ class Wikihandy(object):
         else:
             item = self.get_item(qid=item_id)
 
+        # Retrieve claims objects
+        if item.getID() != '-1':
+            item_claims = dict(item.get()['claims'])
+        else:
+            item_claims = {}
+
         for statement in statements:
 
             qualifiers = []
@@ -266,18 +276,12 @@ class Wikihandy(object):
                 source_pid = self.label_pid['source']
                 given_sources = [val for pid, val in qualifiers if pid==source_pid]
             
-            # Retrieve claims objects
-            if item.getID() != '-1':
-                claims = dict(item.get(u'claims')['claims'])
-            else:
-                claims = {}
-
             # Find the matching claim or create a new one
             selected_claim = None
-            if property_id in claims:
+            if property_id in item_claims:
                 # update the main statement value
                 selected_claim = self._update_statement_local(
-                        claims[property_id], target, given_ref_urls, given_sources)
+                        item_claims[property_id], target, given_ref_urls, given_sources)
 
             if selected_claim is None:
                 # create a new claim
@@ -317,7 +321,11 @@ class Wikihandy(object):
 
         # Commit changes
         if commit and item is not None:
-            item.editEntity(updates)# , asynchronous=True, callback=self.on_delivery)
+            if self.pending_requests > MAX_PENDING_REQUESTS:
+                self.pending_requests += 1
+                item.editEntity(updates, asynchronous=True, callback=self.on_delivery)
+            else:
+                item.editEntity(updates)
 
         return updates
 
@@ -325,8 +333,10 @@ class Wikihandy(object):
     def on_delivery(self, entity, error):
         """Print errors if a commit didn't succeed"""
 
+        self.pending_requests -= 1
         if error is not None:
             print('!!! ERROR (on_delivery)!!!')
+            print(entity)
             print(error)
 
 
@@ -412,10 +422,11 @@ class Wikihandy(object):
 
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)
-        results = self.sparql.query().convert()
+        response = self.sparql.query().convert()
+        results = response['results']
         
         extid2qid = {}
-        for res in results['results']['bindings']:
+        for res in results['bindings']:
             res_qid = res['item']['value'].rpartition('/')[2]
             res_extid = res['extid']['value']
 
