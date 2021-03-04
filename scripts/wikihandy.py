@@ -1,8 +1,12 @@
+import os
 import pywikibot
 from SPARQLWrapper import SPARQLWrapper, JSON
+import json
 import logging
 import iso3166
 import arrow
+from collections import defaultdict
+from threading import RLock
 
 
 # DEFAULT_WIKI_SPARQL = 'http://localhost:8989/bigdata/namespace/wdq/sparql' #'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
@@ -10,12 +14,25 @@ import arrow
 DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
-MAX_PENDING_REQUESTS = 1000
+MAX_PENDING_REQUESTS = 100
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
 #TODO add method to efficiently get countries
 #TODO label2QID should not include AS, prefixes, countries
+
+from functools import wraps
+
+# Decorator for making a method thread safe and fix concurrent pywikibot cache
+# accesses
+def thread_safe(method):
+    @wraps(method)
+    def _impl(self, *method_args, **method_kwargs):
+        with self.lock:
+            res = method(self, *method_args, **method_kwargs)
+        return res
+    return _impl
+
 
 class Wikihandy(object):
 
@@ -23,6 +40,9 @@ class Wikihandy(object):
             sparql=DEFAULT_WIKI_SPARQL, preload=True):
 
         logging.debug('Wikihandy: Enter initialization')
+
+        # used to make pywikibot cache access thread-safe
+        self.lock = RLock()
 
         self._asn2qid = None
         self._prefix2qid = None
@@ -33,7 +53,7 @@ class Wikihandy(object):
         self.label_pid, self.label_qid = self._label2id()
         # TODO this is not neded?? already cached by pywikibot
         self.cache = {}
-        self.already_selected_claims = []
+        self.pending_requests = 0
 
         if preload:
             self.asn2qid(1)
@@ -61,7 +81,8 @@ class Wikihandy(object):
         dtstr = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
         return pywikibot.WbTime.fromTimestr(dtstr,
             calendarmodel="http://www.wikidata.org/entity/Q1985727")
-        
+    
+    @thread_safe
     def get_item(self, label=None, qid=None):
         """ Return the first item with the given label."""
 
@@ -86,6 +107,7 @@ class Wikihandy(object):
         # result = request.submit()
         # return result['search'] 
 
+    @thread_safe
     def get_property(self, label=None, pid=None):
         """ Return the fisrt property with the given label"""
 
@@ -111,6 +133,7 @@ class Wikihandy(object):
         # print(result)
         # return result['search']
 
+    @thread_safe
     def add_property(self, summary, label, description, aliases, data_type):
         """Create new property if it doesn't already exists. Return the property
         PID."""
@@ -125,7 +148,7 @@ class Wikihandy(object):
                 'aliases': {'en': aliases},
                 'descriptions': {'en': description}
                 }
-        new_prop.editEntity(data, summary=summary)
+        self.editEntity(new_prop, data, summary)
         pid = new_prop.getID()
 
         # Keep it in the cache
@@ -134,6 +157,7 @@ class Wikihandy(object):
 
         return pid 
 
+    @thread_safe
     def add_item(self, summary, label, description=None, aliases=None, statements=None):
         """Create new item if it doesn't already exists. Return the item QID"""
 
@@ -153,7 +177,7 @@ class Wikihandy(object):
         if statements is not None:
             data['claims'] = self.upsert_statements(summary,new_item,statements,commit=False)['claims']
 
-        new_item.editEntity(data, summary=summary)
+        self.editEntity(new_item, data, summary)
         qid = new_item.getID()
 
         # Keep it in the cache
@@ -174,7 +198,9 @@ class Wikihandy(object):
         return pywikibot.WbQuantity(**target_tmp)
 
 
-    def _update_statement_local(self, claims, target, ref_urls=None, sources=None):
+
+    def _update_statement_local(self, claims, target, ref_urls=None, 
+            sources=None, reference=False):
         """Update a statement locally (changed are not pushed to wikibase). 
         If a reference URL is given, then it will update the statement that have
         the same reference URL. Otherwise it will update the first statement that
@@ -187,34 +213,37 @@ class Wikihandy(object):
         # search for a claim with the same reference url
         if ref_urls is not None:
             for claim in claims:
-                if claim not in self.already_selected_claims:
-                    for qualifier in claim.qualifiers.get(ref_url_pid,[]):
-                        if qualifier.getTarget() in ref_urls:
-                            selected_claim = claim
-                            break
+                for source in claim.sources:
+                    if ref_url_pid in source:
+                        for ref in source[ref_url_pid]:
+                            if ref.getTarget() in ref_urls:
+                                selected_claim = claim
+                                break
+
         # search for a claim with the same source
         elif sources is not None:
             for claim in claims:
-                if claim not in self.already_selected_claims:
-                    for qualifier in claim.qualifiers.get(source_pid,[]):
-                        if qualifier.getTarget() in sources:
-                            selected_claim = claim
-                            break
+                for source in claim.sources:
+                    if source_pid in source:
+                        for ref in source[source_pid]:
+                            if ref.getTarget() in sources:
+                                selected_claim = claim
+                                break
+
         # search for the first claim without a reference url
         else:
             for claim in claims:
-                if( claim not in self.already_selected_claims and 
-                        ref_url_pid not in claim.qualifiers ): 
-                    selected_claim = claim
-                    break
+                for source in claim.sources:
+                    if ref_url_pid not in source:
+                        selected_claim = claim
+                        break
 
         if selected_claim is None:
             # Couldn't find a matching claim
             return None
 
-        # Remove the claim from the list, so we won't select it anymore
-        self.already_selected_claims.append(selected_claim)
 
+        # Update statement target value
         if selected_claim.type == 'wikibase-item': 
             target_value = self.get_item(qid=target)
             if target_value.getID() != selected_claim.getTarget().id:
@@ -231,17 +260,83 @@ class Wikihandy(object):
                 selected_claim.setTarget(target_value)                    # no API access!
 
         return selected_claim
+    
+    def _update_qualifiers_local(self, qualifiers, new_qualifiers_list):
+        new_qualifiers = [] 
+        for pid, value in new_qualifiers_list:
+            if pid in qualifiers:
+                self._update_statement_local(qualifiers[pid], value)
+            else:
+                new_qualifiers.append( [pid, value] )
+
+        return new_qualifiers
+
+    def _update_references_local(self, sources, new_ref_list):
+        new_sources = [] 
+        for pid, value in new_ref_list:
+            updated = False
+            for source in sources:
+                if pid in source:
+                    source = self._update_statement_local(source[pid], value)
+                    updated = True
+            if not updated:
+                new_sources.append( [pid, value] )
+
+        return new_sources
+
+    def _insert_qualifiers_local(self, claim, new_qualifiers):
+        # Add new qualifiers
+        if 'qualifiers' not in claim and new_qualifiers:
+            claim['qualifiers'] = {}
+
+        for pid, value in new_qualifiers:
+            qualifier = pywikibot.Claim(self.repo, pid)
+            target_value = value
+            if qualifier.type == 'wikibase-item':
+                target_value = self.get_item(qid=value)
+            elif qualifier.type == 'quantity': 
+                target_value = self.__dict2quantity(value)
+            qualifier.setTarget(target_value)
+            claim['qualifiers'][pid] = [qualifier.toJSON()['mainsnak']]
 
 
+    def _insert_references_local(self, claim, new_references):
+        # Add new sources
+        if 'references' not in claim and new_references:
+            claim['references'] = []
 
+        refs = defaultdict(list)
+        for pid, value in new_references:
+            reference = pywikibot.Claim(self.repo, pid)
+            target_value = value
+            if reference.type == 'wikibase-item':
+                target_value = self.get_item(qid=value)
+            elif reference.type == 'quantity': 
+                target_value = self.__dict2quantity(value)
+            reference.setTarget(target_value)
+            reference.isReference = True
+            refs[pid].append(reference.toJSON())
+
+        if refs:
+            claim['references'].append({'snaks':refs})
+
+
+    @thread_safe
     def upsert_statements(self, summary, item_id, statements, commit=True, 
-            checkRefURL=True, checkSource=False):
-        """Update statements values if the property are already assigned to the item
-        and create them if they don't exist. All of this in one API call.
+            checkRefURL=True, checkSource=False, delete_ref_url=None):
+        """
+        Update statements that have the same reference URLs or create new
+        statements. All of this in only one or two API calls.
+
+        This method finds statements based on the given item_id and reference 
+        URLs, it updates statements with new values, and delete outdated 
+        statements (i.e. statements with same references but not seen in the
+        given statements).
         
         The statements parameter is a list of statement where each statement is
-        a list in the form ['pid', 'target', 'qualifiers'].  Qualifiers is a
-        list of pairs (PID, value (e.g QID, string, URL)).  If checkRefURL is
+        a list in the form ['pid', 'target', 'references', 'qualifiers'].  
+        References and qualifiers have the same format, both are a list of 
+        pairs (PID, value (e.g QID, string, URL)).  If checkRefURL is
         True and an existing claim has the same 'reference URL' has the one
         given in the qualifiers then this claim value and qualifiers will be
         updated.  If checkSource is True, it will update a claim from the same 
@@ -252,11 +347,12 @@ class Wikihandy(object):
         to be the item PID. For properties with a different datatype the value 
         of target is used as is.
         - If the item has multiple times the given property only the first one
-        is modified."""
+        is modified.
+
+        When delete_ref_url is not None, all statements with the given URL will
+        also be removed. This is useful if the reference URL has changed."""
 
         updates = {'claims':[]}
-        self.already_selected_claims = []
-
         # Retrieve item and claims objects
         item = None
         if isinstance(item_id, pywikibot.ItemPage):
@@ -272,28 +368,32 @@ class Wikihandy(object):
 
         for statement in statements:
 
+            references = []
             qualifiers = []
             if len(statement) == 2:
                 property_id, target = statement
+            elif len(statement) == 3:
+                property_id, target, references = statement
             else:
-                property_id, target, qualifiers = statement
+                property_id, target, references, qualifiers = statement
 
             given_ref_urls = None
             if checkRefURL:
                 ref_url_pid = self.label_pid['reference URL']
-                given_ref_urls = [val for pid, val in qualifiers if pid==ref_url_pid]
+                given_ref_urls = [val for pid, val in references if pid==ref_url_pid]
 
             given_sources = None
             if checkSource:
                 source_pid = self.label_pid['source']
-                given_sources = [val for pid, val in qualifiers if pid==source_pid]
+                given_sources = [val for pid, val in references if pid==source_pid]
             
             # Find the matching claim or create a new one
             selected_claim = None
             if property_id in item_claims:
                 # update the main statement value
                 selected_claim = self._update_statement_local(
-                        item_claims[property_id], target, given_ref_urls, given_sources)
+                        item_claims[property_id], target, given_ref_urls, 
+                        given_sources)
 
             if selected_claim is None:
                 # create a new claim
@@ -304,42 +404,44 @@ class Wikihandy(object):
                 elif selected_claim.type == 'quantity': 
                     target_value = self.__dict2quantity(target)
                 selected_claim.setTarget(target_value)
+            else:
+                # Remove the claim from the list, so we won't select it anymore
+                item_claims[property_id].remove(selected_claim)
 
-            # update qualifiers
-            claims = selected_claim.qualifiers 
-            new_qualifiers = [] 
-            for pid, value in qualifiers:
-                if pid in claims:
-                    self._update_statement_local(claims[pid], value)
-                else:
-                    new_qualifiers.append( [pid, value] )
+            # update current qualifiers and references
+            new_qualifiers = self._update_qualifiers_local(selected_claim.qualifiers, qualifiers)
+            new_references = self._update_references_local(selected_claim.sources, references)
 
-            # Add new qualifiers
+            # add new qualifiers and references
             updated_claim = selected_claim.toJSON()
-            if 'qualifiers' not in updated_claim and new_qualifiers:
-                updated_claim['qualifiers'] = {}
 
-            for pid, value in new_qualifiers:
-                qualifier = pywikibot.Claim(self.repo, pid)
-                target_value = value
-                if qualifier.type == 'wikibase-item':
-                    target_value = self.get_item(qid=target_value)
-                elif qualifier.type == 'quantity': 
-                    target_value = self.__dict2quantity(target)
-                qualifier.setTarget(target_value)
-                updated_claim['qualifiers'][pid] = [qualifier.toJSON()['mainsnak']]
+            # update references
+            self._insert_qualifiers_local(updated_claim, new_qualifiers)
+            self._insert_references_local(updated_claim, new_references)
 
+            # Add updated claims
             updates['claims'].append(updated_claim)
 
         # Commit changes
         if commit and item is not None:
-            if self.pending_requests > MAX_PENDING_REQUESTS:
-                self.pending_requests += 1
-                item.editEntity(updates, asynchronous=True, callback=self.on_delivery)
-            else:
-                item.editEntity(updates)
+            self.editEntity(item, updates, summary)
 
         return updates
+
+    
+    @thread_safe
+    def editEntity(self, entity, data, summary):
+        """Update entity in asynchronous manner if MAX_PENDING_REQUESTS permits,
+        use synchronous call otherwise."""
+
+        # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
+
+        if self.pending_requests < MAX_PENDING_REQUESTS:
+            self.pending_requests += 1
+            entity.editEntity(data, summary=summary, asynchronous=True, callback=self.on_delivery)
+        else:
+            logging.warn('Too many pending requests. Doing a synchronous request.')
+            entity.editEntity(data, summary=summary)
 
 
     def on_delivery(self, entity, error):
@@ -352,6 +454,7 @@ class Wikihandy(object):
             print(error)
 
 
+    @thread_safe
     def add_statement(self, summary, item_id, property_id, target, qualifiers=[]):
         """Create new claim, if the property datatype is 'wikibase-item' then 
         the target is expected to be the item PID. For properties with a 
@@ -401,6 +504,7 @@ class Wikihandy(object):
 
         return self.label_pid.get(label, None)
 
+    @thread_safe
     def extid2qid(self, label=None, qid=None):
         """Find items that have an external ID for the given type of IDs.
         return: dict where keys are the external ids and values are the QIDs
@@ -447,6 +551,7 @@ class Wikihandy(object):
         return extid2qid
         
 
+    @thread_safe
     def asn2qid(self, asn, create=False):
         """Retrive QID of items assigned with the given Autonomous System Number.
 
@@ -460,6 +565,7 @@ class Wikihandy(object):
             return None
 
         if self._asn2qid is None:
+            logging.info('Wikihandy: downloading AS QIDs')
             # Bootstrap : retrieve all existing ASN/QID pairs
             QUERY = """
             #Items that have a pKa value set
@@ -486,6 +592,8 @@ class Wikihandy(object):
 
                 self._asn2qid[res_asn] = res_qid
 
+            logging.info('Wikihandy: download complete (AS QIDs)')
+
         # Find the AS QID or add it to wikibase
         qid = self._asn2qid.get(int(asn), None)
         if create and qid is None:
@@ -499,6 +607,7 @@ class Wikihandy(object):
         return qid
         
     # FIXME: decide on a proper type for IP routing prefixes
+    @thread_safe
     def prefix2qid(self, prefix, create=False):
         """Retrive QID of items assigned with the given routing IP prefix.
 
@@ -517,7 +626,10 @@ class Wikihandy(object):
             af=6
 
         if self._prefix2qid is None:
-            # Bootstrap : retrieve all existing ASN/QID pairs
+            # Bootstrap : retrieve all existing prefix/QID pairs
+
+            logging.info('Wikihandy: downloading prefix QIDs')
+
             QUERY = """
             #Items that have a pKa value set
             SELECT ?item ?prefix
@@ -544,6 +656,8 @@ class Wikihandy(object):
                 res_prefix = res['prefix']['value']
 
                 self._prefix2qid[res_prefix] = res_qid
+
+            logging.info('Wikihandy: download complete (prefix QIDs)')
 
         # Find the prefix QID or add it to wikibase
         qid = self._prefix2qid.get(prefix, None)
@@ -610,19 +724,26 @@ class Wikihandy(object):
         """Return two dictionaries, one for properties and  one for items, with 
         labels as keys and Q/P IDs as values. For entities that have the same 
         label only the first entity found is given, the other are ignored."""
+
         properties = {}
         items = {}
-        QUERY="""SELECT ?item ?itemLabel
-            WHERE { 
-                ?item rdfs:label ?itemLabel. 
-            } """
+        results = []
 
-        # Fetch existing entities
-        self.sparql.setQuery(QUERY)
-        self.sparql.setReturnFormat(JSON)
-        results = self.sparql.query().convert()
+        # Load cached data if available
+        if os.path.exists('.wikihandy_label2id.json'):
+            results = json.load(open('.wikihandy_label2id.json','r'))
+        else:
+            QUERY="""SELECT ?item ?itemLabel
+                WHERE { 
+                    ?item rdfs:label ?itemLabel. 
+                } """
+
+            # Fetch existing entities
+            self.sparql.setQuery(QUERY)
+            self.sparql.setReturnFormat(JSON)
+            results = self.sparql.query().convert()
+            json.dump(results, open('.wikihandy_label2id.json','w'))
         
-        entities = []
         for res in results['results']['bindings']:
             id = res['item']['value'].rpartition('/')[2]
             label = res['itemLabel']['value']

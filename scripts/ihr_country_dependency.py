@@ -32,14 +32,14 @@ class Crawler(object):
             today = self.wh.today()
             self.url = URL_API.format(country=cc)
             ### TODO TODO TODO remove this hack
-            self.urltmp = self.url+'&timebin=2021-01-25T00:00'
+            self.urltmp = self.url+'&timebin=2021-03-02T00:00'
             req = requests.get( self.urltmp )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
             data = json.loads(req.text)
             ranking = data['results']
 
-            self.reference = [
+            self.references = [
                 (self.wh.get_pid('source'), self.org_qid),
                 (self.wh.get_pid('reference URL'), self.url),
                 (self.wh.get_pid('point in time'), today),
@@ -47,7 +47,9 @@ class Crawler(object):
 
             country_qid = self.wh.get_qid(country.name)
             if country_qid is not None:
-                self.reference.append( (self.wh.get_pid('country'), country_qid) )
+                self.qualifiers = [ (self.wh.get_pid('country'), country_qid) ]
+            else:
+                self.qualifiers = []
 
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
 
@@ -92,7 +94,8 @@ class Crawler(object):
                     'amount': asn['rank'], 
                     'unit': self.countryrank_qid,
                     },
-                    self.reference])
+                    self.references,
+                    self.qualifiers])
 
         # Commit to wikibase
         # Get the AS QID (create if AS is not yet registered) and commit changes
