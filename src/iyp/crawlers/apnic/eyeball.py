@@ -10,7 +10,7 @@ import iso3166
 URL_API = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
 MIN_POP_PERC = 0.01 # ASes with less population will be ignored
 
-class APNICeyeball(object):
+class Crawler(object):
     def __init__(self):
         """Initialize wikihandy and qualifiers for pushed data"""
     
@@ -121,7 +121,7 @@ class APNICeyeball(object):
 # Main program
 if __name__ == '__main__':
 
-    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    scriptname = sys.argv[0].replace('/','_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
             format=FORMAT, 
@@ -131,5 +131,5 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    apnic = APNICeyeball()
+    apnic = Crawler()
     apnic.run()

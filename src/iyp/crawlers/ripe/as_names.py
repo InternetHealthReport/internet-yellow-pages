@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 URL_RIPE_AS_NAME = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 
-class ASNames(object):
+class Crawler(object):
     def __init__(self):
 
         # Helper for wiki access
@@ -61,7 +61,7 @@ class ASNames(object):
 
 if __name__ == '__main__':
 
-    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    scriptname = sys.argv[0].replace('/','_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
             format=FORMAT, 
@@ -71,5 +71,5 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asnames = ASNames()
+    asnames = Crawler()
     asnames.run()

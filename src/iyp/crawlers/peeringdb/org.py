@@ -12,7 +12,7 @@ URL_PDB_ORGS = 'https://peeringdb.com/api/org'
 # Label used for the class/item representing the organization IDs
 ORGID_LABEL = 'PeeringDB organization ID' 
 
-class PDBOrganizations(object):
+class Crawler(object):
     def __init__(self):
         """Create an item representing the 'PeeringDB organization ID' class if 
         doesn't already exist. And fetch QIDs for organizations already in the
@@ -107,7 +107,7 @@ class PDBOrganizations(object):
 # Main program
 if __name__ == '__main__':
 
-    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    scriptname = sys.argv[0].replace('/','_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
             format=FORMAT, 
@@ -117,5 +117,5 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    pdbo = PDBOrganizations()
+    pdbo = Crawler()
     pdbo.run()

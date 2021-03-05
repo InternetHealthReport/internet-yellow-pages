@@ -17,7 +17,7 @@ ORGID_LABEL = 'PeeringDB organization ID'
 # Label used for the class/item representing the exchange point IDs
 IXID_LABEL = 'PeeringDB IX ID' 
 
-class PDBNetworks(object):
+class Crawler(object):
     def __init__(self):
         """Create an item representing the PeeringDB network ID class if 
         doesn't already exist. And fetch QIDs for networks already in the
@@ -162,7 +162,7 @@ class PDBNetworks(object):
 # Main program
 if __name__ == '__main__':
 
-    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    scriptname = sys.argv[0].replace('/','_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
             format=FORMAT, 
@@ -173,5 +173,5 @@ if __name__ == '__main__':
     logging.warning("Started: %s" % sys.argv)
 
 
-    pdbn = PDBNetworks()
+    pdbn = Crawler()
     pdbn.run()

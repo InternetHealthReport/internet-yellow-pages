@@ -8,7 +8,7 @@ from iyp.lib.wikihandy import Wikihandy
 # URL to ASRank API
 URL_API = 'https://api.asrank.caida.org/v2/restful/asns/'
 
-class ASRank(object):
+class Crawler(object):
     def __init__(self):
         """Initialize wikihandy and qualifiers for pushed data"""
     
@@ -86,7 +86,7 @@ class ASRank(object):
 # Main program
 if __name__ == '__main__':
 
-    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    scriptname = sys.argv[0].replace('/','_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
             format=FORMAT, 
@@ -96,5 +96,5 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asrank = ASRank()
+    asrank = Crawler()
     asrank.run()
