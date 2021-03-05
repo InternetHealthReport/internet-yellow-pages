@@ -6,7 +6,7 @@ from iyp.lib.wikihandy import Wikihandy
 # URL to MANRS csv file
 URL_MANRS = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
 
-class MANRS(object):
+class Crawler(object):
     def __init__(self):
         """Fetch QIDs for MANRS actions (create them if they are not in the 
         wikibase)."""
@@ -108,5 +108,5 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    manrs = MANRS()
+    manrs = Crawler()
     manrs.run()

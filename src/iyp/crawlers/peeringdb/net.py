@@ -1,11 +1,10 @@
 import sys
 import logging
+from iyp.lib.wikihandy import Wikihandy
 import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import json
-from concurrent.futures import ThreadPoolExecutor
-from iyp.lib.wikihandy import Wikihandy
 
 # URL to peeringdb API for networks
 URL_PDB_NETS = 'https://peeringdb.com/api/net'
@@ -67,10 +66,8 @@ class Crawler(object):
 
         self.wh.login() # Login once for all threads
 
-        #pool = ThreadPoolExecutor()
         for i, _ in enumerate(map(self.update_net, networks)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(networks)}')
-        #pool.shutdown()
 
 
     def update_net(self, network):

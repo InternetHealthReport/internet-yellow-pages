@@ -2,7 +2,6 @@ import sys
 import logging
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor
 from iyp.lib.wikihandy import Wikihandy
 import iso3166
 
@@ -27,7 +26,6 @@ class Crawler(object):
         """Fetch data from API and push to wikibase. """
 
         self.wh.login() # Login once for all threads
-        pool = ThreadPoolExecutor()
 
         for cc, country in self.countries.items():
             today = self.wh.today()
@@ -74,12 +72,11 @@ class Crawler(object):
 
 
                 # Push data to wiki
-                for i, res in enumerate(pool.map(self.update_entry, selected)):
+                for i, res in enumerate(map(self.update_entry, selected)):
                     sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(selected)}')
 
                 sys.stderr.write('\n')
 
-        pool.shutdown()
 
     def update_entry(self, asn):
         """Add the network to wikibase if it's not already there and update its

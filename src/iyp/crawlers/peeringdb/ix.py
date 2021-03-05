@@ -1,9 +1,8 @@
 import sys
 import logging
+from iyp.lib.wikihandy import Wikihandy
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor
-from iyp.lib.wikihandy import Wikihandy
 
 # URL to peeringdb API for exchange points
 URL_PDB_IXS = 'https://peeringdb.com/api/ix'
@@ -53,10 +52,8 @@ class Crawler(object):
 
         self.wh.login() # Login once for all threads
 
-        pool = ThreadPoolExecutor()
-        for i, res in enumerate(pool.map(self.update_ix, ixs)):
+        for i, res in enumerate(map(self.update_ix, ixs)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(ixs)}')
-        pool.shutdown()
 
 
     def update_ix(self, ix):

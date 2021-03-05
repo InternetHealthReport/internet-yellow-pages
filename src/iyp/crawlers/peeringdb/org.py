@@ -1,10 +1,9 @@
 import sys
 import logging
-import requests
 import json
-from concurrent.futures import ThreadPoolExecutor
 import iso3166
 from iyp.lib.wikihandy import Wikihandy
+import requests
 
 # URL to peeringdb API for organizations
 URL_PDB_ORGS = 'https://peeringdb.com/api/org'
@@ -52,10 +51,8 @@ class Crawler(object):
 
         self.wh.login() # Login once for all threads
 
-        pool = ThreadPoolExecutor()
-        for i, res in enumerate(pool.map(self.update_org, organizations)):
+        for i, res in enumerate(map(self.update_org, organizations)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(organizations)}')
-        pool.shutdown()
 
     def update_org(self, organization):
         """Add the organization to wikibase if it's not there and update properties"""
