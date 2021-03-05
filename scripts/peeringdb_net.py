@@ -1,6 +1,8 @@
 import sys
 import logging
 import requests
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 import json
 from concurrent.futures import ThreadPoolExecutor
 import wikihandy
@@ -46,12 +48,19 @@ class PDBNetworks(object):
                 (self.wh.get_pid('point in time'), today)
                 ]
 
+        # Session object to fetch peeringdb data
+        retries = Retry(total=5,
+                backoff_factor=0.1,
+                status_forcelist=[ 104, 500, 502, 503, 504 ])
+
+        self.http_session = requests.Session()
+        self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
 
     def run(self):
         """Fetch networks information from PeeringDB and push to wikibase. 
         Using multiple threads for better performances."""
 
-        req = requests.get(URL_PDB_NETS)
+        req = self.http_session.get(URL_PDB_NETS)
         if req.status_code != 200:
             sys.exit('Error while fetching data from API')
         networks = json.loads(req.text)['data']
@@ -59,7 +68,7 @@ class PDBNetworks(object):
         self.wh.login() # Login once for all threads
 
         #pool = ThreadPoolExecutor()
-        for i, res in enumerate(map(self.update_net, networks)):
+        for i, _ in enumerate(map(self.update_net, networks)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(networks)}')
         #pool.shutdown()
 
@@ -68,7 +77,6 @@ class PDBNetworks(object):
         """Add the network to wikibase if it's not already there and update its
         properties."""
 
-        logging.info(f'Pdb: Enter update_net {network}')
 
         # set property name
         statements = [ [self.wh.get_pid('name'), network['name'].strip(), self.reference] ] 
@@ -87,9 +95,11 @@ class PDBNetworks(object):
         # Update IX membership
         # Fetch membership for this network
         netixlan_url = URL_PDB_NETS+f'/{network["id"]}'
-        req = requests.get(netixlan_url)
+
+        req = self.http_session.get(netixlan_url)
         if req.status_code != 200:
             sys.exit(f'Error while fetching network data (id={network["id"]})')
+
         net_details = json.loads(req.text)['data']
         if len(net_details)>1:
             print(net_details)
@@ -105,14 +115,16 @@ class PDBNetworks(object):
                 ]
 
         for ixlan in net_details['netixlan_set']:
-            ix_qid = self.ixid2qid[str(ixlan['ix_id'])]
+            ix_qid = self.ixid2qid.get(str(ixlan['ix_id']))
+            if ix_qid is None:
+                print(f'Unknown IX: ix_id={ixlan["ix_id"]}')
+                continue
             statements.append( [self.wh.get_pid('member of'), ix_qid, netixlan_ref] )
 
         # Update name, website, and organization for this network
         net_qid = self.net_qid(network) 
         self.wh.upsert_statements('update peeringDB networks', net_qid, statements )
         
-        logging.info(f'Pdb: Leave update_net {network}')
         return net_qid
 
 
@@ -124,7 +136,6 @@ class PDBNetworks(object):
 
         Return the network QID."""
 
-        logging.info(f'Pdb: Enter net_qid {network}')
 
         # Check if the network is in the wikibase
         if str(network['id']) not in self.netid2qid :
@@ -144,7 +155,6 @@ class PDBNetworks(object):
             # keep track of this QID
             self.netid2qid[str(network['id'])] = net_qid
 
-        logging.info(f'Pdb: Leave net_qid {network}')
 
         return self.netid2qid[str(network['id'])]
 
@@ -157,10 +167,10 @@ if __name__ == '__main__':
     logging.basicConfig(
             format=FORMAT, 
             filename='log/'+scriptname+'.log',
-            level=logging.DEBUG, 
-            #datefmt='%Y-%m-%d %H:%M:%S'
+            level=logging.INFO, 
+            datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.warning("Started: %s" % sys.argv)
 
 
     pdbn = PDBNetworks()

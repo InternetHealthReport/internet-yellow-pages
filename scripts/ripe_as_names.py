@@ -1,4 +1,5 @@
 import sys
+import logging
 import datetime
 import requests
 import wikihandy 
@@ -59,5 +60,16 @@ class ASNames(object):
         return asn_qid
 
 if __name__ == '__main__':
+
+    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    logging.basicConfig(
+            format=FORMAT, 
+            filename='log/'+scriptname+'.log',
+            level=logging.INFO, 
+            datefmt='%Y-%m-%d %H:%M:%S'
+            )
+    logging.info("Started: %s" % sys.argv)
+
     asnames = ASNames()
     asnames.run()

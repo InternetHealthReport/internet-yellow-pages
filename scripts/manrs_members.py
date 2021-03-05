@@ -1,6 +1,6 @@
 import sys
+import logging
 import requests
-import csv
 import wikihandy
 
 # URL to MANRS csv file
@@ -72,7 +72,7 @@ class MANRS(object):
         """Add the network to wikibase if it's not already there and update its
         properties."""
 
-        org, areas, asns, act1, act2, act3, act4 = [col.strip() for col in one_line.split(',')]
+        _, areas, asns, act1, act2, act3, act4 = [col.strip() for col in one_line.split(',')]
 
         # Properties
         statements = [ 
@@ -97,5 +97,16 @@ class MANRS(object):
         
 # Main program
 if __name__ == '__main__':
+
+    scriptname = sys.argv[0].rpartition('/')[2][0:-3]
+    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    logging.basicConfig(
+            format=FORMAT, 
+            filename='log/'+scriptname+'.log',
+            level=logging.INFO, 
+            datefmt='%Y-%m-%d %H:%M:%S'
+            )
+    logging.info("Started: %s" % sys.argv)
+
     manrs = MANRS()
     manrs.run()
