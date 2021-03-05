@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to MANRS csv file
 URL_MANRS = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
@@ -12,7 +12,7 @@ class MANRS(object):
         wikibase)."""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Actions defined by MANRS
         self.actions = [

@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 import iso3166
 
 # URL to APNIC API
@@ -15,7 +15,7 @@ class APNICeyeball(object):
         """Initialize wikihandy and qualifiers for pushed data"""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Added properties will have this additional information
         today = self.wh.today()

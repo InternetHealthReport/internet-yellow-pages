@@ -5,9 +5,9 @@ import socket
 import csv
 from zipfile import ZipFile
 import io
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
-sys.path.append('../ip2asn/')
+sys.path.append('../../../../ip2asn/')
 from ip2asn import ip2asn
 
 # URL to Tranco top 1M
@@ -20,7 +20,7 @@ class Crawler(object):
     
         sys.stderr.write('Initialization...\n')
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         self.tranco_qid = self.wh.get_qid('Tranco Top 1M',
             create={                                    # Create it if it doesn't exist

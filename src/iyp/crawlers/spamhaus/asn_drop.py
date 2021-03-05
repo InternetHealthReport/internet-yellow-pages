@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to Routeview's WIDE collector
 URL = 'https://www.spamhaus.org/drop/asndrop.txt'
@@ -12,7 +12,7 @@ class Crawler(object):
         """
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy(preload=True)
+        self.wh = Wikihandy(preload=True)
 
         # Get the QID for Spamhaus organization
         self.spamhaus_qid = self.wh.get_qid('Spamhaus',

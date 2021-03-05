@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 import iso3166
 
 # URL to the API
@@ -17,7 +17,7 @@ class Crawler(object):
         """Initialize wikihandy """
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Added properties will have this additional information
         self.org_qid = self.wh.get_qid(ORG)

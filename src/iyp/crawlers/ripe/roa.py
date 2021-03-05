@@ -2,7 +2,7 @@ import sys
 import logging
 import requests
 from concurrent.futures import ThreadPoolExecutor
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 from ftplib import FTP
 import arrow
 
@@ -16,7 +16,7 @@ class Crawler(object):
         """Initialize wikihandy and qualifiers for pushed data"""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Added properties will have this additional information
         today = self.wh.today()
@@ -68,7 +68,7 @@ class Crawler(object):
             self.url = URL_API+filepath
             req = requests.get( self.url )
             if req.status_code != 200:
-                sys.exit('Error while fetching data for '+cc)
+                sys.exit('Error while fetching data for '+filepath)
             
             # Push data to wiki
             for i, res in enumerate(pool.map(self.update, req.text.splitlines() )):

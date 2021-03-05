@@ -4,7 +4,7 @@ import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
 import iso3166
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to peeringdb API for organizations
 URL_PDB_ORGS = 'https://peeringdb.com/api/org'
@@ -21,7 +21,7 @@ class PDBOrganizations(object):
         sys.stderr.write('Initialization...\n')
 
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Get the QID for the item representing the organization IDs
         orgid_qid = self.wh.get_qid(ORGID_LABEL,

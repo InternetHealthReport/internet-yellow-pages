@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from collections import defaultdict
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to the API
 URL_CONFIG = 'https://lg.de-cix.net/api/v1/config'
@@ -18,7 +18,7 @@ class Crawler(object):
         """Initialize wikihandy """
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Added properties will have this additional information
         self.org_qid = self.wh.get_qid(ORG)

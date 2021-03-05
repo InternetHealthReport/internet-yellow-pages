@@ -2,7 +2,7 @@ import sys
 import logging
 import datetime
 import requests
-import wikihandy 
+from iyp.lib.wikihandy import Wikihandy
 from concurrent.futures import ThreadPoolExecutor
 
 URL_RIPE_AS_NAME = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
@@ -11,7 +11,7 @@ class ASNames(object):
     def __init__(self):
 
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Reference information for data pushed to the wikibase
         self.reference = [

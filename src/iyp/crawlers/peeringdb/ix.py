@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to peeringdb API for exchange points
 URL_PDB_IXS = 'https://peeringdb.com/api/ix'
@@ -20,7 +20,7 @@ class PDBIxs(object):
         wikibase."""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Get the QID of the item representing PeeringDB IX IDs
         ixid_qid = self.wh.get_qid(IXID_LABEL,

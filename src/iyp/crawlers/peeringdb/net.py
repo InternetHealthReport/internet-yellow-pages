@@ -5,7 +5,7 @@ from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import json
 from concurrent.futures import ThreadPoolExecutor
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to peeringdb API for networks
 URL_PDB_NETS = 'https://peeringdb.com/api/net'
@@ -24,7 +24,7 @@ class PDBNetworks(object):
         wikibase."""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Get the QID of the item representing PeeringDB network IDs
         netid_qid = self.wh.get_qid(NETID_LABEL,

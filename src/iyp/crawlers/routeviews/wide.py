@@ -4,7 +4,7 @@ from datetime import timedelta
 import arrow
 import requests
 import csv
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 import pybgpstream
 
 # URL to original data
@@ -16,7 +16,7 @@ class Crawler(object):
         """
    
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy(preload=True)
+        self.wh = Wikihandy(preload=True)
 
         # Get the QID for Routeviews organization
         self.org_qid = self.wh.get_qid('Route Views')

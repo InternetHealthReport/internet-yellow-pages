@@ -1,11 +1,10 @@
 import sys
 import logging
 import requests
-import pybgpstream
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to spamhaus data
-URL = 'https://www.spamhaus.org/drop/drop.txt'
+URL = 'https://www.spamhaus.org/drop/edrop.txt'
 
 class Crawler(object):
     def __init__(self):
@@ -13,7 +12,7 @@ class Crawler(object):
         """
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy(preload=True)
+        self.wh = Wikihandy(preload=True)
 
         # Get the QID for Spamhaus organization
         self.spamhaus_qid = self.wh.get_qid('Spamhaus',
@@ -32,11 +31,11 @@ class Crawler(object):
                 'statements': [[self.wh.get_pid('managed by'), self.spamhaus_qid]]
                 })
 
-        # Get the QID for Spamhaus DROP list
-        self.drop_qid = self.wh.get_qid('Spamhaus DROP list',
+        # Get the QID for Spamhaus EDROP list
+        self.drop_qid = self.wh.get_qid('Spamhaus EDROP list',
             create={                                    # Create it if it doesn't exist
                 'summary': 'add Spamhaus block list',         # Commit message
-                'description': 'The DROP list only include netblocks allocated directly by an established RIR or NIR.', 
+                'description': 'EDROP is an extension of the DROP list that includes suballocated netblocks controlled by spammers or cyber criminals',
                 'statements': [[self.wh.get_pid('managed by'), self.spamhaus_qid],
                                 [self.wh.get_pid('part of'), self.drop_qid]]
                 })
@@ -83,7 +82,7 @@ class Crawler(object):
         # Commit to wikibase
         # Get the prefix QID (create if prefix is not yet registered) and commit changes
         net_qid = self.wh.prefix2qid(prefix, create=True) 
-        self.wh.upsert_statements('update from Spamhaus DROP list', net_qid, statements )
+        self.wh.upsert_statements('update from Spamhaus EDROP list', net_qid, statements )
         
 # Main program
 if __name__ == '__main__':

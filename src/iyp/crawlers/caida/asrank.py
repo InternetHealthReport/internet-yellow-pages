@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
-import wikihandy
+from iyp.lib.wikihandy import Wikihandy
 
 # URL to ASRank API
 URL_API = 'https://api.asrank.caida.org/v2/restful/asns/'
@@ -13,7 +13,7 @@ class ASRank(object):
         """Initialize wikihandy and qualifiers for pushed data"""
     
         # Helper for wiki access
-        self.wh = wikihandy.Wikihandy()
+        self.wh = Wikihandy()
 
         # Added properties will have this additional information
         today = self.wh.today()
