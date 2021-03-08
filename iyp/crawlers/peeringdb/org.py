@@ -85,12 +85,10 @@ class Crawler(object):
         # Check if the organization is in the wikibase
         if str(organization['id']) not in self.orgid2qid :
             # Set properties for this new organization
-            org_qualifiers = [
+            org_qualifier = [
                     (self.wh.get_pid('instance of'), self.wh.get_qid(ORGID_LABEL)),
-                    (self.wh.get_pid('reference URL'), URL_PDB_ORGS),
-                    (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB'))
                     ]
-            statements = [ [self.wh.get_pid('external ID'), str(organization['id']), org_qualifiers] ]
+            statements = [ [self.wh.get_pid('external ID'), str(organization['id']), [], org_qualifier] ]
 
             # Add this organization to the wikibase
             org_qid = self.wh.add_item('add new peeringDB organization', 
