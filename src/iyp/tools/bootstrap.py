@@ -1,12 +1,13 @@
-import pywikibot
-import wikihandy 
 import csv
+import sys
+import time
 from collections import defaultdict
+from iyp.lib.wikihandy import Wikihandy
 
 BASIC_PROPERTY_FNAME = 'basic/properties.csv'
 BASIC_ITEMS_FNAME = 'basic/items.csv'
 
-wh = wikihandy.Wikihandy(preload=False) 
+wh = Wikihandy(preload=False) 
 
 def decomment(csvfile):
     """Ignore lines with comments"""
@@ -22,8 +23,8 @@ with open(BASIC_PROPERTY_FNAME, 'r') as fp:
             continue
 
         label, description, aliases, data_type = [col.strip() for col in row]
-        wh.add_property('bootstrap', label, description, aliases, data_type)
-
+        pid = wh.add_property('bootstrap', label, description, aliases, data_type)
+        print(pid, label)
 
 print('Adding items')
 statements=defaultdict(list)
@@ -36,35 +37,8 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
         if not row:    
             continue
 
-        print(row)
         label, description, aliases, statements = [col.strip() for col in row]
         print(label)
-
-        # #TODO remove this. We have all we need in the csv files?
-        # wikidata_item_list = False #wikidata.get_items(label)
-        # if wikidata_item_list:
-            # wikidata_qid = wikidata_item_list[0]['id']
-            # wikidata_item = pywikibot.ItemPage(wikidata.repo, wikidata_qid).get() 
-            # wikidata_label = wikidata_item['labels']['en']
-            # print('Found corresponding wikidata item')
-            # sitelinks = [val for key, val in wikidata_item['sitelinks'].toJSON().items()]
-            # aliases = wikidata_item['aliases'].get('en','')
-            # description = wikidata_item['descriptions'].get('en','')
-
-            # items[label] = wh.add_item(
-                # "bootstrap",
-                # label,
-                # description,
-                # aliases,
-                # sitelinks
-                # )
-
-
-            # Keep track of wikidata QID
-            # wh.upsert_statement('bootstrap', wh.get_qid(label), wh.get_pid(''),  wikidata_qid, 'external-id' )
-
-        # else:
-
 
         # Retrive statements from the csv file
         # Assume all properties have the 'wikidata-item' datatype

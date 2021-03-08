@@ -1,9 +1,8 @@
 import sys
 import logging
-import datetime
 import requests
 from iyp.lib.wikihandy import Wikihandy
-from concurrent.futures import ThreadPoolExecutor
+#from ...lib.wikihandy import Wikihandy
 
 URL_RIPE_AS_NAME = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 
@@ -29,10 +28,8 @@ class Crawler(object):
 
         self.wh.login() # Login once for all threads, not needed with OAuth
         
-        pool = ThreadPoolExecutor()
-        for i, res in enumerate(pool.map(self.update_asn, req.text.splitlines())):
+        for i, res in enumerate(map(self.update_asn, req.text.splitlines())):
             sys.stderr.write(f'\rProcessed {i} ASes')
-        pool.shutdown()
             
 
     def update_asn(self, one_line):
