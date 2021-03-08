@@ -359,15 +359,20 @@ class Wikihandy(object):
             selected_claims = select_claims(all_claims, ref_url_pid, all_given_ref_urls)
 
         else:
+            all_claims = {}
             selected_claims = {}
 
         for statement in statements:
 
             property_id, target, references, qualifiers = unpack_statement(statement)
 
+            claims = selected_claims
             given_ref_urls = None
             if checkRefURL:
                 given_ref_urls = set([val for pid, val in references if pid==ref_url_pid])
+                if not given_ref_urls:
+                    given_ref_urls = None
+                    claims = all_claims
 
             given_sources = None
             if checkSource:
@@ -375,10 +380,10 @@ class Wikihandy(object):
             
             # Find the matching claim or create a new one
             selected_claim = None
-            if property_id in selected_claims:
+            if property_id in claims:
                 # update the main statement value
                 selected_claim = self._update_statement_local(
-                        selected_claims[property_id], target, given_ref_urls, 
+                        claims[property_id], target, given_ref_urls, 
                         given_sources)
 
             if selected_claim is None:
@@ -392,7 +397,7 @@ class Wikihandy(object):
                 selected_claim.setTarget(target_value)
             else:
                 # Remove the claim from the list, so we won't select it anymore
-                selected_claims[property_id].remove(selected_claim)
+                claims[property_id].remove(selected_claim)
 
             # update current qualifiers and references
             new_qualifiers = self._update_qualifiers_local(selected_claim.qualifiers, qualifiers)
@@ -415,6 +420,8 @@ class Wikihandy(object):
                                     for claim in claims_list]
             if claims_to_remove:
                 item.removeClaims(claims_to_remove)
+            else:
+                pass
 
         return updates
 
@@ -425,7 +432,7 @@ class Wikihandy(object):
 
         # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
 
-        if asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
+        if False and asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
             self.pending_requests += 1
             entity.editEntity(data, summary=summary, asynchronous=True, callback=self.on_delivery)
         else:
