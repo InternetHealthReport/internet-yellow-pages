@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 # URL to MANRS csv file
 URL_MANRS = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'

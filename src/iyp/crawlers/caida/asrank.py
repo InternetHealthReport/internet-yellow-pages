@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 # URL to ASRank API
 URL_API = 'https://api.asrank.caida.org/v2/restful/asns/'

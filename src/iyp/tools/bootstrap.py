@@ -2,7 +2,7 @@ import csv
 import sys
 import time
 from collections import defaultdict
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 BASIC_PROPERTY_FNAME = 'basic/properties.csv'
 BASIC_ITEMS_FNAME = 'basic/items.csv'

@@ -5,7 +5,7 @@ import socket
 import csv
 from zipfile import ZipFile
 import io
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 sys.path.append('../../../../ip2asn/')
 from ip2asn import ip2asn

@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 import iso3166
 
 # URL to APNIC API

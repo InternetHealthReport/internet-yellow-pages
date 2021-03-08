@@ -2,7 +2,7 @@ import sys
 import logging
 import requests
 import json
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 import iso3166
 
 # URL to the API

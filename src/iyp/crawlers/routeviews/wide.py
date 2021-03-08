@@ -4,7 +4,7 @@ from datetime import timedelta
 import arrow
 import requests
 import csv
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 import pybgpstream
 
 # URL to original data

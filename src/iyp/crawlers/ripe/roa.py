@@ -2,7 +2,7 @@ import sys
 import logging
 import requests
 from concurrent.futures import ThreadPoolExecutor
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 from ftplib import FTP
 import arrow
 

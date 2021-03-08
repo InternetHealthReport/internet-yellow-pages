@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 # URL to Routeview's WIDE collector
 URL = 'https://www.spamhaus.org/drop/asndrop.txt'

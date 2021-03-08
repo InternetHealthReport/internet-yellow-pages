@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 from collections import defaultdict
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 # URL to the API
 URL_CONFIG = 'https://lg.de-cix.net/api/v1/config'

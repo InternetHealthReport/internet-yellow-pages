@@ -2,7 +2,7 @@ import sys
 import logging
 import json
 import iso3166
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 import requests
 
 # URL to peeringdb API for organizations

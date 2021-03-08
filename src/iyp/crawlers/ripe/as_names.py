@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 #from ...lib.wikihandy import Wikihandy
 
 URL_RIPE_AS_NAME = 'https://ftp.ripe.net/ripe/asnames/asn.txt'

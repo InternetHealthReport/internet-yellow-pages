@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 
 # URL to spamhaus data
 URL = 'https://www.spamhaus.org/drop/edrop.txt'

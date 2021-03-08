@@ -1,6 +1,6 @@
 import sys
 import logging
-from iyp.lib.wikihandy import Wikihandy
+from iyp.wiki.wikihandy import Wikihandy
 import requests
 import json
 
