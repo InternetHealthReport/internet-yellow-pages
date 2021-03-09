@@ -2,7 +2,6 @@ import sys
 import logging
 import requests
 import socket
-import csv
 from zipfile import ZipFile
 import io
 from iyp.wiki.wikihandy import Wikihandy
