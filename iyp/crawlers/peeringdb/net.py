@@ -139,12 +139,8 @@ class Crawler(object):
             # Find or create the corresponding ASN item
             net_qid = self.wh.asn2qid(network['asn'], create=True)
             # Set properties for this new network
-            net_qualifiers = [
-                    (self.wh.get_pid('instance of'), self.wh.get_qid(NETID_LABEL)),
-                    (self.wh.get_pid('reference URL'), URL_PDB_NETS),
-                    (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB'))
-                    ]
-            statements = [ [self.wh.get_pid('external ID'), str(network['id']), net_qualifiers] ]
+            net_qualifiers = [(self.wh.get_pid('instance of'), self.wh.get_qid(NETID_LABEL)),]
+            statements = [ [self.wh.get_pid('external ID'), str(network['id']), [], net_qualifiers] ]
 
             # Add this network to the wikibase
             self.wh.upsert_statements('add new peeringDB network', net_qid,

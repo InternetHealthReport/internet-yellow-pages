@@ -104,12 +104,11 @@ class Crawler(object):
         if str(ix['id']) not in self.ixid2qid :
             # Set properties for this new ix
             ix_qualifiers = [
-                    (self.wh.get_pid('instance of'), self.wh.get_qid('Internet exchange point')),
                     (self.wh.get_pid('instance of'), self.wh.get_qid(IXID_LABEL)),
-                    (self.wh.get_pid('reference URL'), URL_PDB_IXS),
-                    (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB'))
                     ]
-            statements = [ [self.wh.get_pid('external ID'), str(ix['id']), ix_qualifiers] ]
+            statements = [ 
+                    (self.wh.get_pid('instance of'), self.wh.get_qid('Internet exchange point')),
+                    (self.wh.get_pid('external ID'), str(ix['id']), [],  ix_qualifiers) ]
 
             # Add this ix to the wikibase
             ix_qid = self.wh.add_item('add new peeringDB IX', 
