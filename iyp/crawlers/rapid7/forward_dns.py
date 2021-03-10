@@ -15,6 +15,7 @@ from ip2asn import ip2asn
 # URL to Tranco top 1M
 # TODO automatically fetch file
 # TODO remove all data with URL regex
+# TODO remove downloaded file
 URL = 'https://opendata.rapid7.com/sonar.fdns_v2/2021-02-26-1614298023-fdns_a.json.gz'
 
 def download_file(url, local_filename):
