@@ -1,4 +1,5 @@
 import sys
+import os
 import json
 import progressbar
 import logging
@@ -16,8 +17,7 @@ from ip2asn import ip2asn
 # TODO remove all data with URL regex
 URL = 'https://opendata.rapid7.com/sonar.fdns_v2/2021-02-26-1614298023-fdns_a.json.gz'
 
-def download_file(url):
-    local_filename = url.split('/')[-1]
+def download_file(url, local_filename):
     r = requests.get(url, stream=True)
     with open(local_filename, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024): 
@@ -66,7 +66,9 @@ class Crawler(object):
 
         # download rapid7 data and find corresponding prefixes
         sys.stderr.write('Downloading latest dataset...\n')
-        fname = download_file(URL)
+        local_filename = url.split('/')[-1]
+        if not os.path.exists(local_filename):
+            fname = download_file(URL, local_filename)
         sys.stderr.write('Downloading latest dataset...\n')
         with gzip.open(fname, 'rt') as finput:
             for line in progressbar.progressbar(finput):
