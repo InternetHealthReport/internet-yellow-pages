@@ -10,8 +10,8 @@ URL = 'https://tranco-list.eu/top-1m.csv.zip'
 
 class Crawler(object):
     def __init__(self):
-        """Fetch QIDs for MANRS actions (create them if they are not in the 
-        wikibase)."""
+        """Fetch QIDs for Tranco and affiliation (create them if they are not 
+        in the wikibase)."""
     
         sys.stderr.write('Initialization...\n')
         # Helper for wiki access
