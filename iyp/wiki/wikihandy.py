@@ -40,12 +40,12 @@ class Wikihandy(object):
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
         self.sparql = SPARQLWrapper(sparql)
+        self.label_pid, self.label_qid = self._label2id()
         # TODO this is not neded?? already cached by pywikibot
         self.cache = {}
         self.pending_requests = 0
 
         if preload:
-            self.label_pid, self.label_qid = self._label2id()
             self.asn2qid(1)
             self.prefix2qid('10.0.0.0/8')
 
