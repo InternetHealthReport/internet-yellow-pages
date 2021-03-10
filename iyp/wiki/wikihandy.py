@@ -20,9 +20,7 @@ MAX_PENDING_REQUESTS = 100
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
 #TODO add method to efficiently get countries
-#TODO label2QID should not include AS, prefixes, countries, domain
 #TODO make a generic function for all the XXX2qid() functions
-#TODO store prefixes in a radix tree so we can do IP to AS resolution 8)
 
 
 class Wikihandy(object):
@@ -42,12 +40,12 @@ class Wikihandy(object):
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
         self.sparql = SPARQLWrapper(sparql)
-        self.label_pid, self.label_qid = self._label2id()
         # TODO this is not neded?? already cached by pywikibot
         self.cache = {}
         self.pending_requests = 0
 
         if preload:
+            self.label_pid, self.label_qid = self._label2id()
             self.asn2qid(1)
             self.prefix2qid('10.0.0.0/8')
 
@@ -764,11 +762,36 @@ class Wikihandy(object):
                 print(f'# {item}')
                 #item.delete(reason='delete all', prompt=False)
 
+    def label2id(self, label):
+        """Return the qid or pid corresponding to the given label using a sparql 
+        query."""
+
+        QUERY="""SELECT ?item 
+            WHERE { 
+                ?item rdfs:label "%s"@en. 
+            } """ % label
+
+        # Fetch existing entities
+        self.sparql.setQuery(QUERY)
+        self.sparql.setReturnFormat(JSON)
+        results = self.sparql.query().convert()
+        
+        print(results['results'])
+        for res in results['results']['bindings']:
+            return res['item']['value'].rpartition('/')[2]
+
 
     def _label2id(self):
         """Return two dictionaries, one for properties and  one for items, with 
         labels as keys and Q/P IDs as values. For entities that have the same 
-        label only the first entity found is given, the other are ignored."""
+        label only the first entity found is given, the other are ignored.
+
+        Also ignore items that are instance of:
+            - autonomous system
+            - IP routing prefix
+            - domain name
+        Use dedicated method for these items (e.g. asn2qid)
+        """
 
         properties = {}
         items = {}
@@ -781,7 +804,14 @@ class Wikihandy(object):
             QUERY="""SELECT ?item ?itemLabel
                 WHERE { 
                     ?item rdfs:label ?itemLabel. 
-                } """
+                    ?item wdt:%s ?instance.
+                    FILTER(?instance NOT IN (wd:%s, wd:%s, wd:%s))
+                } """ % (
+                        self.label2id('instance of'), 
+                        self.label2id('autonomous system'),
+                        self.label2id('IP routing prefix'),
+                        self.label2id('domain name'),
+                        ) 
 
             # Fetch existing entities
             self.sparql.setQuery(QUERY)
