@@ -1,13 +1,9 @@
 import sys
 import logging
 import requests
-import socket
 from zipfile import ZipFile
 import io
 from iyp.wiki.wikihandy import Wikihandy
-
-sys.path.append('../../../../ip2asn/')
-from ip2asn import ip2asn
 
 # URL to Tranco top 1M
 URL = 'https://tranco-list.eu/top-1m.csv.zip'
@@ -49,9 +45,6 @@ class Crawler(object):
                 (self.wh.get_pid('point in time'), today)
                 ]
 
-        # TODO use latest rib
-        self.ia = ip2asn("../ip2asn/db/rib.20210201.pickle.bz2")
-
 
     def run(self):
         """Fetch Tranco top 1M and push to wikibase. """
@@ -85,17 +78,6 @@ class Crawler(object):
                     },
                 self.reference]
              ] 
-
-        # Find corresponding AS
-        try:
-            ip = socket.gethostbyname(domain)
-            asn = self.ia.ip2asn(ip)
-            if asn > 0:
-                asn_qid = self.wh.asn2qid(asn)
-                statements.append( [ self.wh.get_pid('part of'), asn_qid] )
-        except Exception as e:
-            print(e)
-
 
         # Commit to wikibase
         # Get the domain name QID (create if it is not yet registered) and commit changes
