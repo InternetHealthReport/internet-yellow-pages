@@ -20,7 +20,9 @@ MAX_PENDING_REQUESTS = 100
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
 #TODO add method to efficiently get countries
-#TODO label2QID should not include AS, prefixes, countries
+#TODO label2QID should not include AS, prefixes, countries, domain
+#TODO make a generic function for all the XXX2qid() functions
+#TODO store prefixes in a radix tree so we can do IP to AS resolution 8)
 
 
 class Wikihandy(object):
@@ -35,6 +37,7 @@ class Wikihandy(object):
 
         self._asn2qid = None
         self._prefix2qid = None
+        self._domain2qid = None
         self.repo = pywikibot.DataSite(lang, wikidata_project, 
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
@@ -602,7 +605,6 @@ class Wikihandy(object):
 
         return qid
         
-    # FIXME: decide on a proper type for IP routing prefixes
     @decorators.thread_safe
     def prefix2qid(self, prefix, create=False):
         """Retrive QID of items assigned with the given routing IP prefix.
@@ -631,14 +633,11 @@ class Wikihandy(object):
             SELECT ?item ?prefix
             WHERE 
             {
-                    ?item wdt:%s ?type.
+                    ?item wdt:%s wd:%s.
                     ?item rdfs:label ?prefix. 
-                    FILTER(?type IN (wd:%s, wd:%s, wd:%s))
             } 
             """ % (
                     self.get_pid('instance of'), 
-                    self.get_qid(f'IPv4 routing prefix') , 
-                    self.get_qid(f'IPv6 routing prefix') , 
                     self.get_qid(f'IP routing prefix') , 
                   )
 
@@ -663,6 +662,56 @@ class Wikihandy(object):
                     statements=[
                         [self.get_pid('instance of'), self.get_qid('IP routing prefix'), []],
                         [self.get_pid('IP version'), self.get_qid(f'IPv{af}'), []],
+                    ])
+
+        return qid
+        
+    @decorators.thread_safe
+    def domain2qid(self, domain, create=False):
+        """Retrive QID of items assigned to the given domain name.
+
+        param: domain (str)"""
+
+        domain = domain.strip()
+
+        if self._domain2qid is None:
+            # Bootstrap : retrieve all existing prefix/QID pairs
+
+            logging.info('Wikihandy: downloading prefix QIDs')
+
+            QUERY = """
+            #Items that have a pKa value set
+            SELECT ?item ?domain
+            WHERE 
+            {
+                    ?item wdt:%s wd:%s.
+                    ?item rdfs:label ?domain. 
+            } 
+            """ % (
+                    self.get_pid('instance of'), 
+                    self.get_qid('domain name') , 
+                  )
+
+            self.sparql.setQuery(QUERY)
+            self.sparql.setReturnFormat(JSON)
+            results = self.sparql.query().convert()
+            
+            self._domain2qid = {}
+            for res in results['results']['bindings']:
+                res_qid = res['item']['value'].rpartition('/')[2]
+                res_domain = res['domain']['value']
+
+                self._domain2qid[res_domain] = res_qid
+
+            logging.info('Wikihandy: download complete (domain QIDs)')
+
+        # Find the domain QID or add it to wikibase
+        qid = self._domain2qid.get(domain, None)
+        if create and qid is None:
+            # if this domain is unknown, create corresponding item
+            qid = self.add_item('new domain', domain,
+                    statements=[
+                        [self.get_pid('instance of'), self.get_qid('domain'), []],
                     ])
 
         return qid
