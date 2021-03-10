@@ -4,3 +4,4 @@ progressbar2
 requests-oauthlib
 mwoauth
 arrow
+tldextract
