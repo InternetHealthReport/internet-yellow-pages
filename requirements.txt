@@ -5,3 +5,4 @@ requests-oauthlib
 mwoauth
 arrow
 tldextract
+py-radix
