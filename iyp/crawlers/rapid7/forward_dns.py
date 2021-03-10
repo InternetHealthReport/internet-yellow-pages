@@ -9,7 +9,7 @@ from collections import defaultdict
 import tldextract
 from iyp.wiki.wikihandy import Wikihandy
 
-sys.path.append('../../../../ip2asn/')
+sys.path.append('../ip2asn/')
 from ip2asn import ip2asn
 
 # URL to Tranco top 1M
@@ -66,11 +66,13 @@ class Crawler(object):
         and push resolution for domains already in the wikibase. """
 
         # download rapid7 data and find corresponding prefixes
-        sys.stderr.write('Downloading latest dataset...\n')
-        local_filename = url.split('/')[-1]
-        if not os.path.exists(local_filename):
-            fname = download_file(URL, local_filename)
-        sys.stderr.write('Downloading latest dataset...\n')
+        sys.stderr.write('Downloading Rapid7 dataset...\n')
+        fname = URL.split('/')[-1]
+        if not os.path.exists(fname):
+            fname = download_file(URL, fname)
+
+        sys.stderr.write('Processing dataset...\n')
+        all_tldn = set()
         with gzip.open(fname, 'rt') as finput:
             for line in progressbar.progressbar(finput):
                 datapoint = json.loads(line)
@@ -80,9 +82,10 @@ class Crawler(object):
 
                     ext = tldextract.extract(datapoint['name'])
                     tld = '.'.join(ext[:2]) 
+                    all_tldn.add(tld)
 
                     # skip domains not in the wiki
-                    if tld not in self.wh._label2id:
+                    if self.wh.domain2qid(tld) is None:
                         continue
 
                     pfx = self.ia.ip2prefix(datapoint['value'])
@@ -91,6 +94,7 @@ class Crawler(object):
 
                     self.tld_pfx[tld].add(pfx)
 
+        print(f'Found {len(all_tldn)} domain names in Rapid7 dataset')
         # push data to wiki
         for tld, pfxs in self.tld_pfx.items():
             self.update(tld, pfxs)
