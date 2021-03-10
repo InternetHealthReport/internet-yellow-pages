@@ -74,7 +74,7 @@ class Crawler(object):
         sys.stderr.write('Processing dataset...\n')
         all_tldn = set()
         with gzip.open(fname, 'rt') as finput:
-            for line in progressbar.progressbar(finput):
+            for i, line in enumerate(progressbar.progressbar(finput)):
                 datapoint = json.loads(line)
                 if ( datapoint['type'] in ['a', 'aaaa'] 
                     and 'value' in datapoint
