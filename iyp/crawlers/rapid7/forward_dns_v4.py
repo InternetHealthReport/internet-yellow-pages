@@ -11,10 +11,11 @@ from iyp.wiki.wikihandy import Wikihandy
 from iyp.wiki.ip2asn import ip2asn
 
 # URL to Rapid7 open data
-# TODO automatically fetch file
+# TODO automatically fetch filename
 # TODO remove all data with URL regex
 # TODO remove downloaded file
 URL = 'https://opendata.rapid7.com/sonar.fdns_v2/2021-02-26-1614298023-fdns_a.json.gz'
+#URL = 'https://opendata.rapid7.com/sonar.fdns_v2/2021-02-26-1614297920-fdns_aaaa.json.gz'
 
 def download_file(url, local_filename):
     r = requests.get(url, stream=True)
@@ -26,7 +27,7 @@ def download_file(url, local_filename):
     return local_filename
 
 class Crawler(object):
-    def __init__(self):
+    def __init__(self, fdns_url=URL):
         """Fetch QID for Rapid7 and initialize wikihandy."""
     
         sys.stderr.write('Initialization...\n')
@@ -47,7 +48,7 @@ class Crawler(object):
         today = self.wh.today()
         self.reference = [
                 (self.wh.get_pid('source'), self.org_qid),
-                (self.wh.get_pid('reference URL'), URL),
+                (self.wh.get_pid('reference URL'), fdns_url),
                 (self.wh.get_pid('point in time'), today)
                 ]
 
@@ -64,9 +65,9 @@ class Crawler(object):
 
         # download rapid7 data and find corresponding prefixes
         sys.stderr.write('Downloading Rapid7 dataset...\n')
-        fname = URL.split('/')[-1]
+        fname = fdns_url.split('/')[-1]
         if not os.path.exists(fname):
-            fname = download_file(URL, fname)
+            fname = download_file(fdns_url, fname)
 
         i=0
         sys.stderr.write('Processing dataset...\n')
@@ -93,10 +94,13 @@ class Crawler(object):
                     self.tld_pfx[tld].add(ip_info['prefix'])
 
 
-        print(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki')
+        sys.stderr.write(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki\n')
         # push data to wiki
-        for tld, pfxs in self.tld_pfx.items():
+        for i, (tld, pfxs) in enumerate(self.tld_pfx.items()):
             self.update(tld, pfxs)
+            sys.stderr.write(f'\rUpdating iyp... {i+1}/{len(self.tld_pfx)}')
+            
+        sys.stderr.write('\n')
 
     def update(self, tld, pfxs):
         """Update statements for the given domain name."""
