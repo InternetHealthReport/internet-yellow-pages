@@ -82,7 +82,6 @@ class Crawler(object):
                     ext = tldextract.extract(datapoint['name'])
                     tld = ext[-2]+'.'+ext[-1]
 
-                    print(tld)
                     # skip domains not in the wiki
                     if self.wh.domain2qid(tld) is None:
                         continue
@@ -92,9 +91,6 @@ class Crawler(object):
                         continue
 
                     self.tld_pfx[tld].add(ip_info['prefix'])
-
-                if i > 1000000:
-                    break
 
 
         print(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki')
