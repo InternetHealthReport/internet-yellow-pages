@@ -27,3 +27,5 @@ route origin authorization, "a ROA is a cryptographically signed object that sta
 start time,"time an item begins to exist or a statement starts being valid",from|starting|from time|from date|starttime|since|start date,time
 end time,"time an item ends to exist or a statement ends being valid",to|ending|to time|to date|endtime|until|end date,time
 maxLength, "the maxLength specifies the maximum length of IP address prefix that the AS is authorized to advertise",,quantity
+forward DNS, "IP address or prefix obtained from a DNS resolution of the item or one of its hosts",,wikibase-item
+reverse DNS, "domain name or hostname obtained from a DNS PTR record for the item or its IP addresses",,wikibase-item

@@ -495,7 +495,7 @@ class Wikihandy(object):
         elif qid is None:
             # Try a query with this label
             res = self.label2id(label)
-            if res.startswith('Q'):
+            if res is not None and res.startswith('Q'):
                 self.label_qid[label] = res
                 qid = res
 
@@ -509,7 +509,7 @@ class Wikihandy(object):
         if pid is None:
             # Try a query with this label
             res = self.label2id(label)
-            if res.startswith('P'):
+            if res is not None and res.startswith('P'):
                 self.label_pid[label] = res
                 pid = res
 
