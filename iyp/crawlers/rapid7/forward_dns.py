@@ -8,11 +8,9 @@ import gzip
 from collections import defaultdict
 import tldextract
 from iyp.wiki.wikihandy import Wikihandy
+from iyp.wiki.ip2asn import ip2asn
 
-sys.path.append('../ip2asn/')
-from ip2asn import ip2asn
-
-# URL to Tranco top 1M
+# URL to Rapid7 open data
 # TODO automatically fetch file
 # TODO remove all data with URL regex
 # TODO remove downloaded file
@@ -53,8 +51,7 @@ class Crawler(object):
                 (self.wh.get_pid('point in time'), today)
                 ]
 
-        # TODO use latest rib
-        self.ia = ip2asn("../ip2asn/db/rib.20210201.pickle.bz2")
+        self.ia = ip2asn(wikihandy=self.wh)
 
         # keep track of all resolved prefixes so we just make one push per
         # domain
@@ -71,30 +68,36 @@ class Crawler(object):
         if not os.path.exists(fname):
             fname = download_file(URL, fname)
 
+        i=0
         sys.stderr.write('Processing dataset...\n')
-        all_tldn = set()
         with gzip.open(fname, 'rt') as finput:
-            for i, line in enumerate(progressbar.progressbar(finput)):
+            # TODO reading the file takes hours, this should be multi-threaded
+            for line in progressbar.progressbar(finput):
+                i+=1
                 datapoint = json.loads(line)
                 if ( datapoint['type'] in ['a', 'aaaa'] 
                     and 'value' in datapoint
                     and 'name' in datapoint ):
 
                     ext = tldextract.extract(datapoint['name'])
-                    tld = '.'.join(ext[:2]) 
-                    all_tldn.add(tld)
+                    tld = ext[-2]+'.'+ext[-1]
 
+                    print(tld)
                     # skip domains not in the wiki
                     if self.wh.domain2qid(tld) is None:
                         continue
 
-                    pfx = self.ia.ip2prefix(datapoint['value'])
-                    if pfx is None:
+                    ip_info = self.ia.lookup(datapoint['value'])
+                    if ip_info is None:
                         continue
 
-                    self.tld_pfx[tld].add(pfx)
+                    self.tld_pfx[tld].add(ip_info['prefix'])
 
-        print(f'Found {len(all_tldn)} domain names in Rapid7 dataset')
+                if i > 1000000:
+                    break
+
+
+        print(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki')
         # push data to wiki
         for tld, pfxs in self.tld_pfx.items():
             self.update(tld, pfxs)
