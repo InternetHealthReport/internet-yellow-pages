@@ -1,8 +1,8 @@
 import sys
 import logging
 from SPARQLWrapper import SPARQLWrapper, JSON
-# TODO fetch PIDs with sparql, and make it a standalone script (no need for
-# pywikibot setup)
+# TODO fetch PIDs with sparql, and make it a standalone script 
+# (no need for fancy pywikibot setup)
 from iyp.wiki.wikihandy import DEFAULT_WIKI_SPARQL, Wikihandy
 import radix
 
