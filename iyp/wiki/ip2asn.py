@@ -27,56 +27,44 @@ class ip2asn(object):
 
         logging.info('Fetching prefix info...\n')
         # Fetch prefixes
-        non_empty = True
-        batch_size = 100000
-        offset = 0
-        while non_empty:
-            non_empty = False
-            QUERY = """
-            #Items that have a pKa value set
-            SELECT ?item ?prefix ?asn ?as_qid
-            WHERE 
-            {
-                    ?item wdt:%s wd:%s.
-                    ?item wdt:%s wd:%s.
-                    ?item rdfs:label ?prefix. 
-                    ?item wdt:%s ?as_qid.
-                    ?as_qid wdt:%s ?asn.
-            } 
-            LIMIT %s
-            OFFSET %s
-            """ % (
-                    self.wh.get_pid('instance of'), 
-                    self.wh.get_qid('IP routing prefix') , 
-                    self.wh.get_pid('IP version') , 
-                    self.wh.get_qid(f'IPv{af}') , 
-                    self.wh.get_pid('announced by') , 
-                    self.wh.get_pid('autonomous system number') , 
-                    batch_size,
-                    offset
-                    )
-            print(QUERY)
-            # Query wiki
-            self.sparql.setQuery(QUERY)
-            self.sparql.setReturnFormat(JSON)
-            response = self.sparql.query().convert()
-            results = response['results']
-        
-            # Parse results
-            for res in results['bindings']:
-                non_empty = True
-                prefix_qid = res['item']['value'].rpartition('/')[2]
-                prefix = res['prefix']['value']
-                asn = res['asn']['value']
-                as_qid = res['as_qid']['value'].rpartition('/')[2]
+        QUERY = """
+        #Items that have a pKa value set
+        SELECT ?item ?prefix ?asn
+        WHERE 
+        {
+                ?item wdt:%s wd:%s.
+                ?item wdt:%s wd:%s.
+                ?item rdfs:label ?prefix. 
+                ?item wdt:%s ?as_qid.
+                ?as_qid wdt:%s ?asn.
+        } 
+        """ % (
+                self.wh.get_pid('instance of'), 
+                self.wh.get_qid('IP routing prefix') , 
+                self.wh.get_pid('IP version') , 
+                self.wh.get_qid(f'IPv{af}') , 
+                self.wh.get_pid('announced by') , 
+                self.wh.get_pid('autonomous system number') , 
+                )
+        print(QUERY)
+        # Query wiki
+        self.sparql.setQuery(QUERY)
+        self.sparql.setReturnFormat(JSON)
+        response = self.sparql.query().convert()
+        results = response['results']
 
-                rnode = self.rtree.add(prefix)
-                rnode.data['prefix'] = prefix
-                rnode.data['asn'] = asn
-                rnode.data['prefix_qid'] = prefix_qid
-                rnode.data['as_qid'] = as_qid
+        # Parse results
+        for res in results['bindings']:
+            prefix_qid = res['item']['value'].rpartition('/')[2]
+            prefix = res['prefix']['value']
+            asn = res['asn']['value']
+            as_qid = res['as_qid']['value'].rpartition('/')[2]
 
-            offset += batch_size
+            rnode = self.rtree.add(prefix)
+            rnode.data['prefix'] = prefix
+            rnode.data['asn'] = asn
+            rnode.data['prefix_qid'] = prefix_qid
+            rnode.data['as_qid'] = as_qid
      
     def lookup(self, ip):
         """Lookup for the given ip address.
