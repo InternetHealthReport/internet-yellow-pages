@@ -40,7 +40,7 @@ class Wikihandy(object):
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
         self.sparql = SPARQLWrapper(sparql)
-        self.label_pid, self.label_qid = self._label2id()
+        self.label_pid, self.label_qid = self._id4alllabels()
         # TODO this is not neded?? already cached by pywikibot
         self.cache = {}
         self.pending_requests = 0
@@ -492,6 +492,12 @@ class Wikihandy(object):
             if 'label' not in create:
                 create['label'] = label
             qid = self.add_item(**create)
+        elif qid is None:
+            # Try a query with this label
+            res = self.label2id(label)
+            if res.startswith('Q'):
+                self.label_qid[label] = res
+                qid = res
 
         return qid
 
@@ -499,7 +505,15 @@ class Wikihandy(object):
         """Retrieve property id based on the given label. Returns None if the label
         is unknown."""
 
-        return self.label_pid.get(label, None)
+        pid = self.label_pid.get(label, None)
+        if pid is None:
+            # Try a query with this label
+            res = self.label2id(label)
+            if res.startswith('P'):
+                self.label_pid[label] = res
+                pid = res
+
+        return pid
 
     @decorators.thread_safe
     def extid2qid(self, label=None, qid=None):
@@ -690,9 +704,11 @@ class Wikihandy(object):
                     self.get_qid('domain name') , 
                   )
 
+            print(QUERY)
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()
+            print(results)
             
             self._domain2qid = {}
             for res in results['results']['bindings']:
@@ -776,12 +792,13 @@ class Wikihandy(object):
         self.sparql.setReturnFormat(JSON)
         results = self.sparql.query().convert()
         
-        print(results['results'])
         for res in results['results']['bindings']:
             return res['item']['value'].rpartition('/')[2]
 
+        return None
 
-    def _label2id(self):
+
+    def _id4alllabels(self):
         """Return two dictionaries, one for properties and  one for items, with 
         labels as keys and Q/P IDs as values. For entities that have the same 
         label only the first entity found is given, the other are ignored.
@@ -893,7 +910,7 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    wh = Wikihandy(preload=False)
+    wh = Wikihandy()
 
     import IPython
     IPython.embed()

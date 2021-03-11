@@ -42,7 +42,7 @@ class ip2asn(object):
                 self.wh.get_pid(f'announced by') , 
                 self.wh.get_pid(f'autonomous system number') , 
                 )
-
+        print(QUERY)
         # Query wiki
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)

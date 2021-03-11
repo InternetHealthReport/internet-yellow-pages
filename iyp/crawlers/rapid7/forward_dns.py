@@ -82,6 +82,7 @@ class Crawler(object):
                     ext = tldextract.extract(datapoint['name'])
                     tld = ext[-2]+'.'+ext[-1]
 
+                    print(tld)
                     # skip domains not in the wiki
                     if self.wh.domain2qid(tld) is None:
                         continue
@@ -92,7 +93,7 @@ class Crawler(object):
 
                     self.tld_pfx[tld].add(ip_info['prefix'])
 
-                if i > 10000:
+                if i > 1000000:
                     break
 
 
