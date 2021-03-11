@@ -494,7 +494,7 @@ class Wikihandy(object):
             qid = self.add_item(**create)
         elif qid is None:
             # Try a query with this label
-            res = self.label2id(label)
+            res = self.label2id(label, type='Q')
             if res is not None and res.startswith('Q'):
                 self.label_qid[label] = res
                 qid = res
@@ -508,7 +508,7 @@ class Wikihandy(object):
         pid = self.label_pid.get(label, None)
         if pid is None:
             # Try a query with this label
-            res = self.label2id(label)
+            res = self.label2id(label, type='P')
             if res is not None and res.startswith('P'):
                 self.label_pid[label] = res
                 pid = res
@@ -778,7 +778,7 @@ class Wikihandy(object):
                 print(f'# {item}')
                 #item.delete(reason='delete all', prompt=False)
 
-    def label2id(self, label):
+    def label2id(self, label, type=None):
         """Return the qid or pid corresponding to the given label using a sparql 
         query."""
 
@@ -793,7 +793,9 @@ class Wikihandy(object):
         results = self.sparql.query().convert()
         
         for res in results['results']['bindings']:
-            return res['item']['value'].rpartition('/')[2]
+            id = res['item']['value'].rpartition('/')[2]
+            if type is None or id.startswith(type):
+                return id
 
         return None
 
@@ -818,6 +820,8 @@ class Wikihandy(object):
         if False: #os.path.exists('.wikihandy_label2id.json'):
             results = json.load(open('.wikihandy_label2id.json','r'))
         else:
+            # FIXME: this query ignores item that don't have 'instance of'
+            # property?
             QUERY="""SELECT ?item ?itemLabel
                 WHERE { 
                     ?item rdfs:label ?itemLabel. 
@@ -834,7 +838,7 @@ class Wikihandy(object):
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()
-            #json.dump(results, open('.wikihandy_label2id.json','w'))
+            json.dump(results, open('.wikihandy_label2id.json','w'))
         
         for res in results['results']['bindings']:
             id = res['item']['value'].rpartition('/')[2]
