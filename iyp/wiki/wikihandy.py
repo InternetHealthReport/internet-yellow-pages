@@ -33,9 +33,9 @@ class Wikihandy(object):
         # used to make pywikibot cache access thread-safe
         self.lock = RLock()
 
-        self._asn2qid = None
-        self._prefix2qid = None
-        self._domain2qid = None
+        self._asn2qid = {}
+        self._prefix2qid = {}
+        self._domain2qid = {}
         self.repo = pywikibot.DataSite(lang, wikidata_project, 
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
@@ -575,7 +575,7 @@ class Wikihandy(object):
             print('Error: ASN value should be positive.')
             return None
 
-        if self._asn2qid is None:
+        if len( self._asn2qid ) == 0:
             logging.info('Wikihandy: downloading AS QIDs')
             # Bootstrap : retrieve all existing ASN/QID pairs
             QUERY = """
@@ -596,7 +596,6 @@ class Wikihandy(object):
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()
             
-            self._asn2qid = {}
             for res in results['results']['bindings']:
                 res_qid = res['item']['value'].rpartition('/')[2]
                 res_asn = int(res['asn']['value'])
@@ -635,7 +634,7 @@ class Wikihandy(object):
         if ':' in prefix:
             af=6
 
-        if self._prefix2qid is None:
+        if len( self._prefix2qid ) == 0:
             # Bootstrap : retrieve all existing prefix/QID pairs
 
             logging.info('Wikihandy: downloading prefix QIDs')
@@ -657,7 +656,6 @@ class Wikihandy(object):
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()
             
-            self._prefix2qid = {}
             for res in results['results']['bindings']:
                 res_qid = res['item']['value'].rpartition('/')[2]
                 res_prefix = res['prefix']['value']
@@ -686,7 +684,7 @@ class Wikihandy(object):
 
         domain = domain.strip()
 
-        if self._domain2qid is None:
+        if len( self._domain2qid ) == 0:
             # Bootstrap : retrieve all existing prefix/QID pairs
 
             logging.info('Wikihandy: downloading prefix QIDs')
@@ -707,11 +705,10 @@ class Wikihandy(object):
             print(QUERY)
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
-            results = self.sparql.query().convert()
-            print(results)
+            results = self.sparql.query().convert()['results']
             
             self._domain2qid = {}
-            for res in results['results']['bindings']:
+            for res in results['bindings']:
                 res_qid = res['item']['value'].rpartition('/')[2]
                 res_domain = res['domain']['value']
 
@@ -769,9 +766,9 @@ class Wikihandy(object):
 
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)
-        results = self.sparql.query().convert()
+        results = self.sparql.query().convert()['results']
         
-        for res in results['results']['bindings']:
+        for res in results['bindings']:
             qid = res['item']['value'].rpartition('/')[2]
             if qid.startswith('Q'):
                 item = self.get_item(qid=qid)
@@ -790,9 +787,9 @@ class Wikihandy(object):
         # Fetch existing entities
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)
-        results = self.sparql.query().convert()
+        results = self.sparql.query().convert()['results']
         
-        for res in results['results']['bindings']:
+        for res in results['bindings']:
             id = res['item']['value'].rpartition('/')[2]
             if type is None or id.startswith(type):
                 return id

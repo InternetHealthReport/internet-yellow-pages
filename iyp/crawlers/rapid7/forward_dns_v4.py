@@ -7,6 +7,7 @@ import requests
 import gzip
 from collections import defaultdict
 import tldextract
+from concurrent.futures import ThreadPoolExecutor
 from iyp.wiki.wikihandy import Wikihandy
 from iyp.wiki.ip2asn import ip2asn
 
@@ -31,6 +32,7 @@ class Crawler(object):
         """Fetch QID for Rapid7 and initialize wikihandy."""
     
         sys.stderr.write('Initialization...\n')
+        self.fdns_url = fdns_url
         # Helper for wiki access
         self.wh = Wikihandy()
 
@@ -58,6 +60,32 @@ class Crawler(object):
         # domain
         self.tld_pfx = defaultdict(set)
 
+    def match_domain_prefix(self, line):
+        """Parse a line from the rapid7 dataset, extract the domain and ip, and
+        find the corresponding IP prefix. 
+
+        return: (domain name, prefix or None if the domain is not in the wiki)
+        """
+
+        datapoint = json.loads(line)
+        if ( datapoint['type'] in ['a', 'aaaa'] 
+            and 'value' in datapoint
+            and 'name' in datapoint ):
+
+            ext = tldextract.extract(datapoint['name'])
+            tld = ext[-2]+'.'+ext[-1]
+
+            # skip domains not in the wiki
+            if self.wh.domain2qid(tld) is None:
+                return tld, None
+
+            ip_info = self.ia.lookup(datapoint['value'])
+            if ip_info is None:
+                return tld, None
+
+            return tld, ip_info['prefix']
+
+
 
     def run(self):
         """Fetch Rapid7 DNS forward data, find corresponding BGP prefixes 
@@ -65,34 +93,21 @@ class Crawler(object):
 
         # download rapid7 data and find corresponding prefixes
         sys.stderr.write('Downloading Rapid7 dataset...\n')
-        fname = fdns_url.split('/')[-1]
+        fname = self.fdns_url.split('/')[-1]
         if not os.path.exists(fname):
-            fname = download_file(fdns_url, fname)
+            fname = download_file(self.fdns_url, fname)
 
-        i=0
+        pool = ThreadPoolExecutor()
         sys.stderr.write('Processing dataset...\n')
+        i = 0
         with gzip.open(fname, 'rt') as finput:
-            # TODO reading the file takes hours, this should be multi-threaded
-            for line in progressbar.progressbar(finput):
+            for tld, prefix in progressbar.progressbar(pool.map(self.match_domain_prefix, finput)):
                 i+=1
-                datapoint = json.loads(line)
-                if ( datapoint['type'] in ['a', 'aaaa'] 
-                    and 'value' in datapoint
-                    and 'name' in datapoint ):
+                if prefix is not None:
+                    self.tld_pfx[tld].add(prefix)
 
-                    ext = tldextract.extract(datapoint['name'])
-                    tld = ext[-2]+'.'+ext[-1]
-
-                    # skip domains not in the wiki
-                    if self.wh.domain2qid(tld) is None:
-                        continue
-
-                    ip_info = self.ia.lookup(datapoint['value'])
-                    if ip_info is None:
-                        continue
-
-                    self.tld_pfx[tld].add(ip_info['prefix'])
-
+                if i>10000:
+                    break
 
         sys.stderr.write(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki\n')
         # push data to wiki
