@@ -617,7 +617,7 @@ class Wikihandy(object):
 
                 self._asn2qid[res_asn] = res_qid
 
-            logging.info('Wikihandy: downloaded QIDs for {len(self._asn2qid)} ASes')
+            logging.info(f'Wikihandy: downloaded QIDs for {len(self._asn2qid)} ASes')
 
         # Find the AS QID or add it to wikibase
         qid = self._asn2qid.get(int(asn), None)
@@ -677,7 +677,7 @@ class Wikihandy(object):
 
                 self._prefix2qid[res_prefix] = res_qid
 
-            logging.info('Wikihandy: downloaded QIDs for {len(self._prefix2qid)} prefixes ')
+            logging.info(f'Wikihandy: downloaded QIDs for {len(self._prefix2qid)} prefixes ')
 
         # Find the prefix QID or add it to wikibase
         qid = self._prefix2qid.get(prefix, None)
@@ -729,7 +729,7 @@ class Wikihandy(object):
 
                 self._domain2qid[res_domain] = res_qid
 
-            logging.info('Wikihandy: downloaded QIDs for {len(self._domain2qid)} domains')
+            logging.info(f'Wikihandy: downloaded QIDs for {len(self._domain2qid)} domains')
 
         # Find the domain QID or add it to wikibase
         qid = self._domain2qid.get(domain, None)
