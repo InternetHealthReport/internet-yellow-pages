@@ -64,8 +64,11 @@ class Crawler(object):
         """Parse a line from the rapid7 dataset, extract the domain and ip, and
         find the corresponding IP prefix. 
 
-        return: (domain name, prefix or None if the domain is not in the wiki)
+        return: (domain name, prefix) or None, None if the domain is not in the wiki
         """
+
+        tld = None
+        prefix = None
 
         datapoint = json.loads(line)
         if ( datapoint['type'] in ['a', 'aaaa'] 
@@ -83,8 +86,10 @@ class Crawler(object):
             if ip_info is None:
                 return tld, None
 
-            return tld, ip_info['prefix']
+            prefix = ip_info['prefix']
+            self.tld_pfx[tld].add(prefix)
 
+        return tld, prefix
 
 
     def run(self):
@@ -98,17 +103,20 @@ class Crawler(object):
             fname = download_file(self.fdns_url, fname)
 
         pool = ThreadPoolExecutor()
+        # set cache
+        self.wh.domain2qid('google.com') 
         sys.stderr.write('Processing dataset...\n')
         i = 0
         with gzip.open(fname, 'rt') as finput:
-            for tld, prefix in progressbar.progressbar(pool.map(self.match_domain_prefix, finput)):
+            for line in finput:
+                pool.submit(self.match_domain_prefix, line)
                 i+=1
-                if prefix is not None:
-                    self.tld_pfx[tld].add(prefix)
-
                 if i>10000:
                     break
 
+        pool.shutdown()
+
+        print(self.tld_pfx)
         sys.stderr.write(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki\n')
         # push data to wiki
         for i, (tld, pfxs) in enumerate(self.tld_pfx.items()):

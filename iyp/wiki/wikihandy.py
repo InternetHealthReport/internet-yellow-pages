@@ -335,7 +335,7 @@ class Wikihandy(object):
         URLs will also be removed. This is useful if the reference URLs has 
         changed."""
 
-        updates = {'claims':[]}
+        all_updated_claims = []
         ref_url_pid = self.label_pid['reference URL']
         source_pid = self.label_pid['source']
         # Retrieve item and claims objects
@@ -412,11 +412,11 @@ class Wikihandy(object):
             self._insert_references_local(updated_claim, new_references)
 
             # Add updated claims
-            updates['claims'].append(updated_claim)
+            all_updated_claims.append(updated_claim)
 
         # Commit changes
         if commit and item is not None:
-            self.editEntity(item, updates, summary)
+            self.editEntity(item, all_updated_claims, summary)
             claims_to_remove = [claim for claims_list in selected_claims.values()
                                     for claim in claims_list]
             if claims_to_remove:
@@ -424,15 +424,26 @@ class Wikihandy(object):
             else:
                 pass
 
-        return updates
+        return {'claims':all_updated_claims}
 
     @decorators.thread_safe
-    def editEntity(self, entity, data, summary, asynchronous=True):
-        """Update entity in asynchronous manner if MAX_PENDING_REQUESTS permits,
+    def editEntity(self, entity, claims, summary, asynchronous=True):
+        """Update entity's claims.
+
+        Update is done in asynchronous manner if MAX_PENDING_REQUESTS permits,
         use synchronous call otherwise."""
 
-        # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
+        if len(claims) == 0:
+            # Nothing to do
+            return
 
+        # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
+        # API limits the number of claims to 500
+        if len(claims) > 200:
+            self.editEntity(self,entity, claims[200:],summary, asynchronous)
+            claims = claims[:200]
+
+        data = { 'claims':claims }
         if False and asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
             self.pending_requests += 1
             entity.editEntity(data, summary=summary, asynchronous=True, callback=self.on_delivery)
