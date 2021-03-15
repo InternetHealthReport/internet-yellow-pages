@@ -40,7 +40,7 @@ class Wikihandy(object):
                 user=pywikibot.config.usernames[wikidata_project][lang])
 
         self.sparql = SPARQLWrapper(sparql)
-        self.label_pid, self.label_qid = self._id4alllabels()
+        self.label_pid, self.label_qid = self.id4alllabels()
         # TODO this is not neded?? already cached by pywikibot
         self.cache = {}
         self.pending_requests = 0
@@ -335,8 +335,8 @@ class Wikihandy(object):
         changed."""
 
         all_updated_claims = []
-        ref_url_pid = self.label_pid['reference URL']
-        source_pid = self.label_pid['source']
+        ref_url_pid = self.get_pid('reference URL')
+        source_pid = self.get_pid('source')
         # Retrieve item and claims objects
         item = None
         if isinstance(item_id, pywikibot.ItemPage):
@@ -812,7 +812,7 @@ class Wikihandy(object):
         return None
 
 
-    def _id4alllabels(self):
+    def id4alllabels(self):
         """Return two dictionaries, one for properties and  one for items, with 
         labels as keys and Q/P IDs as values. For entities that have the same 
         label only the first entity found is given, the other are ignored.
@@ -829,6 +829,7 @@ class Wikihandy(object):
         results = []
 
         # Load cached data if available
+        # TODO remove this or uncomment, dump line below
         if False: #os.path.exists('.wikihandy_label2id.json'):
             results = json.load(open('.wikihandy_label2id.json','r'))
         else:
@@ -850,7 +851,7 @@ class Wikihandy(object):
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()
-            json.dump(results, open('.wikihandy_label2id.json','w'))
+            #json.dump(results, open('.wikihandy_label2id.json','w'))
         
         for res in results['results']['bindings']:
             id = res['item']['value'].rpartition('/')[2]
@@ -863,6 +864,8 @@ class Wikihandy(object):
             elif id.startswith('Q'):
                 if label not in items:
                     items[label] = id
+
+        logging.info('Wikihandy: loaded {len(properties)} PIDs and {len(items)} QIDs')
 
         return properties, items
 
