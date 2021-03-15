@@ -466,7 +466,7 @@ class Wikihandy(object):
                 self.editEntity(entity, claims[batch_size:],summary, asynchronous)
                 claims = claims[:batch_size]
 
-        if False and asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
+        if asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
             self.pending_requests += 1
             entity.editEntity(data, summary=summary, asynchronous=True, callback=self.on_delivery)
         else:
