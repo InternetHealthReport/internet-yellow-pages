@@ -43,6 +43,7 @@ class Crawler(object):
         self.wh.login() # Login once for all threads
         pool = ThreadPoolExecutor(max_workers=4)
 
+        logging.info('Connecting to the FTP server..')
         # Find latest roa files
         filepaths = []
         ftp = FTP(FTP_URL)
@@ -53,6 +54,7 @@ class Crawler(object):
         self.last_line = ''
         ftp.retrlines('LIST', callback=self.get_all_lines)
 
+        logging.info('Listing directories...')
         for dir in self.all_lines:
             path = ''
             while self.last_line != 'roas.csv':
@@ -61,10 +63,12 @@ class Crawler(object):
                 ftp.retrlines('LIST', callback=self.get_last_line)
 
             path += 'roas.csv'
+            logging.info(f'Found ROA file: {path}')
             filepaths.append(path)
 
         for filepath in filepaths:
             self.url = URL_API+filepath
+            logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get( self.url )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+filepath)
@@ -85,10 +89,6 @@ class Crawler(object):
         if uri=='URI':
             return
 
-        print(line)
-        sys.exit()
-        
-        # FIXME
         qualifiers = [
                 [self.wh.get_pid('start time'), self.wh.to_wbtime(start)],
                 [self.wh.get_pid('end time'), self.wh.to_wbtime(end)],
