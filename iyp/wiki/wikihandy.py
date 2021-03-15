@@ -7,7 +7,7 @@ import iso3166
 import arrow
 from collections import defaultdict
 from threading import RLock
-from . import decorators 
+from iyp.wiki import decorators 
 
 
 # DEFAULT_WIKI_SPARQL = 'http://localhost:8989/bigdata/namespace/wdq/sparql' #'https://exp1.iijlab.net/wdqs/bigdata/namespace/wdq/sparql'
@@ -16,6 +16,7 @@ DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
 MAX_PENDING_REQUESTS = 100
+MAX_CLAIM_EDIT = 500
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
@@ -419,7 +420,14 @@ class Wikihandy(object):
             claims_to_remove = [claim for claims_list in selected_claims.values()
                                     for claim in claims_list]
             if claims_to_remove:
-                item.removeClaims(claims_to_remove)
+                if len(claims_to_remove) > MAX_CLAIM_EDIT:
+                    # Remove in batches if there is too many to do
+                    batch_size = MAX_CLAIM_EDIT - 1
+                    for i in range(0, len(claims_to_remove), batch_size):
+                        batch = claims_to_remove[i:min(i+batch_size, len(claims_to_remove))]
+                        item.removeClaims( batch )
+                else:
+                    item.removeClaims(claims_to_remove)
             else:
                 pass
 
@@ -444,9 +452,10 @@ class Wikihandy(object):
 
             # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
             # API limits the number of claims to 500
-            if len(claims) > 200:
-                self.editEntity(self,entity, claims[200:],summary, asynchronous)
-                claims = claims[:200]
+            if len(claims) > MAX_CLAIM_EDIT:
+                batch_size = MAX_CLAIM_EDIT - 1
+                self.editEntity(entity, claims[batch_size:],summary, asynchronous)
+                claims = claims[:batch_size]
 
         if False and asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
             self.pending_requests += 1
