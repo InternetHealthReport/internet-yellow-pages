@@ -705,8 +705,7 @@ class Wikihandy(object):
                     statements=[
                         [self.get_pid('instance of'), self.get_qid('IP routing prefix'), []],
                         [self.get_pid('IP version'), self.get_qid(f'IPv{af}'), []],
-                    ],
-                    force=True)
+                    ],)
 
         return qid
         
