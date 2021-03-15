@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import pickle
 import logging
 import requests
 import gzip
@@ -101,15 +102,20 @@ class Crawler(object):
             fname = download_file(self.fdns_url, fname)
 
         sys.stderr.write('Processing dataset...\n')
-        i = 0
-        with gzip.open(fname, 'rt') as finput:
-            for line in finput:
-                self.match_domain_prefix(line)
-                i+=1
-                if i>1000001:
-                    break
+        if os.path.exists(fname+'.pickle'):
+            sys.stderr.write('Load data from cache!')
+            self.tld_pfx = pickle.load(open(fname+'.pickle', 'rb'))
+        else:
+            with gzip.open(fname, 'rt') as finput:
+                i = 0
+                for line in finput:
+                    i+=1
+                    self.match_domain_prefix(line)
+                    if i> 10000:
+                        break
 
-        print(self.tld_pfx)
+            pickle.dump(self.tld_pfx, open(fname+'.pickle', 'wb'))
+
         sys.stderr.write(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki\n')
         # push data to wiki
         for i, (tld, pfxs) in enumerate(self.tld_pfx.items()):
