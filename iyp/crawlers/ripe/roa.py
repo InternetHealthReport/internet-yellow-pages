@@ -1,7 +1,6 @@
 import sys
 import logging
 import requests
-from concurrent.futures import ThreadPoolExecutor
 from iyp.wiki.wikihandy import Wikihandy
 from ftplib import FTP
 
@@ -40,9 +39,6 @@ class Crawler(object):
     def run(self):
         """Fetch data from RIPE and push to wikibase. """
 
-        self.wh.login() # Login once for all threads
-        pool = ThreadPoolExecutor(max_workers=4)
-
         logging.info('Connecting to the FTP server..')
         # Find latest roa files
         filepaths = []
@@ -74,25 +70,24 @@ class Crawler(object):
                 sys.exit('Error while fetching data for '+filepath)
             
             # Push data to wiki
-            for i, res in enumerate(pool.map(self.update, req.text.splitlines() )):
+            for i, res in enumerate(map(self.update, req.text.splitlines() )):
                 sys.stderr.write(f'\rProcessing {filepath}... {i+1} prefixes')
-
-        pool.shutdown()
 
     def update(self, line):
         """Add the prefix to wikibase if it's not already there and update its
         properties."""
 
-        uri, asn, prefix, max_length, start, end = line.split(',')
+        url, asn, prefix, max_length, start, end = line.split(',')
         
         # Skip header
-        if uri=='URI':
+        if url=='URI':
             return
 
         qualifiers = [
                 [self.wh.get_pid('start time'), self.wh.to_wbtime(start)],
                 [self.wh.get_pid('end time'), self.wh.to_wbtime(end)],
-                [self.wh.get_pid('maxLength'), {'amount': max_length} ] 
+                [self.wh.get_pid('maxLength'), {'amount': max_length} ] ,
+            #    [self.wh.get_pid('reference URL'), url ] 
                 ]
 
         # Properties

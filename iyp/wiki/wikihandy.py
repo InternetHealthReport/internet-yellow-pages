@@ -69,8 +69,7 @@ class Wikihandy(object):
         object"""
 
         dt = arrow.get(datetime)
-        dtstr = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-        return pywikibot.WbTime.fromTimestr(dtstr,
+        return pywikibot.WbTime(year=dt.year, month=dt.month, day=dt.day,
             calendarmodel="http://www.wikidata.org/entity/Q1985727")
     
     @decorators.thread_safe
