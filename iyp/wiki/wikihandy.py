@@ -426,23 +426,28 @@ class Wikihandy(object):
         return {'claims':all_updated_claims}
 
     @decorators.thread_safe
-    def editEntity(self, entity, claims, summary, asynchronous=True):
-        """Update entity's claims.
+    def editEntity(self, entity, data, summary, asynchronous=True):
+        """Update entity in the database.
+
+        data: should be either a dictionary that may give all informationi (e.g.
+        label, description, claims) or a list with only updated claims.
 
         Update is done in asynchronous manner if MAX_PENDING_REQUESTS permits,
         use synchronous call otherwise."""
 
-        if len(claims) == 0:
-            # Nothing to do
-            return
+        if isinstance(data, list):
+            claims = data
+            data = { 'claims':claims }
+            if len(claims) == 0:
+                # Nothing to do
+                return
 
-        # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
-        # API limits the number of claims to 500
-        if len(claims) > 200:
-            self.editEntity(self,entity, claims[200:],summary, asynchronous)
-            claims = claims[:200]
+            # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
+            # API limits the number of claims to 500
+            if len(claims) > 200:
+                self.editEntity(self,entity, claims[200:],summary, asynchronous)
+                claims = claims[:200]
 
-        data = { 'claims':claims }
         if False and asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
             self.pending_requests += 1
             entity.editEntity(data, summary=summary, asynchronous=True, callback=self.on_delivery)
