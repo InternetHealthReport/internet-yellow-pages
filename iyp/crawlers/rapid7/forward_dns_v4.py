@@ -1,13 +1,11 @@
 import sys
 import os
 import json
-import progressbar
 import logging
 import requests
 import gzip
 from collections import defaultdict
 import tldextract
-from concurrent.futures import ThreadPoolExecutor
 from iyp.wiki.wikihandy import Wikihandy
 from iyp.wiki.ip2asn import ip2asn
 
@@ -102,19 +100,14 @@ class Crawler(object):
         if not os.path.exists(fname):
             fname = download_file(self.fdns_url, fname)
 
-        pool = ThreadPoolExecutor()
-        # set cache
-        self.wh.domain2qid('google.com') 
         sys.stderr.write('Processing dataset...\n')
         i = 0
         with gzip.open(fname, 'rt') as finput:
             for line in finput:
-                pool.submit(self.match_domain_prefix, line)
+                self.match_domain_prefix(line)
                 i+=1
-                if i>10000:
+                if i>1000001:
                     break
-
-        pool.shutdown()
 
         print(self.tld_pfx)
         sys.stderr.write(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki\n')
