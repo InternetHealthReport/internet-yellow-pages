@@ -189,8 +189,7 @@ class Wikihandy(object):
 
 
 
-    def _update_statement_local(self, claims, target, ref_urls=None, 
-            sources=None, reference=False):
+    def _update_statement_local(self, claims, target, ref_urls=None, sources=None):
         """Update a statement locally (changed are not pushed to wikibase). 
         If a reference URL is given, then it will update the statement that have
         the same reference URL. Otherwise it will update the first statement that
@@ -613,7 +612,7 @@ class Wikihandy(object):
 
                 self._asn2qid[res_asn] = res_qid
 
-            logging.info('Wikihandy: download complete (AS QIDs)')
+            logging.info('Wikihandy: downloaded QIDs for {len(self._asn2qid)} ASes')
 
         # Find the AS QID or add it to wikibase
         qid = self._asn2qid.get(int(asn), None)
@@ -673,7 +672,7 @@ class Wikihandy(object):
 
                 self._prefix2qid[res_prefix] = res_qid
 
-            logging.info('Wikihandy: download complete (prefix QIDs)')
+            logging.info('Wikihandy: downloaded QIDs for {len(self._prefix2qid)} prefixes ')
 
         # Find the prefix QID or add it to wikibase
         qid = self._prefix2qid.get(prefix, None)
@@ -698,7 +697,7 @@ class Wikihandy(object):
         if len( self._domain2qid ) == 0:
             # Bootstrap : retrieve all existing prefix/QID pairs
 
-            logging.info('Wikihandy: downloading prefix QIDs')
+            logging.info('Wikihandy: downloading domain QIDs')
 
             QUERY = """
             #Items that have a pKa value set
@@ -725,7 +724,7 @@ class Wikihandy(object):
 
                 self._domain2qid[res_domain] = res_qid
 
-            logging.info('Wikihandy: download complete (domain QIDs)')
+            logging.info('Wikihandy: downloaded QIDs for {len(self._domain2qid)} domains')
 
         # Find the domain QID or add it to wikibase
         qid = self._domain2qid.get(domain, None)
