@@ -80,11 +80,18 @@ class Crawler(object):
                     (self.wh.get_pid('point in time'), self.wh.today()),
                     ]
 
+
                 routes = self.fetch(self.url_route)
+                nb_pages = routes['pagination']['total_pages']
                 # Imported routes
-                for i, route in enumerate(routes['imported']):
-                    self.update_route(route,'imported')
-                    sys.stderr.write(f'\rProcessing... {i+1}/{len(routes["imported"])}')
+                for p in range(nb_pages):
+                    # fetch all subsequent pages
+                    if p != 0:
+                        routes = self.fetch(self.url_route+f'?page={p}')
+
+                    for i, route in enumerate(routes['imported']):
+                        self.update_route(route,'imported')
+                        sys.stderr.write(f'\rProcessing page {p+1}/{nb_pages} {i+1}/{len(routes["imported"])} routes')
 
                 sys.stderr.write('\n')
 
