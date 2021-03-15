@@ -4,7 +4,6 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 from iyp.wiki.wikihandy import Wikihandy
 from ftplib import FTP
-import arrow
 
 # URL to RIPE repository
 URL_API = 'https://ftp.ripe.net/ripe/rpki/'
@@ -85,12 +84,15 @@ class Crawler(object):
         # Skip header
         if uri=='URI':
             return
+
+        print(line)
+        sys.exit()
         
         # FIXME
         qualifiers = [
-                # [self.wh.get_pid('start time'), self.wh.to_wbtime(start)],
-                # [self.wh.get_pid('end time'), self.wh.to_wbtime(end)],
-                # [self.wh.get_pid('maxLength'), ,{'amount': max_length} ] #
+                [self.wh.get_pid('start time'), self.wh.to_wbtime(start)],
+                [self.wh.get_pid('end time'), self.wh.to_wbtime(end)],
+                [self.wh.get_pid('maxLength'), {'amount': max_length} ] 
                 ]
 
         # Properties
@@ -102,7 +104,8 @@ class Crawler(object):
         statements = [
                     [ self.wh.get_pid('route origin authorization'), 
                         asn_qid,
-                        qualifiers+self.reference
+                        self.reference,
+                        qualifiers
                     ]
                 ]
 
