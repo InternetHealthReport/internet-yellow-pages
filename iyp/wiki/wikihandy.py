@@ -149,10 +149,19 @@ class Wikihandy(object):
         return pid 
 
     @decorators.thread_safe
-    def add_item(self, summary, label, description=None, aliases=None, statements=None):
-        """Create new item if it doesn't already exists. Return the item QID"""
+    def add_item(self, summary, label, description=None, aliases=None, 
+            statements=None):
+        """Create new item if it doesn't already exists. 
 
-        qid = self.get_qid(label)
+        - summary (string): a commit message
+        - label (string): the item name
+        - description (string): the item description in english
+        - aliases: item's aliases
+        - statements: list of statements for the created item
+
+        Return the item QID"""
+
+        qid = self.label_qid.get(label, None)
         if qid is not None:
             self.upsert_statements(summary, qid, statements)
             return qid
@@ -696,7 +705,8 @@ class Wikihandy(object):
                     statements=[
                         [self.get_pid('instance of'), self.get_qid('IP routing prefix'), []],
                         [self.get_pid('IP version'), self.get_qid(f'IPv{af}'), []],
-                    ])
+                    ],
+                    force=True)
 
         return qid
         
