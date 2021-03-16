@@ -1,5 +1,6 @@
 import sys
 import logging
+from collections import defaultdict
 import requests
 from iyp.wiki.wikihandy import Wikihandy
 from ftplib import FTP
@@ -69,42 +70,55 @@ class Crawler(object):
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+filepath)
             
-            # Push data to wiki
-            for i, res in enumerate(map(self.update, req.text.splitlines() )):
-                sys.stderr.write(f'\rProcessing {filepath}... {i+1} prefixes')
+            # Aggregate data per prefix
+            prefix_info = defaultdict(list)
+            for line in req.text.splitlines():
+                url, asn, prefix, max_length, start, end = line.split(',')
+                
+                # Skip header
+                if url=='URI':
+                    continue
 
-    def update(self, line):
+                prefix_info[prefix].append({
+                    'url': url, 
+                    'asn': asn, 
+                    'max_length': max_length, 
+                    'start': start, 
+                    'end': end})
+
+            for i, (prefix, attributes) in enumerate(prefix_info.items()):
+                self.update(prefix, attributes)
+                sys.stderr.write(f'\rProcessing {filepath}... {i+1} prefixes ({prefix})\t\t')
+
+    def update(self, prefix, attributes):
         """Add the prefix to wikibase if it's not already there and update its
         properties."""
 
-        url, asn, prefix, max_length, start, end = line.split(',')
+        statements = []
+        for att in attributes:
         
-        # Skip header
-        if url=='URI':
-            return
-
-        qualifiers = [
-                [self.wh.get_pid('start time'), self.wh.to_wbtime(start)],
-                [self.wh.get_pid('end time'), self.wh.to_wbtime(end)],
-            #    [self.wh.get_pid('reference URL'), url ] 
-                ]
-
-        if max_length:
-            qualifiers.append( [self.wh.get_pid('maxLength'), {'amount': max_length} ] )
-
-        # Properties
-        asn_qid = self.wh.asn2qid(asn, create=True)
-        if asn_qid is None:
-            print('Error: ', line)
-            return
-
-        statements = [
-                    [ self.wh.get_pid('route origin authorization'), 
-                        asn_qid,
-                        self.reference,
-                        qualifiers
+            qualifiers = [
+                    [self.wh.get_pid('start time'), self.wh.to_wbtime(att['start'])],
+                    [self.wh.get_pid('end time'), self.wh.to_wbtime(att['end'])],
+                #    [self.wh.get_pid('reference URL'), url ] 
                     ]
-                ]
+
+            if att['max_length']:
+                qualifiers.append( [self.wh.get_pid('maxLength'), {'amount': att['max_length']} ] )
+
+            # Properties
+            asn_qid = self.wh.asn2qid(att['asn'], create=True)
+            if asn_qid is None:
+                print('Error: ', line)
+                return
+
+            statements.append(
+                        [ self.wh.get_pid('route origin authorization'), 
+                            asn_qid,
+                            self.reference,
+                            qualifiers
+                        ]
+                    )
 
         # Commit to wikibase
         # Get the prefix QID (create if prefix is not yet registered) and commit changes
