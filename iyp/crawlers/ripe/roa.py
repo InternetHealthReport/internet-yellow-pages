@@ -86,9 +86,11 @@ class Crawler(object):
         qualifiers = [
                 [self.wh.get_pid('start time'), self.wh.to_wbtime(start)],
                 [self.wh.get_pid('end time'), self.wh.to_wbtime(end)],
-                [self.wh.get_pid('maxLength'), {'amount': max_length} ] ,
             #    [self.wh.get_pid('reference URL'), url ] 
                 ]
+
+        if max_length:
+            qualifiers.append( [self.wh.get_pid('maxLength'), {'amount': max_length} ] )
 
         # Properties
         asn_qid = self.wh.asn2qid(asn, create=True)
