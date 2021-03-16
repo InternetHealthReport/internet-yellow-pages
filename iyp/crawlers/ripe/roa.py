@@ -1,3 +1,4 @@
+from datetime import date
 import sys
 import logging
 from collections import defaultdict
@@ -6,9 +7,9 @@ from iyp.wiki.wikihandy import Wikihandy
 from ftplib import FTP
 
 # URL to RIPE repository
-URL_API = 'https://ftp.ripe.net/ripe/rpki/'
+URL_API = 'https://ftp.ripe.net/'
 FTP_URL = 'ftp.ripe.net'
-FTP_ROOT = 'ripe/rpki'
+FTP_ROOT = '/ripe/rpki'
 
 class Crawler(object):
     def __init__(self):
@@ -40,6 +41,9 @@ class Crawler(object):
     def run(self):
         """Fetch data from RIPE and push to wikibase. """
 
+        now = date.today()
+        today = f'{now.year}/{now.month:02d}/{now.day:02d}'
+
         logging.info('Connecting to the FTP server..')
         # Find latest roa files
         filepaths = []
@@ -52,16 +56,20 @@ class Crawler(object):
         ftp.retrlines('LIST', callback=self.get_all_lines)
 
         logging.info('Listing directories...')
+        logging.info(f'{self.all_lines}')
         for dir in self.all_lines:
-            path = ''
-            while self.last_line != 'roas.csv':
+            path = FTP_ROOT+'/'+dir
+            ftp.cwd(path)
+            self.last_line = ''
+            while self.last_line not in ['roas.csv', 'repo.tar.gz']:
                 ftp.cwd(self.last_line)
                 path += self.last_line + '/'
                 ftp.retrlines('LIST', callback=self.get_last_line)
 
-            path += 'roas.csv'
-            logging.info(f'Found ROA file: {path}')
-            filepaths.append(path)
+            if self.last_line == 'roas.csv' and today in path:
+                path += 'roas.csv'
+                logging.info(f'Found ROA file: {path}')
+                filepaths.append(path)
 
         for filepath in filepaths:
             self.url = URL_API+filepath
@@ -88,7 +96,7 @@ class Crawler(object):
 
             for i, (prefix, attributes) in enumerate(prefix_info.items()):
                 self.update(prefix, attributes)
-                sys.stderr.write(f'\rProcessing {filepath}... {i+1} prefixes ({prefix})\t\t')
+                sys.stderr.write(f'\rProcessing {filepath}... {i+1} prefixes ({prefix})     ')
 
     def update(self, prefix, attributes):
         """Add the prefix to wikibase if it's not already there and update its
