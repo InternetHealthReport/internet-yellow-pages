@@ -424,7 +424,7 @@ class Wikihandy(object):
 
         # Commit changes
         if commit and item is not None:
-            self.editEntity(item, all_updated_claims, summary)
+            self.editEntity(item, all_updated_claims, summary )
             claims_to_remove = [claim for claims_list in selected_claims.values()
                                     for claim in claims_list]
             if claims_to_remove:
@@ -458,7 +458,6 @@ class Wikihandy(object):
                 # Nothing to do
                 return
 
-            # logging.info(f'wikihandy: editEntity entity={entity}, data={data}')
             # API limits the number of claims to 500
             if len(claims) > MAX_CLAIM_EDIT:
                 batch_size = MAX_CLAIM_EDIT - 1
@@ -469,7 +468,7 @@ class Wikihandy(object):
             self.pending_requests += 1
             entity.editEntity(data, summary=summary, asynchronous=True, callback=self.on_delivery)
         else:
-            logging.warn('Too many pending requests. Doing a synchronous request.')
+            logging.debug('Too many pending requests. Doing a synchronous request.')
             entity.editEntity(data, summary=summary)
 
 

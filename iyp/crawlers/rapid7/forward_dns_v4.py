@@ -107,12 +107,8 @@ class Crawler(object):
             self.tld_pfx = pickle.load(open(fname+'.pickle', 'rb'))
         else:
             with gzip.open(fname, 'rt') as finput:
-                i = 0
                 for line in finput:
-                    i+=1
                     self.match_domain_prefix(line)
-                    if i> 10000:
-                        break
 
             pickle.dump(self.tld_pfx, open(fname+'.pickle', 'wb'))
 
