@@ -1,5 +1,6 @@
 import sys
 import logging
+import arrow
 import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -38,7 +39,7 @@ class Crawler(object):
         for cc, country in self.countries.items():
             # Query IHR
             self.url = URL_API.format(country=cc)
-            req = self.http_session.get( self.url )
+            req = self.http_session.get( self.url+'&format=json' )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
             data = json.loads(req.text)
@@ -52,12 +53,20 @@ class Crawler(object):
                 (self.wh.get_pid('point in time'), today),
                 ]
 
+            # Setup qualifiers
             country_qid = self.wh.country2qid(country.name)
             if country_qid is not None:
                 self.qualifiers = [ (self.wh.get_pid('country'), country_qid) ]
             else:
                 self.qualifiers = []
 
+            # Find the latest timebin in the data
+            last_timebin = '1970-01-01'
+            for r in ranking:
+                if arrow.get(r['timebin']) > arrow.get(last_timebin):
+                    last_timebin = r['timebin']
+
+            # Make ranking and push data
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
 
                 # Get the QID of the selected country / create this country if needed
@@ -68,10 +77,13 @@ class Crawler(object):
                         'statements': [[self.wh.get_pid('managed by'), self.org_qid]]
                         })
 
-
                 # Filter out unnecessary data
                 selected = [r for r in ranking 
-                        if r['weightscheme']==weight and r['transitonly']==False and r['hege']>MIN_HEGE]
+                                    if(r['weightscheme'] == weight 
+                                        and r['transitonly'] == False 
+                                        and r['hege'] > MIN_HEGE
+                                        and r['timebin'] == last_timebin )
+                            ]
 
                 # Make sure the ranking is sorted and add rank field
                 selected.sort(key=lambda x: x['hege'], reverse=True)
@@ -106,7 +118,8 @@ class Crawler(object):
         # Commit to wikibase
         # Get the AS QID (create if AS is not yet registered) and commit changes
         net_qid = self.wh.asn2qid(asn['asn'], create=True) 
-        self.wh.upsert_statements('update from IHR country ranking', net_qid, statements)
+        self.wh.upsert_statements('update from IHR country ranking', 
+                net_qid, statements, asynchronous=False)
         
 # Main program
 if __name__ == '__main__':

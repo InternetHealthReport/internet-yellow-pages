@@ -313,7 +313,8 @@ class Wikihandy(object):
 
     @decorators.thread_safe
     def upsert_statements(self, summary, item_id, statements, commit=True, 
-            checkRefURL=True, checkSource=False, delete_ref_url=None):
+            checkRefURL=True, checkSource=False, delete_ref_url=None,
+            asynchronous=True):
         """
         Update statements that have the same reference URLs or create new
         statements. All of this in only one or two API calls.
@@ -424,7 +425,7 @@ class Wikihandy(object):
 
         # Commit changes
         if commit and item is not None:
-            self.editEntity(item, all_updated_claims, summary )
+            self.editEntity(item, all_updated_claims, summary, asynchronous=asynchronous)
             claims_to_remove = [claim for claims_list in selected_claims.values()
                                     for claim in claims_list]
             if claims_to_remove:
