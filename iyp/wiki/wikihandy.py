@@ -44,7 +44,7 @@ class Wikihandy(object):
         self.sparql = SPARQLWrapper(sparql)
         self.label_pid, self.label_qid = self.id4alllabels()
         # TODO this is not neded?? already cached by pywikibot
-        self.cache = {}
+        #self.cache = {}
         self.pending_requests = 0
 
         if preload:
@@ -78,16 +78,18 @@ class Wikihandy(object):
         """ Return the first item with the given label."""
 
         if qid is not None:
-            if qid not in self.cache:
-                self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
-            return self.cache[qid]
+            #if qid not in self.cache:
+                #self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
+            #return self.cache[qid]
+            return pywikibot.ItemPage(self.repo, qid)
 
         if label is not None:
             if label in self.label_qid:
                 qid = self.label_qid[label]
-                if qid not in self.cache: 
-                    self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
-                return self.cache[qid]
+                #if qid not in self.cache: 
+                    #self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
+                #return self.cache[qid]
+                return pywikibot.ItemPage(self.repo, qid)
 
         return None
 
@@ -103,16 +105,18 @@ class Wikihandy(object):
         """ Return the fisrt property with the given label"""
 
         if pid is not None:
-            if pid not in self.cache:
-                self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
-            return [self.cache[pid]]
+            #if pid not in self.cache:
+                #self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
+            #return [self.cache[pid]]
+            return [pywikibot.ItemPage(self.repo, pid)]
 
         if label is not None:
             if label in self.label_pid:
                 pid = self.label_pid[label]
-                if pid not in self.cache: 
-                    self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
-                return [self.cache[pid]]
+                #if pid not in self.cache: 
+                    #self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
+                #return [self.cache[pid]]
+                return [pywikibot.ItemPage(self.repo, pid)]
 
         return None
 
@@ -144,7 +148,7 @@ class Wikihandy(object):
 
         # Keep it in the cache
         self.label_pid[label] = pid
-        self.cache[pid] = new_prop
+        #self.cache[pid] = new_prop
 
         return pid 
 
@@ -182,7 +186,7 @@ class Wikihandy(object):
 
         # Keep it in the cache
         self.label_qid[label] = qid
-        self.cache[qid] = new_item
+        #self.cache[qid] = new_item
 
         return qid
 
