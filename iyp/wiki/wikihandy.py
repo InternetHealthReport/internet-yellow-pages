@@ -844,30 +844,27 @@ class Wikihandy(object):
         items = {}
         results = []
 
-        # Load cached data if available
-        # TODO remove this or uncomment, dump line below
-        if False: #os.path.exists('.wikihandy_label2id.json'):
-            results = json.load(open('.wikihandy_label2id.json','r'))
-        else:
-            # FIXME: this query ignores item that don't have 'instance of'
-            # property?
-            QUERY="""SELECT ?item ?itemLabel
-                WHERE { 
-                    ?item rdfs:label ?itemLabel. 
+        # Query Sparql for label of items that are not AS, prefix, domain
+        QUERY="""SELECT ?item ?itemLabel
+            WHERE { 
+                ?item rdfs:label ?itemLabel. 
+                OPTIONAL{
                     ?item wdt:%s ?instance.
-                    FILTER(?instance NOT IN (wd:%s, wd:%s, wd:%s))
-                } """ % (
-                        self.label2id('instance of'), 
-                        self.label2id('autonomous system'),
-                        self.label2id('IP routing prefix'),
-                        self.label2id('domain name'),
-                        ) 
+                }
+                FILTER( !bound(?instance) || ?instance NOT IN (wd:%s, wd:%s, wd:%s))
+                
+            } """ % (
+                    self.label2id('instance of'), 
+                    self.label2id('autonomous system'),
+                    self.label2id('IP routing prefix'),
+                    self.label2id('domain name'),
+                    ) 
 
-            # Fetch existing entities
-            self.sparql.setQuery(QUERY)
-            self.sparql.setReturnFormat(JSON)
-            results = self.sparql.query().convert()
-            #json.dump(results, open('.wikihandy_label2id.json','w'))
+        print(QUERY)
+        # Fetch existing entities
+        self.sparql.setQuery(QUERY)
+        self.sparql.setReturnFormat(JSON)
+        results = self.sparql.query().convert()
         
         for res in results['results']['bindings']:
             id = res['item']['value'].rpartition('/')[2]
@@ -881,7 +878,7 @@ class Wikihandy(object):
                 if label not in items:
                     items[label] = id
 
-        logging.info('Wikihandy: loaded {len(properties)} PIDs and {len(items)} QIDs')
+        logging.info(f'Wikihandy: loaded {len(properties)} PIDs and {len(items)} QIDs')
 
         return properties, items
 

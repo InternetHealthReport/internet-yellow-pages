@@ -52,7 +52,7 @@ class Crawler(object):
                 (self.wh.get_pid('point in time'), today),
                 ]
 
-            country_qid = self.wh.get_qid(country.name)
+            country_qid = self.wh.country2qid(country.name)
             if country_qid is not None:
                 self.qualifiers = [ (self.wh.get_pid('country'), country_qid) ]
             else:
