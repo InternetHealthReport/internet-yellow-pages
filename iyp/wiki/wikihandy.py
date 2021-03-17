@@ -733,7 +733,6 @@ class Wikihandy(object):
                     self.get_qid('domain name') , 
                   )
 
-            print(QUERY)
             self.sparql.setQuery(QUERY)
             self.sparql.setReturnFormat(JSON)
             results = self.sparql.query().convert()['results']
