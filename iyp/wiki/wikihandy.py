@@ -15,8 +15,9 @@ from iyp.wiki import decorators
 DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
-MAX_PENDING_REQUESTS = 100
-MAX_CLAIM_EDIT = 500
+MAX_PENDING_REQUESTS = 0
+MAX_CLAIM_EDIT = 300
+MAX_CLAIM_REMOVE = 500
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
@@ -425,13 +426,15 @@ class Wikihandy(object):
 
         # Commit changes
         if commit and item is not None:
+
             self.editEntity(item, all_updated_claims, summary, asynchronous=asynchronous)
+
             claims_to_remove = [claim for claims_list in selected_claims.values()
                                     for claim in claims_list]
             if claims_to_remove:
-                if len(claims_to_remove) > MAX_CLAIM_EDIT:
+                if len(claims_to_remove) > MAX_CLAIM_REMOVE:
                     # Remove in batches if there is too many to do
-                    batch_size = MAX_CLAIM_EDIT - 1
+                    batch_size = MAX_CLAIM_REMOVE - 1
                     for i in range(0, len(claims_to_remove), batch_size):
                         batch = claims_to_remove[i:min(i+batch_size, len(claims_to_remove))]
                         item.removeClaims( batch )
@@ -460,6 +463,7 @@ class Wikihandy(object):
                 return
 
             # API limits the number of claims to 500
+            # and 2MB
             if len(claims) > MAX_CLAIM_EDIT:
                 batch_size = MAX_CLAIM_EDIT - 1
                 self.editEntity(entity, claims[batch_size:],summary, asynchronous)
@@ -860,7 +864,6 @@ class Wikihandy(object):
                     self.label2id('domain name'),
                     ) 
 
-        print(QUERY)
         # Fetch existing entities
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)
