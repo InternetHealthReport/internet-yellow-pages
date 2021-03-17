@@ -33,11 +33,15 @@ class Crawler(object):
         self.rs_asn_qid = self.wh.asn2qid(self.rs_config['asn'], create=True)
 
 
-    def fetch(self, url):
+    def fetch(self, url, nbtrial=0):
         req = requests.get( url )
         if req.status_code != 200:
-            print('Error while fetching data: ', url)
-            return defaultdict(list)
+            # Try five times then give up
+            if nbtrial < 5:
+                return self.fetch(url, nbtrial+1)
+            else:
+                print(f'Error while fetching data: {url}')
+                return defaultdict(list)
         return json.loads(req.text)
 
 
@@ -63,10 +67,12 @@ class Crawler(object):
             self.url_neighbor = URL_NEIGHBOR.format(rs=rs['id'])
             self.reference_neighbor = [
                 (self.wh.get_pid('source'), self.org_qid),
-                (self.wh.get_pid('managed by'), self.rs_qid),
                 (self.wh.get_pid('reference URL'), self.url_neighbor),
                 (self.wh.get_pid('point in time'), self.wh.today()),
                 ]
+            self.qualifier_neighbor = [ 
+                (self.wh.get_pid('managed by'), self.rs_qid),
+                    ]
 
             neighbors = self.fetch(self.url_neighbor)['neighbours']
             for neighbor in neighbors:
@@ -110,7 +116,8 @@ class Crawler(object):
         """Update AS neighbor data"""
 
         # Properties
-        statements = [ [ self.wh.get_pid('external ID'), neighbor['id'], self.reference_neighbor] ]
+        statements = [ [ self.wh.get_pid('external ID'), neighbor['id'], 
+            self.reference_neighbor, self.qualifier_neighbor] ]
         asn_qid = self.wh.asn2qid(neighbor['asn'], create=True) 
         self.wh.upsert_statements('update from route server API', asn_qid, statements)
 
