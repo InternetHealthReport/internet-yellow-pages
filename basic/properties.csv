@@ -29,3 +29,4 @@ end time,"time an item ends to exist or a statement ends being valid",to|ending|
 maxLength, "the maxLength specifies the maximum length of IP address prefix that the AS is authorized to advertise",,quantity
 forward DNS, "IP address or prefix obtained from a DNS resolution of the item or one of its hosts",,wikibase-item
 reverse DNS, "domain name or hostname obtained from a DNS PTR record for the item or its IP addresses",,wikibase-item
+imported from, "AS from which a route is received",,wikibase-item
