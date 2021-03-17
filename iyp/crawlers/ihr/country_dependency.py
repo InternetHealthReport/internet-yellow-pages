@@ -1,6 +1,8 @@
 import sys
 import logging
 import requests
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 import json
 from iyp.wiki.wikihandy import Wikihandy
 import iso3166
@@ -22,22 +24,28 @@ class Crawler(object):
         self.org_qid = self.wh.get_qid(ORG)
         self.countries = iso3166.countries_by_alpha2
 
+        # Session object to fetch peeringdb data
+        retries = Retry(total=5,
+                backoff_factor=0.1,
+                status_forcelist=[ 104, 500, 502, 503, 504 ])
+
+        self.http_session = requests.Session()
+        self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
+
     def run(self):
         """Fetch data from API and push to wikibase. """
 
-        self.wh.login() # Login once for all threads
-
         for cc, country in self.countries.items():
-            today = self.wh.today()
+            # Query IHR
             self.url = URL_API.format(country=cc)
-            ### TODO TODO TODO remove this hack
-            self.urltmp = self.url+'&timebin=2021-03-02T00:00'
-            req = requests.get( self.urltmp )
+            req = self.http_session.get( self.url )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
             data = json.loads(req.text)
             ranking = data['results']
 
+            # Setup references
+            today = self.wh.today()
             self.references = [
                 (self.wh.get_pid('source'), self.org_qid),
                 (self.wh.get_pid('reference URL'), self.url),
