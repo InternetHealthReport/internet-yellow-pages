@@ -17,7 +17,6 @@ DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
 MAX_PENDING_REQUESTS = 0
 MAX_CLAIM_EDIT = 300
-MAX_CLAIM_REMOVE = 500
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 
@@ -44,7 +43,7 @@ class Wikihandy(object):
         self.sparql = SPARQLWrapper(sparql)
         self.label_pid, self.label_qid = self.id4alllabels()
         # TODO this is not neded?? already cached by pywikibot
-        #self.cache = {}
+        self.cache = {}
         self.pending_requests = 0
 
         if preload:
@@ -78,18 +77,16 @@ class Wikihandy(object):
         """ Return the first item with the given label."""
 
         if qid is not None:
-            #if qid not in self.cache:
-                #self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
-            #return self.cache[qid]
-            return pywikibot.ItemPage(self.repo, qid)
+            if qid not in self.cache:
+                self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
+            return self.cache[qid]
 
         if label is not None:
             if label in self.label_qid:
                 qid = self.label_qid[label]
-                #if qid not in self.cache: 
-                    #self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
-                #return self.cache[qid]
-                return pywikibot.ItemPage(self.repo, qid)
+                if qid not in self.cache: 
+                    self.cache[qid] = pywikibot.ItemPage(self.repo, qid)
+                return self.cache[qid]
 
         return None
 
@@ -105,18 +102,16 @@ class Wikihandy(object):
         """ Return the fisrt property with the given label"""
 
         if pid is not None:
-            #if pid not in self.cache:
-                #self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
-            #return [self.cache[pid]]
-            return [pywikibot.ItemPage(self.repo, pid)]
+            if pid not in self.cache:
+                self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
+            return [self.cache[pid]]
 
         if label is not None:
             if label in self.label_pid:
                 pid = self.label_pid[label]
-                #if pid not in self.cache: 
-                    #self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
-                #return [self.cache[pid]]
-                return [pywikibot.ItemPage(self.repo, pid)]
+                if pid not in self.cache: 
+                    self.cache[pid] = pywikibot.PropertyPage(self.repo, pid)
+                return [self.cache[pid]]
 
         return None
 
@@ -148,7 +143,7 @@ class Wikihandy(object):
 
         # Keep it in the cache
         self.label_pid[label] = pid
-        #self.cache[pid] = new_prop
+        self.cache[pid] = new_prop
 
         return pid 
 
@@ -186,7 +181,7 @@ class Wikihandy(object):
 
         # Keep it in the cache
         self.label_qid[label] = qid
-        #self.cache[qid] = new_item
+        self.cache[qid] = new_item
 
         return qid
 
@@ -430,15 +425,13 @@ class Wikihandy(object):
 
         # Commit changes
         if commit and item is not None:
-
             self.editEntity(item, all_updated_claims, summary, asynchronous=asynchronous)
-
             claims_to_remove = [claim for claims_list in selected_claims.values()
                                     for claim in claims_list]
             if claims_to_remove:
-                if len(claims_to_remove) > MAX_CLAIM_REMOVE:
+                if len(claims_to_remove) > MAX_CLAIM_EDIT:
                     # Remove in batches if there is too many to do
-                    batch_size = MAX_CLAIM_REMOVE - 1
+                    batch_size = MAX_CLAIM_EDIT - 1
                     for i in range(0, len(claims_to_remove), batch_size):
                         batch = claims_to_remove[i:min(i+batch_size, len(claims_to_remove))]
                         item.removeClaims( batch )
@@ -467,7 +460,6 @@ class Wikihandy(object):
                 return
 
             # API limits the number of claims to 500
-            # and 2MB
             if len(claims) > MAX_CLAIM_EDIT:
                 batch_size = MAX_CLAIM_EDIT - 1
                 self.editEntity(entity, claims[batch_size:],summary, asynchronous)
