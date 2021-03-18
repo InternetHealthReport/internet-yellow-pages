@@ -3,6 +3,8 @@ import logging
 import requests
 import json
 from collections import defaultdict
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from iyp.wiki.wikihandy import Wikihandy
 
 # URL to the API
@@ -17,6 +19,14 @@ class Crawler(object):
     def __init__(self):
         """Initialize wikihandy """
     
+        # Session object to fetch peeringdb data
+        retries = Retry(total=5,
+                backoff_factor=0.1,
+                status_forcelist=[ 104, 500, 502, 503, 504 ])
+
+        self.http_session = requests.Session()
+        self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
+
         # Helper for wiki access
         self.wh = Wikihandy()
 
@@ -34,7 +44,7 @@ class Crawler(object):
 
 
     def fetch(self, url, nbtrial=0):
-        req = requests.get( url )
+        req = self.http_session.get( url )
         if req.status_code != 200:
             # Try five times then give up
             if nbtrial < 5:
@@ -48,8 +58,6 @@ class Crawler(object):
     def run(self):
         """Fetch data from API and push to wikibase. """
 
-        self.wh.login() # Login once for all threads
-
         routeservers = self.fetch(URL_RS)['routeservers']
 
         self.reference = [
@@ -59,6 +67,8 @@ class Crawler(object):
             ]
 
         for rs in routeservers:
+            if 'IPv6' not in rs['name']:
+                continue
             sys.stderr.write(f'Processing route server {rs["name"]}\n')
             # Register/update route server 
             self.update_rs(rs)
@@ -86,6 +96,10 @@ class Crawler(object):
                     (self.wh.get_pid('point in time'), self.wh.today()),
                     ]
 
+                asn_qid = self.wh.asn2qid(neighbor['asn'], create=True) 
+                self.qualifier_route = [ 
+                        (self.wh.get_pid('imported from'), asn_qid)
+                        ]
 
                 routes = self.fetch(self.url_route)
                 nb_pages = routes['pagination']['total_pages']
@@ -106,7 +120,9 @@ class Crawler(object):
 
         asn_qid = self.wh.asn2qid(route['bgp']['as_path'][-1], create=True) 
         # Properties
-        statements = [ [ self.wh.get_pid('appeared in'), self.rs_qid, self.reference_route] ]
+        statements = [ 
+                [ self.wh.get_pid('appeared in'), self.rs_qid, 
+                    self.reference_route, self.qualifier_route] ]
         statements.append( [self.wh.get_pid('announced by'), asn_qid, self.reference_route]) 
         prefix_qid = self.wh.prefix2qid(route['network'], create=True) 
         self.wh.upsert_statements('update from route server API', prefix_qid, statements)
