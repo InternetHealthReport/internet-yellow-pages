@@ -110,7 +110,7 @@ class Crawler(object):
                         ]
 
                 routes = self.fetch(self.url_route)
-                if route is None:
+                if routes is None:
                     continue
                 nb_pages = routes['pagination']['total_pages']
                 # Imported routes
