@@ -15,7 +15,7 @@ from iyp.wiki import decorators
 DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
-MAX_PENDING_REQUESTS = 0
+MAX_PENDING_REQUESTS = 100
 MAX_CLAIM_EDIT = 300
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
