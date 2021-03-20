@@ -3,6 +3,9 @@ import logging
 import requests
 import json
 from collections import defaultdict
+import urllib3
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from iyp.wiki.wikihandy import Wikihandy
 
 # URL to the API
@@ -17,6 +20,14 @@ class Crawler(object):
     def __init__(self):
         """Initialize wikihandy """
     
+        # Session object to fetch peeringdb data
+        retries = Retry(total=10,
+                backoff_factor=0.1,
+                status_forcelist=[ 104, 500, 502, 503, 504 ])
+
+        self.http_session = requests.Session()
+        self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
+
         # Helper for wiki access
         self.wh = Wikihandy()
 
@@ -33,22 +44,21 @@ class Crawler(object):
         self.rs_asn_qid = self.wh.asn2qid(self.rs_config['asn'], create=True)
 
 
-    def fetch(self, url, nbtrial=0):
-        req = requests.get( url )
+    def fetch(self, url):
+        try:
+            req = self.http_session.get( url )
+        except urllib3.exceptions.MaxRetryError as e:
+            logging.error(f"Error could not fetch: {url}")
+            logging.error(e)
+            return None
+
         if req.status_code != 200:
-            # Try five times then give up
-            if nbtrial < 5:
-                return self.fetch(url, nbtrial+1)
-            else:
-                print(f'Error while fetching data: {url}')
-                return defaultdict(list)
+                return None
         return json.loads(req.text)
 
 
     def run(self):
         """Fetch data from API and push to wikibase. """
-
-        self.wh.login() # Login once for all threads
 
         routeservers = self.fetch(URL_RS)['routeservers']
 
@@ -59,6 +69,10 @@ class Crawler(object):
             ]
 
         for rs in routeservers:
+            # FIXME remove this: for now check only v6 not in FRA 
+            if 'IPv6' not in rs['name'] or 'fra.de-cix' in rs['name']:
+                continue
+
             sys.stderr.write(f'Processing route server {rs["name"]}\n')
             # Register/update route server 
             self.update_rs(rs)
@@ -76,6 +90,10 @@ class Crawler(object):
 
             neighbors = self.fetch(self.url_neighbor)['neighbours']
             for neighbor in neighbors:
+                # FIXME remove this: for now avoid HE
+                if neighbor['asn'] == 6939:
+                    continue
+
                 sys.stderr.write(f'Processing neighbor {neighbor["id"]}\n')
                 self.update_neighbor(neighbor)
 
@@ -86,8 +104,14 @@ class Crawler(object):
                     (self.wh.get_pid('point in time'), self.wh.today()),
                     ]
 
+                asn_qid = self.wh.asn2qid(neighbor['asn'], create=True) 
+                self.qualifier_route = [ 
+                        (self.wh.get_pid('imported from'), asn_qid)
+                        ]
 
                 routes = self.fetch(self.url_route)
+                if routes is None:
+                    continue
                 nb_pages = routes['pagination']['total_pages']
                 # Imported routes
                 for p in range(nb_pages):
@@ -106,7 +130,9 @@ class Crawler(object):
 
         asn_qid = self.wh.asn2qid(route['bgp']['as_path'][-1], create=True) 
         # Properties
-        statements = [ [ self.wh.get_pid('appeared in'), self.rs_qid, self.reference_route] ]
+        statements = [ 
+                [ self.wh.get_pid('appeared in'), self.rs_qid, 
+                    self.reference_route, self.qualifier_route] ]
         statements.append( [self.wh.get_pid('announced by'), asn_qid, self.reference_route]) 
         prefix_qid = self.wh.prefix2qid(route['network'], create=True) 
         self.wh.upsert_statements('update from route server API', prefix_qid, statements)
