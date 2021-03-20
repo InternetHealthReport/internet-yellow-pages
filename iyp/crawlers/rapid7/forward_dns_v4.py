@@ -115,8 +115,8 @@ class Crawler(object):
         sys.stderr.write(f'Found {len(self.tld_pfx)} domain names in Rapid7 dataset out of the {len(self.wh._domain2qid)} domain names in wiki\n')
         # push data to wiki
         for i, (tld, pfxs) in enumerate(self.tld_pfx.items()):
+            sys.stderr.write(f'\33[2K\rUpdating iyp... {i+1}/{len(self.tld_pfx)}\t{tld} {len(pfxs)} prefixes')
             self.update(tld, pfxs)
-            sys.stderr.write(f'\rUpdating iyp... {i+1}/{len(self.tld_pfx)}')
             
         sys.stderr.write('\n')
 
@@ -134,8 +134,13 @@ class Crawler(object):
         # Commit to wikibase
         # Get the domain name QID  and commit changes
         dn_qid = self.wh.domain2qid(tld)
-        # TODO remove old data with URL regex
-        self.wh.upsert_statements('update from Rapid7 forward DNS data', dn_qid, statements )
+        try:
+            # TODO remove old data with URL regex
+            self.wh.upsert_statements('update from Rapid7 forward DNS data', dn_qid, statements )
+        except Exception as e:
+            logging.error(f"Could not update domain {dn_qid}")
+            logging.error(str(e))
+
         
 # Main program
 if __name__ == '__main__':

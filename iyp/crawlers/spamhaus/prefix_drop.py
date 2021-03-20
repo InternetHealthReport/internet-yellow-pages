@@ -7,9 +7,12 @@ from iyp.wiki.wikihandy import Wikihandy
 URL = 'https://www.spamhaus.org/drop/drop.txt'
 
 class Crawler(object):
-    def __init__(self):
+    def __init__(self, url=URL):
         """
         """
+
+        #API endpoint
+        self.url = url
     
         # Helper for wiki access
         self.wh = Wikihandy(preload=True)
@@ -44,7 +47,7 @@ class Crawler(object):
         today = self.wh.today()
         self.reference = [
                 (self.wh.get_pid('source'), self.spamhaus_qid),
-                (self.wh.get_pid('reference URL'), URL),
+                (self.wh.get_pid('reference URL'), self.url),
                 (self.wh.get_pid('point in time'), today)
                 ]
 
@@ -53,7 +56,7 @@ class Crawler(object):
     def run(self):
         """Fetch blocklist from Spamhaus and push to wikibase. """
 
-        req = requests.get(URL)
+        req = requests.get(self.url)
         if req.status_code != 200:
             sys.exit('Error while fetching the blocklist')
 
@@ -97,5 +100,5 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler()
+    crawler = Crawler(URL)
     crawler.run()
