@@ -15,7 +15,7 @@ from iyp.wiki import decorators
 DEFAULT_WIKI_SPARQL = 'http://iyp-proxy.iijlab.net/bigdata/namespace/wdq/sparql'
 DEFAULT_WIKI_PROJECT = 'iyp'
 DEFAULT_LANG = 'en'
-MAX_PENDING_REQUESTS = 0
+MAX_PENDING_REQUESTS = 250
 MAX_CLAIM_EDIT = 300
 
 EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
@@ -454,7 +454,7 @@ class Wikihandy(object):
 
         if isinstance(data, list):
             claims = data
-            data = { 'claims':claims }
+            data = { 'claims': claims }
             if len(claims) == 0:
                 # Nothing to do
                 return
@@ -463,7 +463,7 @@ class Wikihandy(object):
             if len(claims) > MAX_CLAIM_EDIT:
                 batch_size = MAX_CLAIM_EDIT - 1
                 self.editEntity(entity, claims[batch_size:],summary, asynchronous)
-                claims = claims[:batch_size]
+                data['claims'] = claims[:batch_size]
 
         if asynchronous and self.pending_requests < MAX_PENDING_REQUESTS:
             self.pending_requests += 1
