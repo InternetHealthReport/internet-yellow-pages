@@ -1,7 +1,6 @@
 import sys
 import pywikibot
 from SPARQLWrapper import SPARQLWrapper, JSON
-import json
 import logging
 import iso3166
 import arrow

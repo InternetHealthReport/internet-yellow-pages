@@ -39,7 +39,7 @@ class ip2asn(object):
         """ % (
                 self.wh.get_pid('instance of'), 
                 self.wh.get_qid('IP routing prefix') , 
-                self.wh.get_pid('announced by') , 
+                self.wh.get_pid('originated by') , 
                 self.wh.get_pid('autonomous system number') , 
                 )
         # Query wiki

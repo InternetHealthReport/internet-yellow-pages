@@ -133,7 +133,7 @@ class Crawler(object):
         statements = [ 
                 [ self.wh.get_pid('appeared in'), self.rs_qid, 
                     self.reference_route, self.qualifier_route] ]
-        statements.append( [self.wh.get_pid('announced by'), asn_qid, self.reference_route]) 
+        statements.append( [self.wh.get_pid('originated by'), asn_qid, self.reference_route]) 
         prefix_qid = self.wh.prefix2qid(route['network'], create=True) 
         self.wh.upsert_statements('update from route server API', prefix_qid, statements)
 
