@@ -1,6 +1,6 @@
-# internet-yellow-pages
+# Internet Yellow Pages
 
-## Quick-start
+## Quick-start to push/pull data
 - [Install and setup pywikibot](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/documentation/install_pywikibot.md)
 - Install required lib
 ```
