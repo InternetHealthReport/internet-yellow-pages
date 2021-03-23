@@ -27,15 +27,15 @@ python scripts/spamhaus_asn_drop.py
 - wikidata homepage: https://wikiba.se/
 
 ## Candidate data sources
-- RIS
+- RIS peers
 - Atlas
 - Regulators: start with ARCEP's open data
-- peeringdb
 - openIPmap
 - AS Hegemony
-- Country hegemony
 - dns tags
-- rpki
+- CERT/ NOG per countries
+- mobile prefixes (Japan)
+- 
 
 
 ## Examples:
