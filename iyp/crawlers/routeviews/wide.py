@@ -64,7 +64,7 @@ class Crawler(object):
         # set origin AS
         for asn in origin_as:
             as_qid = self.wh.asn2qid(asn, create=True) 
-            statements.append( [self.wh.get_pid('announced by'), as_qid, self.reference]) 
+            statements.append( [self.wh.get_pid('originated by'), as_qid, self.reference]) 
 
         # Commit to wikibase
         # Get the prefix QID (create if prefix is not yet registered) and commit changes
