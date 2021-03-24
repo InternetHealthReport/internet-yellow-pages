@@ -84,6 +84,11 @@ class Cleaner(object):
 
                         claims_to_remove.append(claim2)
 
+                        # Avoid deleting more than 500 claims at once
+                        if len(claims_to_remove) > 300:
+                            item.removeClaims(claims_to_remove)
+                            claims_to_remove = []
+
                 if len(claims_to_remove) > 0:
                     # Remove claims
                     item.removeClaims(claims_to_remove)
