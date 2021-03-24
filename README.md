@@ -1,6 +1,6 @@
-# internet-yellow-pages
+# Internet Yellow Pages
 
-## Quick-start
+## Quick-start to push/pull data
 - [Install and setup pywikibot](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/documentation/install_pywikibot.md)
 - Install required lib
 ```
@@ -27,15 +27,15 @@ python scripts/spamhaus_asn_drop.py
 - wikidata homepage: https://wikiba.se/
 
 ## Candidate data sources
-- RIS
+- RIS peers
 - Atlas
 - Regulators: start with ARCEP's open data
-- peeringdb
 - openIPmap
 - AS Hegemony
-- Country hegemony
 - dns tags
-- rpki
+- CERT/ NOG per countries
+- mobile prefixes (Japan)
+- 
 
 
 ## Examples:
