@@ -3,10 +3,20 @@ import logging
 import requests
 import json
 from collections import defaultdict
-import urllib3
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from iyp.wiki.wikihandy import Wikihandy
+
+# TODO do prefix lookups before updating wiki 
+# (e.g. https://lg.de-cix.net/api/v1/lookup/prefix?q=217.115.0.0)
+# so we can add all information at once.
+# TODO keep track of which prefixes have been added and skip the lookup for
+# already seen prefixes
+# TODO keep track of prefixes per routeserver so we might not even have to do
+# the neighbor query if we already saw all exported prefixes (e.g. google)
+
+# TODO config should be passed to the __init__ method so we can make different
+# configs for different IXP
 
 # URL to the API
 URL_CONFIG = 'https://lg.de-cix.net/api/v1/config'
@@ -47,7 +57,7 @@ class Crawler(object):
     def fetch(self, url):
         try:
             req = self.http_session.get( url )
-        except urllib3.exceptions.MaxRetryError as e:
+        except requests.exceptions.RetryError as e:
             logging.error(f"Error could not fetch: {url}")
             logging.error(e)
             return None
@@ -68,11 +78,8 @@ class Crawler(object):
             (self.wh.get_pid('point in time'), self.wh.today()),
             ]
 
+        # For each routeserver
         for rs in routeservers:
-            # FIXME remove this: for now check only v6 not in FRA 
-            if 'IPv6' not in rs['name'] or 'fra.de-cix' in rs['name']:
-                continue
-
             sys.stderr.write(f'Processing route server {rs["name"]}\n')
             # Register/update route server 
             self.update_rs(rs)
@@ -90,9 +97,6 @@ class Crawler(object):
 
             neighbors = self.fetch(self.url_neighbor)['neighbours']
             for neighbor in neighbors:
-                # FIXME remove this: for now avoid HE
-                if neighbor['asn'] == 6939:
-                    continue
 
                 sys.stderr.write(f'Processing neighbor {neighbor["id"]}\n')
                 self.update_neighbor(neighbor)
