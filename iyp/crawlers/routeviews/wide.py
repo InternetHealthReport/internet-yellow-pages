@@ -1,12 +1,11 @@
 import sys
 import logging
-from datetime import timedelta
 import arrow
-import requests
-import csv
 from iyp.wiki.wikihandy import Wikihandy
 import pybgpstream
 
+# TODO read data from multiple collectors and push all results per prefix
+# at once
 # URL to original data
 URL = 'http://routeviews.org/route-views.wide/bgpdata/'
 
