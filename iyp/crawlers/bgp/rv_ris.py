@@ -29,9 +29,8 @@ class Crawler(object):
         today = arrow.now().replace(hour=0, minute=0)
         start = today.shift(hours=-1)
         end = today.shift(hours=1)
-        print(start.timestamp,',',end.timestamp)
         stream = pybgpstream.BGPStream(
-            from_time=start.timestamp, until_time=end.timestamp,
+            from_time=int(start.timestamp()), until_time=int(end.timestamp()),
             record_type="ribs",
         )
 
