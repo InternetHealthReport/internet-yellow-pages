@@ -7,6 +7,8 @@ from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from iyp.wiki.wikihandy import Wikihandy
 
+# TODO find IXP using route server IP and peeringdb LAN
+
 # TODO do prefix lookups before updating wiki 
 # (e.g. https://lg.de-cix.net/api/v1/lookup/prefix?q=217.115.0.0)
 # so we can add all information at once.
@@ -23,6 +25,7 @@ URL_CONFIG = 'https://lg.de-cix.net/api/v1/config'
 URL_RS = 'https://lg.de-cix.net/api/v1/routeservers'
 URL_NEIGHBOR = 'https://lg.de-cix.net/api/v1/routeservers/{rs}/neighbors'
 URL_ROUTE = 'https://lg.de-cix.net/api/v1/routeservers/{rs}/neighbors/{neighbor}/routes/received'
+
 # Name of the organization providing the data
 ORG = 'DE-CIX Management GmbH'
 

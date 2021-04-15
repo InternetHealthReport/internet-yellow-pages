@@ -23,3 +23,4 @@ Route Views, "project founded by Advanced Network Technology Center at the Unive
 traffic statistics, "URL for public traffic data",traffic data|statistics page,
 route server,"BGP route server is a feature designed for internet exchange (IX) operators that provides an alternative to full eBGP mesh peering among the service providers who have a presence at the IX",routeserver|rs,
 domain name, "identification string that defines a realm of administrative autonomy, authority or control within the Internet",,
+peering LAN, "LAN used for exchanging traffic between multiple organizations, usually managed by an IXP", ,instance of:IP routing prefix

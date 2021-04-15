@@ -7,6 +7,9 @@ import json
 # URL to peeringdb API for exchange points
 URL_PDB_IXS = 'https://peeringdb.com/api/ix'
 
+# API endpoint for LAN prefixes
+URL_PDB_LAN = 'https://peeringdb.com/api/ixlan'
+
 # Label used for the class/item representing the exchange point IDs
 IXID_LABEL = 'PeeringDB IX ID' 
 # Label used for the class/item representing the organization IDs
@@ -34,11 +37,11 @@ class Crawler(object):
         self.orgid2qid = self.wh.extid2qid(label=ORGID_LABEL)
 
         # Added properties will have this reference information
-        today = self.wh.today()
+        self.today = self.wh.today()
         self.reference = [
                 (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB')),
                 (self.wh.get_pid('reference URL'), URL_PDB_IXS),
-                (self.wh.get_pid('point in time'), today)
+                (self.wh.get_pid('point in time'), self.today)
                 ]
 
     def run(self):
@@ -52,7 +55,17 @@ class Crawler(object):
 
         self.wh.login() # Login once for all threads
 
-        for i, res in enumerate(map(self.update_ix, ixs)):
+        for i, ix in enumerate(ixs):
+
+            # Get more info for this IX
+            req = requests.get(f'{URL_PDB_IXS}/{ix["id"]}')
+            if req.status_code != 200:
+                sys.exit('Error while fetching IXs data')
+            ix_info = json.loads(req.text)['data'][0]
+
+            # Update info in wiki
+            self.update_ix(ix_info)
+
             sys.stderr.write(f'\rProcessing... {i+1}/{len(ixs)}')
 
 
@@ -84,12 +97,41 @@ class Crawler(object):
 
         # set traffic webpage 
         if ix['url_stats']:
-            statements.append([ self.wh.get_pid('website'), ix['url_stats'], 
-                self.reference+[ (self.wh.get_pid('instance of'), self.wh.get_qid('traffic statistics')) ]])
+            statements.append([ 
+                self.wh.get_pid('website'), ix['url_stats'],  # statement
+                self.reference,                               # reference 
+                [ (self.wh.get_pid('instance of'), self.wh.get_qid('traffic statistics')), ] # qualifier
+                ])
 
-        # Update name, website, and organization for this IX
         ix_qid = self.ix_qid(ix) 
+        # Update name, website, and organization for this IX
         self.wh.upsert_statements('update peeringDB ixs', ix_qid, statements )
+
+        # update LAN corresponding to this IX
+        if 'ixlan_set' in ix:
+            for ixlan in ix['ixlan_set']:
+                pfx_url = f'{URL_PDB_LAN}/{ixlan["id"]}'
+                pfx_ref = [
+                        (self.wh.get_pid('source'), self.wh.get_qid('PeeringDB')),
+                        (self.wh.get_pid('reference URL'), pfx_url),
+                        (self.wh.get_pid('point in time'), self.today)
+                        ]
+
+                req = requests.get(pfx_url)
+                if req.status_code != 200:
+                    sys.exit('Error while fetching IXs data')
+                lans = json.loads(req.text)['data']
+
+                for lan in lans:
+                    for prefix in lan['ixpfx_set']:
+                        pfx_qid = self.wh.prefix2qid(prefix['prefix'], create=True)
+
+                        pfx_stmts = [ 
+                                [self.wh.get_pid('instance of'), self.wh.get_qid('peering LAN'), pfx_ref],
+                                [self.wh.get_pid('managed by'), ix_qid, pfx_ref]
+                                ]
+
+                        self.wh.upsert_statements('update peeringDB ixlan', pfx_qid, pfx_stmts )
 
         return ix_qid
 

@@ -26,7 +26,7 @@ EXOTIC_CC = {'ZZ': 'unknown country', 'EU': 'Europe', 'AP': 'Asia-Pacific'}
 class Wikihandy(object):
 
     def __init__(self, wikidata_project=DEFAULT_WIKI_PROJECT, lang=DEFAULT_LANG, 
-            sparql=DEFAULT_WIKI_SPARQL, preload=True):
+            sparql=DEFAULT_WIKI_SPARQL, preload=False):
 
         logging.debug('Wikihandy: Enter initialization')
 
