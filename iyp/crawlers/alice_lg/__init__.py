@@ -1,13 +1,12 @@
+
 import sys
 import logging
 import requests
 import json
-from collections import defaultdict
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from iyp.wiki.wikihandy import Wikihandy
-
-# TODO find IXP using route server IP and peeringdb LAN
+from iyp.tools.ip2plan import ip2plan
 
 # TODO do prefix lookups before updating wiki 
 # (e.g. https://lg.de-cix.net/api/v1/lookup/prefix?q=217.115.0.0)
@@ -17,22 +16,19 @@ from iyp.wiki.wikihandy import Wikihandy
 # TODO keep track of prefixes per routeserver so we might not even have to do
 # the neighbor query if we already saw all exported prefixes (e.g. google)
 
-# TODO config should be passed to the __init__ method so we can make different
-# configs for different IXP
-
-# URL to the API
-URL_CONFIG = 'https://lg.de-cix.net/api/v1/config'
-URL_RS = 'https://lg.de-cix.net/api/v1/routeservers'
-URL_NEIGHBOR = 'https://lg.de-cix.net/api/v1/routeservers/{rs}/neighbors'
-URL_ROUTE = 'https://lg.de-cix.net/api/v1/routeservers/{rs}/neighbors/{neighbor}/routes/received'
-
-# Name of the organization providing the data
-ORG = 'DE-CIX Management GmbH'
-
 class Crawler(object):
-    def __init__(self):
-        """Initialize wikihandy """
+    def __init__(self, url):
+        """Initialize wikihandy and http session.
+        url is the API endpoint (e.g. https://lg.de-cix.net/api/v1/)"""
     
+        # URLs to the API
+        self.urls = { 
+            'config':  url+'/config',
+            'routeservers':  url+'/routeservers',
+            'routes':  url+'/routeservers/{rs}/neighbors/{neighbor}/routes/received',
+            'neighbors':  url+'/routeservers/{rs}/neighbors'
+            }
+
         # Session object to fetch peeringdb data
         retries = Retry(total=10,
                 backoff_factor=0.1,
@@ -44,18 +40,10 @@ class Crawler(object):
         # Helper for wiki access
         self.wh = Wikihandy()
 
-        # Added properties will have this additional information
-        self.org_qid = self.wh.get_qid(ORG)
-
-        self.reference_config = [
-            (self.wh.get_pid('source'), self.org_qid),
-            (self.wh.get_pid('reference URL'), URL_RS),
-            (self.wh.get_pid('point in time'), self.wh.today()),
-            ]
-
-        self.rs_config = self.fetch( URL_CONFIG )
+        self.rs_config = self.fetch( self.urls['config'] )
         self.rs_asn_qid = self.wh.asn2qid(self.rs_config['asn'], create=True)
 
+        self.ip2plan = ip2plan(self.wh)
 
     def fetch(self, url):
         try:
@@ -73,22 +61,41 @@ class Crawler(object):
     def run(self):
         """Fetch data from API and push to wikibase. """
 
-        routeservers = self.fetch(URL_RS)['routeservers']
-
-        self.reference = [
-            (self.wh.get_pid('source'), self.org_qid),
-            (self.wh.get_pid('reference URL'), URL_RS),
-            (self.wh.get_pid('point in time'), self.wh.today()),
-            ]
+        routeservers = self.fetch(self.urls['routeservers'])['routeservers']
 
         # For each routeserver
         for rs in routeservers:
             sys.stderr.write(f'Processing route server {rs["name"]}\n')
-            # Register/update route server 
-            self.update_rs(rs)
 
             # route server neighbors
-            self.url_neighbor = URL_NEIGHBOR.format(rs=rs['id'])
+            self.url_neighbor = self.urls['neighbors'].format(rs=rs['id'])
+            neighbors = self.fetch(self.url_neighbor)['neighbours']
+
+            # find corresponding IXP
+            self.org_qid = None
+            self.ix_qid = None
+
+            # Find the peering LAN using neighbors IP addresses
+            for neighbor in neighbors:
+                peering_lan = self.ip2plan.lookup(neighbor['address'])
+                if peering_lan is not None:
+                    self.org_qid = peering_lan['org_qid']
+                    self.ix_qid = peering_lan['ix_qid']
+                    break
+
+            if self.org_qid is None:
+                logging.error(f'Could not find the IXP/organization corresponding to routeserver {rs}.')
+                logging.error("Is the IXP's peering LAN registered in IYP or PeeringDB?")
+                continue
+
+            # Register/update route server 
+            self.reference = [
+                (self.wh.get_pid('source'), self.org_qid),
+                (self.wh.get_pid('reference URL'), self.urls['routeservers']),
+                (self.wh.get_pid('point in time'), self.wh.today()),
+                ]
+            self.update_rs(rs)
+
             self.reference_neighbor = [
                 (self.wh.get_pid('source'), self.org_qid),
                 (self.wh.get_pid('reference URL'), self.url_neighbor),
@@ -98,13 +105,12 @@ class Crawler(object):
                 (self.wh.get_pid('managed by'), self.rs_qid),
                     ]
 
-            neighbors = self.fetch(self.url_neighbor)['neighbours']
             for neighbor in neighbors:
 
                 sys.stderr.write(f'Processing neighbor {neighbor["id"]}\n')
                 self.update_neighbor(neighbor)
 
-                self.url_route = URL_ROUTE.format(rs=rs['id'], neighbor=neighbor['id'])
+                self.url_route = self.urls['routes'].format(rs=rs['id'], neighbor=neighbor['id'])
                 self.reference_route = [
                     (self.wh.get_pid('source'), self.org_qid),
                     (self.wh.get_pid('reference URL'), self.url_route),
@@ -157,17 +163,23 @@ class Crawler(object):
     def update_rs(self, rs):
         """Update route server data or create if it's not already there"""
 
+        reference_config = [
+            (self.wh.get_pid('source'), self.org_qid),
+            (self.wh.get_pid('reference URL'), self.urls['routeservers']),
+            (self.wh.get_pid('point in time'), self.wh.today()),
+            ]
+
         # Properties
         statements = []
 
         # set ASN
-        statements.append( [ self.wh.get_pid('autonomous system number'), str(self.rs_config['asn']) , self.reference_config])
+        statements.append( [ self.wh.get_pid('autonomous system number'), str(self.rs_config['asn']) , reference_config])
 
         # set org
         statements.append( [ self.wh.get_pid('managed by'), self.org_qid, self.reference])
 
-        # set IXP (assumes the rs['group'] is the same as peeringdb ix name)
-        statements.append( [ self.wh.get_pid('part of'), self.wh.get_qid(rs['group']), self.reference])
+        # set IXP 
+        statements.append( [ self.wh.get_pid('part of'), self.ix_qid, self.reference])
 
         # set external id
         statements.append( [ self.wh.get_pid('external ID'), rs['id'], self.reference])
@@ -182,18 +194,3 @@ class Crawler(object):
         self.wh.upsert_statements('update from route server API', self.rs_qid, statements)
 
         
-# Main program
-if __name__ == '__main__':
-
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
-    logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Started: %s" % sys.argv)
-
-    crawler = Crawler()
-    crawler.run()

@@ -41,11 +41,12 @@ class Crawler(object):
             # Extract the prefix and origin ASN
             msg = elem.fields
             prefix = msg['prefix']
-            origin_as = msg['as-path'].split(' ')[-1]
-            if '{' in origin_as:
-                origin_as = origin_as[1:-1].split(',')
+            origin_asn_str = msg['as-path'].split(' ')[-1]
+            origin_asns = []
+            if '{' in origin_asn_str:
+                origin_asns = origin_asn_str[1:-1].split(',')
             else:
-                origin_as = [origin_as]
+                origin_asns = [origin_asn_str]
 
             # Store origin ASN in radix tree
             rnode = rtree.search_exact(prefix)
@@ -53,8 +54,9 @@ class Crawler(object):
                 rnode = rtree.add(prefix)
                 rnode.data['origin'] = defaultdict(set)
 
-            rnode.data['origin'][elem.collector].update(origin_as)
-            sys.stderr.write(f'\rProcessed {i+1} BGP messages')
+            for asn in origin_asns:
+                rnode.data['origin'][asn].add(elem.collector)
+                sys.stderr.write(f'\rProcessed {i+1} BGP messages')
 
         sys.stderr.write(f'\nPushing data to IYP...\n')
 
@@ -65,25 +67,25 @@ class Crawler(object):
             sys.stderr.write(f'\rProcessed {i+1} prefixes')
 
 
-    def update_entry(self, prefix, collector_originasns):
+    def update_entry(self, prefix, originasn_collector):
         """Add the prefix to wikibase if it's not already there and update its properties."""
 
         statements = []
 
         # set origin AS
-        for collector, origin_as in collector_originasns.items():
-            # Added properties will have this additional information
-            url = URL_RV
-            if 'rrc' in collector:
-                url = URL_RIS 
+        for asn, collectors in originasn_collector.items():
+            for collector in collectors:
+                # Added properties will have this additional information
+                url = URL_RV
+                if 'rrc' in collector:
+                    url = URL_RIS 
 
-            self.reference = [
-                    (self.wh.get_pid('source'), self.org_qid),
-                    (self.wh.get_pid('reference URL'), url.format(collector)),
-                    (self.wh.get_pid('point in time'), self.today)
-                    ]
+                self.reference = [
+                        (self.wh.get_pid('source'), self.org_qid),
+                        (self.wh.get_pid('reference URL'), url.format(collector)),
+                        (self.wh.get_pid('point in time'), self.today)
+                        ]
 
-            for asn in origin_as:
                 as_qid = self.wh.asn2qid(asn, create=True) 
                 statements.append( [self.wh.get_pid('originated by'), as_qid, self.reference]) 
 
