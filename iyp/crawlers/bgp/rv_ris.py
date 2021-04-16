@@ -92,7 +92,7 @@ class Crawler(object):
         # Commit to wikibase
         # Get the prefix QID (create if prefix is not yet registered) and commit changes
         prefix_qid = self.wh.prefix2qid(prefix, create=True) 
-        self.wh.upsert_statements('update from Routeviews RIB file', prefix_qid, statements )
+        self.wh.upsert_statements('update from RIS/Routeviews RIBs', prefix_qid, statements )
         
 
 # Main program
