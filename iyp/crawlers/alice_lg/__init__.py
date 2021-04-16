@@ -21,12 +21,15 @@ class Crawler(object):
         """Initialize wikihandy and http session.
         url is the API endpoint (e.g. https://lg.de-cix.net/api/v1/)"""
     
+        if not url.endswith('/'):
+            url = url+'/'
+
         # URLs to the API
         self.urls = { 
-            'config':  url+'/config',
-            'routeservers':  url+'/routeservers',
-            'routes':  url+'/routeservers/{rs}/neighbors/{neighbor}/routes/received',
-            'neighbors':  url+'/routeservers/{rs}/neighbors'
+            'config':  url+'config',
+            'routeservers':  url+'routeservers',
+            'routes':  url+'routeservers/{rs}/neighbors/{neighbor}/routes/received',
+            'neighbors':  url+'routeservers/{rs}/neighbors'
             }
 
         # Session object to fetch peeringdb data
