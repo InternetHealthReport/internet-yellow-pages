@@ -839,13 +839,20 @@ class Wikihandy(object):
                     ?item wdt:%s ?instance.
                 }
                 FILTER( !bound(?instance) || ?instance NOT IN (wd:%s, wd:%s, wd:%s))
+                OPTIONAL{
+                    ?item wdt:%s ?extID.
+                }
+                FILTER( bound(?extID) )
                 
             } """ % (
                     self.label2id('instance of'), 
                     self.label2id('autonomous system'),
                     self.label2id('IP routing prefix'),
                     self.label2id('domain name'),
+                    self.label2id('external ID'), 
                     ) 
+
+        print(QUERY)
 
         # Fetch existing entities
         self.sparql.setQuery(QUERY)

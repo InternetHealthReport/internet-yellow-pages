@@ -3,7 +3,7 @@ import logging
 import requests
 from iyp.wiki.wikihandy import Wikihandy
 
-# URL to Routeview's WIDE collector
+# URL to ASN Drop List
 URL = 'https://www.spamhaus.org/drop/asndrop.txt'
 
 class Crawler(object):

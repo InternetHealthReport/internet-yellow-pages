@@ -30,3 +30,4 @@ maxLength, "the maxLength specifies the maximum length of IP address prefix that
 forward DNS, "IP address or prefix obtained from a DNS resolution of the item or one of its hosts",,wikibase-item
 reverse DNS, "domain name or hostname obtained from a DNS PTR record for the item or its IP addresses",,wikibase-item
 imported from, "AS from which a route is received",,wikibase-item
+tag, "free-form label attached to an entity for the purpose of identification or to give other information.",,wikibase-item

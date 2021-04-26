@@ -7,7 +7,8 @@ from requests.adapters import HTTPAdapter
 from iyp.wiki.wikihandy import Wikihandy
 from iyp.tools.ip2plan import ip2plan
 
-# TODO do prefix lookups before updating wiki 
+# TODO do prefix lookups before updating wiki (for that we also need to
+# register all routeservers before doing prefixes)
 # (e.g. https://lg.de-cix.net/api/v1/lookup/prefix?q=217.115.0.0)
 # so we can add all information at once.
 # TODO keep track of which prefixes have been added and skip the lookup for
@@ -28,7 +29,8 @@ class Crawler(object):
             'config':  url+'config',
             'routeservers':  url+'routeservers',
             'routes':  url+'routeservers/{rs}/neighbors/{neighbor}/routes/received',
-            'neighbors':  url+'routeservers/{rs}/neighbors'
+            'neighbors':  url+'routeservers/{rs}/neighbors',
+            'prefix': url+'lookup/prefix?q={prefix}',
             }
 
         # Session object to fetch peeringdb data
@@ -135,12 +137,19 @@ class Crawler(object):
                         routes = self.fetch(self.url_route+f'?page={p}')
 
                     for i, route in enumerate(routes['imported']):
-                        self.update_route(route,'imported')
+
+# TODO do prefix lookups before updating wiki 
+# (e.g. https://lg.de-cix.net/api/v1/lookup/prefix?q=217.115.0.0)
+# TODO keep track of which prefixes have been added and skip the lookup for
+# already seen prefixes
+# TODO keep track of prefixes per routeserver so we might not even have to do
+# the neighbor query if we already saw all exported prefixes (e.g. google)
+                        self.update_route(route)
                         sys.stderr.write(f'\rProcessing page {p+1}/{nb_pages} {i+1}/{len(routes["imported"])} routes')
 
                 sys.stderr.write('\n')
 
-    def update_route(self, route, status):
+    def update_route(self, route):
         """Update route data"""
 
         asn_qid = self.wh.asn2qid(route['bgp']['as_path'][-1], create=True) 
