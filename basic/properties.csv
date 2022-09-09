@@ -1,5 +1,5 @@
 #label, description, aliases, datatype
-instance of,that class of which this subject is a particular example and member, is a|is an|has class|has type|is a particular|is a specific|is an individual,wikibase-item
+instance of,"that class of which this subject is a particular example and member", is a|is an|has class|has type|is a particular|is a specific|is an individual,wikibase-item
 part of, "object of which the subject is a part (if this subject is already part of object A which is a part of object B then please only make the subject part of object A). Inverse property of 'has part'",component of|in|within|is part of|subgroup of|element of,wikibase-item
 reference URL,"should be used for Internet URLs as references",url|Uniform Resource Locator|web|refURL|ref|ref URL|source URL|website,url
 website,"website associated to the entity",webpage|homepage,url
@@ -31,3 +31,6 @@ forward DNS, "IP address or prefix obtained from a DNS resolution of the item or
 reverse DNS, "domain name or hostname obtained from a DNS PTR record for the item or its IP addresses",,wikibase-item
 imported from, "AS from which a route is received",,wikibase-item
 tag, "free-form label attached to an entity for the purpose of identification or to give other information.",,wikibase-item
+uses, "item or concept used by the subject or in the operation",,wikibase-item
+vantage point, "a position or location from which something is collected or measured",probe|source address,wikibase-item
+target, "a location or item to reach",destination address,wikibase-item

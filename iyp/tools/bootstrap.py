@@ -23,7 +23,10 @@ with open(BASIC_PROPERTY_FNAME, 'r') as fp:
             continue
 
         label, description, aliases, data_type = [col.strip() for col in row]
-        pid = wh.add_property('bootstrap', label, description, aliases, data_type)
+        pid = wh.get_pid(label)
+
+        if pid is None:
+            pid = wh.add_property('bootstrap', label, description, aliases, data_type)
         print(pid, label)
 
 print('Adding items')
@@ -52,10 +55,14 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
 
             claims.append( [ wh.get_pid(property.strip()), wh.get_qid(target), [] ] ) 
 
-        wh.add_item(
-            "bootstrap",
-            label,
-            description,
-            aliases,
-            claims
-            )
+        qid = wh.get_qid(label)
+        if qid is None:
+            wh.add_item(
+                "bootstrap",
+                label,
+                description,
+                aliases,
+                claims
+                )
+        else:
+            wh.upsert_statements('bootstrap', qid, claims)
