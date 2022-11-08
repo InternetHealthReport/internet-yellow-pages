@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-import datetime
+from datetime import datetime, time
 from iyp import IYP
 import bz2
 import json
@@ -17,8 +17,7 @@ class Crawler(object):
         self.reference = {
             'source': 'BGPKIT',
             'reference_url': URL_BGPKIT_AS2REL,
-            'point_in_time': datetime.datetime.utcnow()
-                .replace(hour=0, minute=0, second=0, microsecond=0)
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
 
         # connection to IYP database

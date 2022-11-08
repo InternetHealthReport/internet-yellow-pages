@@ -1,10 +1,8 @@
 import sys
 import logging
 import requests
-import datetime
+from datetime import datetime, time
 from iyp import IYP
-# TODO move iyp to a better place
-#from ...lib.wikihandy import Wikihandy
 
 URL_RIPE_AS_NAME = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 
@@ -15,8 +13,7 @@ class Crawler(object):
         self.reference = {
             'source': 'RIPE NCC',
             'reference_url': URL_RIPE_AS_NAME,
-            'point_in_time': datetime.datetime.utcnow()
-                .replace(hour=0, minute=0, second=0, microsecond=0)
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
 
         # connection to IYP database
