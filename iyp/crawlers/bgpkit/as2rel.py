@@ -5,18 +5,16 @@ from datetime import datetime, time
 from iyp import IYP
 import bz2
 import json
-# TODO move iyp to a better place
-#from ...lib.wikihandy import Wikihandy
 
-URL_BGPKIT_AS2REL = 'https://data.bgpkit.com/as2rel/as2rel-latest.json.bz2'
+URL = 'https://data.bgpkit.com/as2rel/as2rel-latest.json.bz2'
 
 class Crawler(object):
     def __init__(self):
 
-        # Reference information for data pushed to the wikibase
+        # Reference information for data pushed to IYP
         self.reference = {
             'source': 'BGPKIT',
-            'reference_url': URL_BGPKIT_AS2REL,
+            'reference_url': URL,
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
 
@@ -27,7 +25,7 @@ class Crawler(object):
     def run(self):
         """Fetch the AS relationship file from BGPKIT website and process lines one by one"""
 
-        req = requests.get(URL_BGPKIT_AS2REL, stream=True)
+        req = requests.get(URL, stream=True)
         if req.status_code != 200:
             sys.exit('Error while fetching AS relationships')
 
