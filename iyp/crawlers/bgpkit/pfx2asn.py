@@ -7,13 +7,14 @@ import bz2
 import json
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
+ORG = 'BGPKIT'
 
 class Crawler(object):
     def __init__(self):
 
         # Reference information for data pushed to IYP
         self.reference = {
-            'source': 'BGPKIT',
+            'source': ORG,
             'reference_url': URL,
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }

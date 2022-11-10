@@ -6,15 +6,16 @@ from datetime import datetime, time
 from iyp import IYP
 
 # URL to ASRank API
-URL_API = 'https://api.asrank.caida.org/v2/restful/asns/'
+URL = 'https://api.asrank.caida.org/v2/restful/asns/'
+ORG = 'CAIDA'
 
 class Crawler(object):
     def __init__(self):
         """Initialize iyp connection and qualifiers for pushed data"""
     
         self.reference = {
-            'source': 'CAIDA',
-            'reference_url': URL_API,
+            'source': ORG,
+            'reference_url': URL,
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
 
@@ -22,14 +23,14 @@ class Crawler(object):
         self.iyp = IYP()
 
     def run(self):
-        """Fetch networks information from ASRank and push to wikibase. """
+        """Fetch networks information from ASRank and push to IYP. """
 
         self.asrank_qid = self.iyp.get_node('RANKING', {'name': f'CAIDA ASRank'}, create=True)
 
         has_next = True
         i = 0
         while has_next:
-            req = requests.get(URL_API+f'?offset={i}')
+            req = requests.get(URL+f'?offset={i}')
             if req.status_code != 200:
                 sys.exit('Error while fetching data from API')
             

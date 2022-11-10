@@ -6,7 +6,8 @@ from datetime import datetime, time
 from iyp import IYP
 
 # URL to APNIC API
-URL_API = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
+URL = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
+ORG = 'APNIC'
 MIN_POP_PERC = 0.01 # ASes with less population will be ignored
 
 class Crawler(object):
@@ -15,10 +16,10 @@ class Crawler(object):
     
 
         # Added properties will have this additional information
-        self.url = URL_API  # url will change for each country
+        self.url = URL  # url will change for each country
         self.reference = {
-            'source': 'APNIC',
-            'reference_url': URL_API,
+            'source': ORG,
+            'reference_url': URL,
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
 
@@ -38,7 +39,7 @@ class Crawler(object):
             statements = [ ['COUNTRY', self.cc_qid, self.reference] ]
             self.iyp.add_links(self.ranking_qid, statements)
 
-            self.url = URL_API+f'{cc}/{cc}.asns.json?m={MIN_POP_PERC}'
+            self.url = URL+f'{cc}/{cc}.asns.json?m={MIN_POP_PERC}'
             req = requests.get( self.url )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
@@ -65,7 +66,7 @@ class Crawler(object):
             name_qid = self.iyp.get_node('NAME', {'name': asn['autnum']}, create=True) 
             statements.append(['NAME', name_qid, self.reference])
 
-        # set country
+        # set country (APNIC suggest the AS has eyeball in this country)
         if asn['cc']:
             statements.append(
                     [ 'COUNTRY', self.cc_qid, self.reference])
