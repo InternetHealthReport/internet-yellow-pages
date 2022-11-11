@@ -3,7 +3,7 @@ import sys
 import logging
 from collections import defaultdict
 import requests
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from iyp import IYP
 
 # URL to RIPE repository
@@ -22,19 +22,29 @@ class Crawler(object):
             'reference_url': URL,
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
-    
+
+        
+        now = datetime.utcnow()
+        self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
+
+        # Check if today's data is available
+        self.url = f'{URL}/afrinic.tal/{self.date_path}/roas.csv'
+        req = requests.head( self.url )
+        if req.status_code != 200:
+            now -= timedelta(days=1)
+            self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
+            logging.warning("Today's data not yet available!")
+            logging.warning("Using yesterday's data: "+self.date_path)
+
         # connection to IYP database
         self.iyp = IYP()
 
     def run(self):
         """Fetch data from RIPE and push to IYP. """
 
-        now = date.today()
-        today = f'{now.year}/{now.month:02d}/{now.day:02d}'
-
         for tal in TALS:
 
-            self.url = f'{URL}/{tal}/{today}/roas.csv'
+            self.url = f'{URL}/{tal}/{self.date_path}/roas.csv'
             logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get( self.url )
             if req.status_code != 200:
