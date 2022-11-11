@@ -48,7 +48,7 @@ class Crawler(object):
         # Parse given line to get ASN, name, and country code 
         asn, _, name = one_line.partition(',')
 
-        asn_qid = self.iyp.get_node('AS', {'asn': asn}, create=True)
+        asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
         name_qid = self.iyp.get_node('NAME', {'name': name}, create=True)
 
         statements = [ [ 'NAME', name_qid, self.reference ] ] # Set AS name
