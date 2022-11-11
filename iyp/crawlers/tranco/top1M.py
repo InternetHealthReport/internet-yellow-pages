@@ -3,51 +3,30 @@ import logging
 import requests
 from zipfile import ZipFile
 import io
-from iyp.wiki.wikihandy import Wikihandy
+from datetime import datetime, time
+from iyp import IYP
 
 # URL to Tranco top 1M
 URL = 'https://tranco-list.eu/top-1m.csv.zip'
+ORG = 'imec-DistriNet'
 
 class Crawler(object):
     def __init__(self):
-        """Fetch QIDs for Tranco and affiliation (create them if they are not 
-        in the wikibase)."""
+        """IYP and references initialization"""
+
+        self.reference = {
+            'source': ORG,
+            'reference_url': URL,
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+            }
+
+        # connection to IYP database
+        self.iyp = IYP()
     
-        sys.stderr.write('Initialization...\n')
-        # Helper for wiki access
-        self.wh = Wikihandy()
-
-        self.tranco_qid = self.wh.get_qid('Tranco Top 1M',
-            create={                                    # Create it if it doesn't exist
-                'summary': 'add Tranco ranking',         # Commit message
-                'description': 'A Research-Oriented Top Sites Ranking Hardened Against Manipulation',    # Item description
-                'statements': [
-                    [self.wh.get_pid('website'), 'https://tranco-list.eu/'],
-                    [self.wh.get_pid('publication'), 'https://tranco-list.eu/assets/tranco-ndss19.pdf'],
-                    [self.wh.get_pid('source code repository'), 'https://github.com/DistriNet/tranco-list'],
-                    ]
-                })
-
-        self.org_qid =  self.wh.get_qid('imec-DistriNet',
-            create={                                    # Create it if it doesn't exist
-                'summary': 'add Tranco ranking',         # Commit message
-                'description': 'The imec-DistriNet research group is part of the Department of Computer Science at the KU Leuven and part of the imec High Impact Initiative Distributed Trust.',    # Item description
-                'statements': [
-                    [self.wh.get_pid('website'), 'https://distrinet.cs.kuleuven.be/'],
-                    ]
-                })
-
-        # Added properties will have this additional information
-        today = self.wh.today()
-        self.reference = [
-                (self.wh.get_pid('source'), self.org_qid),
-                (self.wh.get_pid('reference URL'), URL),
-                (self.wh.get_pid('point in time'), today)
-                ]
-
-
     def run(self):
-        """Fetch Tranco top 1M and push to wikibase. """
+        """Fetch Tranco top 1M and push to IYP. """
+
+        self.tranco_qid = self.iyp.get_node('RANKING', {'name': f'Tranco top 1M'}, create=True)
 
         sys.stderr.write('Downloading latest list...\n')
         req = requests.get(URL)
@@ -70,24 +49,12 @@ class Crawler(object):
         rank, domain = one_line.split(',')
 
         # set rank
-        statements = [
-                [ self.wh.get_pid('ranking'), 
-                    {
-                        'amount': rank, 
-                        'unit': self.tranco_qid,
-                    },
-                self.reference]
-             ] 
+        statements = [[ 'RANK', self.tranco_qid, self.reference ]]
 
-        # Commit to wikibase
+        # Commit to IYP
         # Get the domain name QID (create if it is not yet registered) and commit changes
-        dn_qid = self.wh.get_qid(domain, create={
-            'summary': 'add Tranco ranking',
-            'statements': [
-                [self.wh.get_pid('instance of'), self.wh.get_qid('domain name')] 
-                ]}
-            ) 
-        self.wh.upsert_statements('update from tranco top 1M', dn_qid, statements )
+        domain_qid = self.iyp.get_node('DOMAIN_NAME', {'name': domain}, create=True) 
+        self.iyp.add_links( domain_qid, statements )
         
 # Main program
 if __name__ == '__main__':

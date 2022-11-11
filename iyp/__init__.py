@@ -101,6 +101,16 @@ class IYP(object):
             " FOR (n:IP) "
             " REQUIRE n.af IS NOT NULL ")
 
+        # Constrains for domain names
+        self.session.run(
+            " CREATE CONSTRAINT DN_UNIQUE_NAME IF NOT EXISTS "
+            " FOR (n:DOMAIN_NAME) "
+            " REQUIRE n.name IS UNIQUE ")
+        self.session.run(
+            " CREATE CONSTRAINT DN_NOTNULL_NAME IF NOT EXISTS "
+            " FOR (n:DOMAIN_NAME) "
+            " REQUIRE n.name IS NOT NULL ")
+
         # Constrains for countries
         self.session.run(
             " CREATE CONSTRAINT COUNTRY_UNIQUE_CC IF NOT EXISTS "
