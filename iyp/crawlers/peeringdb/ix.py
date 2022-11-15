@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import requests
@@ -5,28 +6,48 @@ import json
 from datetime import datetime, time
 from iyp import IYP
 
+# NOTES
+# This script should be executed after peeringdb.org
+
 ORG = 'PeeringDB'
 
 # URL to peeringdb API for exchange points
 URL_PDB_IXS = 'https://peeringdb.com/api/ix?depth=2'
 # API endpoint for LAN prefixes
-URL_PDB_LAN = 'https://peeringdb.com/api/ixlan'
-
+URL_PDB_LANS = 'https://peeringdb.com/api/ixlan?depth=2'
 
 # Label used for nodes representing the exchange point IDs
 IXID_LABEL = 'PEERINGDB_IX_ID' 
 # Label used for nodes representing the organization IDs
 ORGID_LABEL = 'PEERINGDB_ORG_ID' 
+# Label used for the class/item representing the network IDs
+NETID_LABEL = 'PEERINGDB_NET_ID' 
+
+API_KEY = ""
+if os.path.exists('config.json'): 
+    API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
 class Crawler(object):
     def __init__(self):
         """Initialisation for pushing peeringDB IXPs to IYP"""
     
-        self.reference = {
+        self.headers = {"Authorization": "Api-Key " + API_KEY}
+        print(self.headers)
+    
+        self.reference_ix = {
             'source': ORG,
             'reference_url': URL_PDB_IXS,
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
+
+        self.reference_lan = {
+            'source': ORG,
+            'reference_url': URL_PDB_LANS,
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+            }
+
+        # keep track of added networksi
+        self.nets = {}
 
         # connection to IYP database
         self.iyp = IYP()
@@ -35,23 +56,22 @@ class Crawler(object):
         """Fetch ixs information from PeeringDB and push to IYP. 
         Using multiple threads for better performances."""
 
-        req = requests.get(URL_PDB_IXS)
+        req = requests.get( URL_PDB_IXS, headers=self.headers)
         if req.status_code != 200:
-            sys.exit(f'Error while fetching IXs data ({req.status_code})')
-        ixs = json.loads(req.text)['data']
+            sys.exit(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
+        self.ixs = json.loads(req.text)['data']
 
-        for i, ix_info in enumerate(ixs):
+        req = requests.get( URL_PDB_LANS, headers=self.headers)
+        if req.status_code != 200:
+            sys.exit(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
+        self.ixlans = json.loads(req.text)['data']
 
-            # Get more info for this IX
-            #req = requests.get(f'{URL_PDB_IXS}/{ix["id"]}')
-            #if req.status_code != 200:
-            #    sys.exit(f'Error while fetching IXs data ({req.status_code})')
-            #ix_info = json.loads(req.text)['data'][0]
+        for i, ix_info in enumerate(self.ixs):
 
-            # Update info in wiki
+            # Push data to IYP
             self.update_ix(ix_info)
 
-            sys.stderr.write(f'\rProcessing... {i+1}/{len(ixs)}')
+            sys.stderr.write(f'\rProcessing... {i+1}/{len(self.ixs)}')
 
 
     def update_ix(self, ix):
@@ -63,29 +83,68 @@ class Crawler(object):
         # update LAN corresponding to this IX
         if 'ixlan_set' in ix:
             for ixlan in ix['ixlan_set']:
-                pfx_url = f'{URL_PDB_LAN}/{ixlan["id"]}'
-                pfx_ref = {
-                    'source': ORG,
-                    'reference_url': pfx_url,
-                    'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-                    }
+                #req = requests.get( pfx_url, headers=self.headers )
+                #if req.status_code != 200:
+                #    sys.exit(f'Error while fetching IX LAN data ({req.status_code})')
+                lan = self.ixlans[ ixlan["id"] ]
 
-                req = requests.get(pfx_url)
-                if req.status_code != 200:
-                    sys.exit(f'Error while fetching IX LAN data ({req.status_code})')
-                lans = json.loads(req.text)['data']
+                for prefix in lan['ixpfx_set']:
+                    af = 6
+                    if '.' in prefix['prefix']:
+                        af = 4
+                    pfx_qid = self.iyp.get_node(
+                            ['PREFIX', 'PEERING_LAN'], 
+                            {'prefix': prefix['prefix'], 'af': af}, 
+                            create=True
+                            )
 
-                for lan in lans:
-                    for prefix in lan['ixpfx_set']:
-                        pfx_qid = self.iyp.get_node(['PREFIX', 'PEERING_LAN'], {'prefix': prefix['prefix']}, create=True)
+                    pfx_stmts = [ 
+                            ['MANAGED_BY', ix_qid, self.reference_lan]
+                            ]
 
-                        pfx_stmts = [ 
-                                ['MANAGED_BY', ix_qid, pfx_ref]
-                                ]
+                    self.iyp.add_links( pfx_qid, pfx_stmts )
 
-                        self.iyp.add_links( pfx_qid, pfx_stmts )
+                for network in lan['net_set']:
+                    net_qid = self.update_net(network)
+
+                    # Update membership
+                    statements = [ ['MEMBER_OF', ix_qid, self.reference_lan] ]
+                    self.iyp.add_links(net_qid, statements)
 
         return ix_qid
+
+
+    def update_net(self, network):
+        """Add the network to IYP and corresponding properties."""
+
+        if network['id'] not in self.nets:
+            # set property name
+            name_qid = self.iyp.get_node('NAME', {'name': network['name'].strip()}, create=True)
+            statements = [ ['NAME', name_qid, self.reference_lan] ] 
+
+            # link to corresponding organization
+            org_qid = self.iyp.get_node_extid(ORGID_LABEL, network['org_id'])
+            if org_qid is not None:
+                statements.append( ['MANAGED_BY', org_qid, self.reference_lan])
+            else:
+                print('Error this organization is not in IYP: ',network['org_id'])
+
+            # set property website
+            if network['website']:
+                website_qid = self.iyp.get_node('URL', {'url': network['website']}, create=True)
+                statements.append( ['WEBSITE', website_qid, self.reference_lan] )
+
+            netid_qid = self.iyp.get_node(NETID_LABEL, {'id': network['id']}, create=True)
+            statements.append( ['EXTERNAL_ID', netid_qid,  self.reference_lan] )
+
+            # Add this network to IYP
+            net_qid = self.iyp.get_node('AS', {'asn': network['asn']}, create=True)
+            self.iyp.add_links( net_qid, statements)
+
+            # keep track of the node id
+            self.nets[network['id']] = net_qid
+
+        return self.nets[network['id']]
 
 
     def ix_qid(self, ix):
@@ -100,19 +159,19 @@ class Crawler(object):
         # link to corresponding organization
         org_qid = self.iyp.get_node_extid(ORGID_LABEL, ix['org_id'])
         if org_qid is not None:
-            statements.append( ['MANAGED_BY', org_qid, self.reference])
+            statements.append( ['MANAGED_BY', org_qid, self.reference_ix])
         else:
             print('Error this organization is not in IYP: ',ix['org_id'])
 
         # set property country
         if ix['country']:
             country_qid = self.iyp.get_node('COUNTRY', {'country_code': ix['country']}, create=True)
-            statements.append(['COUNTRY', country_qid, self.reference])
+            statements.append(['COUNTRY', country_qid, self.reference_ix])
 
         # set property website
         if ix['website']:
             website_qid = self.iyp.get_node('URL', {'url': ix['website']}, create=True)
-            statements.append( ['WEBSITE', website_qid, self.reference] )
+            statements.append( ['WEBSITE', website_qid, self.reference_ix] )
 
         # set traffic webpage 
         #if ix['url_stats']:
@@ -123,10 +182,10 @@ class Crawler(object):
                 #])
 
         ixid_qid = self.iyp.get_node(IXID_LABEL, {'id': ix['id']}, create=True)
-        statements.append( ['EXTERNAL_ID', ixid_qid, self.reference] )
+        statements.append( ['EXTERNAL_ID', ixid_qid, self.reference_ix] )
 
         name_qid = self.iyp.get_node('NAME', {'name': ix['name'].strip()}, create=True)
-        statements.append( ['NAME', name_qid, self.reference] )
+        statements.append( ['NAME', name_qid, self.reference_ix] )
 
         # Add this ix to the wikibase
         ixp_qid = self.iyp.get_node('IXP', {'name': ix['name']}, create=True)

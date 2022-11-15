@@ -12,7 +12,7 @@ class Crawler(object):
     def __init__(self):
 
         self.headers = {
-            'user-agent': 'IIJ/Internet Health Report - romain@iij.ad.jp'
+            'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
         }
 
         # Reference information for data pushed to the wikibase

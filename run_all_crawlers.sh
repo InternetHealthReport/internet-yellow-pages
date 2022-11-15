@@ -1,11 +1,12 @@
 echo "Starting all crawlers"
 date
 
-# AS Names
+# MANRS
 python -m iyp.crawlers.manrs.members                                                                                                                                                                                                                                                                                                            
 
-# MANRS
+# AS Names
 python -m iyp.crawlers.ripe.as_names                                                                                                                                                                                                                                                                                                            
+python -m iyp.crawlers.bgptools.as_names
 
 # Rankings
 python -m iyp.crawlers.apnic.eyeball
@@ -19,6 +20,13 @@ python -m iyp.crawlers.ripe.roa
 
 # DNS
 python -m iyp.crawlers.tranco.top1M
+
+#BGP.Tools tags
+python -m iyp.crawlers.bgptools.tags
+
+#PeeringDB
+python -m iyp.crawlers.peeringdb.org
+python -m iyp.crawlers.peeringdb.ix
 
 echo "All crawlers finished"
 date

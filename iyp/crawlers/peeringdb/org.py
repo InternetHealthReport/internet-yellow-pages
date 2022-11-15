@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import json
@@ -14,9 +15,15 @@ URL_PDB_ORGS = 'https://peeringdb.com/api/org'
 # Label used for the class/item representing the organization IDs
 ORGID_LABEL = 'PEERINGDB_ORG_ID' 
 
+API_KEY = ""
+if os.path.exists('config.json'): 
+    API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
+
 class Crawler(object):
     def __init__(self):
         """Initialisation for pushing peeringDB organizations to IYP. """
+
+        self.headers = {"Authorization": "Api-Key " + API_KEY}
     
         self.reference = {
             'source': ORG,
@@ -31,7 +38,7 @@ class Crawler(object):
         """Fetch organizations information from PeeringDB and push to IYP"""
 
         sys.stderr.write('Fetching PeeringDB data...\n')
-        req = requests.get(URL_PDB_ORGS)
+        req = requests.get(URL_PDB_ORGS, headers=self.headers)
         if req.status_code != 200:
             sys.exit('Error while fetching AS names')
         organizations = json.loads(req.text)['data']
@@ -56,7 +63,8 @@ class Crawler(object):
             country_qid = self.iyp.get_node('COUNTRY', {'country_code': organization['country']}, create=True)
             statements.append(['COUNTRY', country_qid, self.reference])
 
-        statements.append( ['EXTERNAL_ID', organization['id'], self.reference] )
+        orgid_qid = self.iyp.get_node(ORGID_LABEL, {'id': organization['id']}, create=True)
+        statements.append( ['EXTERNAL_ID', orgid_qid, self.reference] )
 
         # Add this organization to IYP
         org_qid = self.iyp.get_node('ORGANIZATION', {'name':organization['name'].strip()}, create=True)
