@@ -128,15 +128,32 @@ class IYP(object):
 
         prop = format_properties(prop)
 
+        type_str = str(type)
+        if isinstance(type, list):
+            type_str = ':'.join(type)
+
         if create:
-            result = self.session.run(f"MERGE (a:{type} {dict2str(prop)}) RETURN ID(a)").single()
+            result = self.session.run(f"MERGE (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
         else:
-            result = self.session.run(f"MATCH (a:{type} {dict2str(prop)}) RETURN ID(a)").single()
+            result = self.session.run(f"MATCH (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
 
         if result is not None:
             return result[0]
         else:
             return None
+
+    def get_node_extid(self, id_type, id):
+        """Find a node in the graph which has an EXTERNAL_ID relationship with
+        the given ID. Return None if the node does not exist."""
+
+        result = self.session.run(f"MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)").single()
+        print(f"MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)")
+
+        if result is not None:
+            return result[0]
+        else:
+            return None
+
 
 
     def add_links(self, src_node, links):

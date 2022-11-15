@@ -16,7 +16,7 @@ class Crawler(object):
         self.iyp = IYP()
 
         self.manrs_qid = self.iyp.get_node(
-                                        'ORGANISATION', 
+                                        'ORGANIZATION', 
                                         { 'name': 'MANRS' },
                                         create=True
                                         )
