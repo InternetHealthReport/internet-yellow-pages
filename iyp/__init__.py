@@ -1,4 +1,5 @@
 import logging
+import sys
 import datetime
 from neo4j import GraphDatabase
 
@@ -56,7 +57,11 @@ class IYP(object):
         # Connect to the database
         uri = f"neo4j://{self.server}:{self.port}"
         self.db = GraphDatabase.driver(uri, auth=(self.login, self.password))
-        self.session = self.db.session()
+
+        if self.db is None:
+            sys.exit('Could not connect to the Neo4j database!')
+        else:
+            self.session = self.db.session()
 
         self._db_init()
 
