@@ -3,6 +3,7 @@ import sys
 import datetime
 from neo4j import GraphDatabase
 
+# Usual constraints on nodes' properties
 NODE_CONSTRAINTS = {
         'AS': {
                 'asn': set(['UNIQUE', 'NOT NULL'])
@@ -28,8 +29,13 @@ NODE_CONSTRAINTS = {
 
         'ORGANIZATION': {
                 'name': set(['NOT NULL'])
-                }
+                },
     }
+
+# Properties that may be frequently queried and that are not constraints
+NODE_INDEXES = {
+        'PEERINGDB_ORG_ID': [ 'id' ]
+        }
 
 # Set of node labels with constrains (ease search for node merging)
 NODE_CONSTRAINTS_LABELS = set(NODE_CONSTRAINTS.keys())
@@ -97,8 +103,9 @@ class IYP(object):
 
 
     def _db_init(self):
-        """Add constraints (implictly add indexes for corresponding keys)"""
+        """Add constraints and indexes."""
 
+        # Create constraints (implicitly add corresponding indexes)
         for label, prop_constraints in NODE_CONSTRAINTS.items():
             for property, constraints in prop_constraints.items():
 
@@ -109,6 +116,13 @@ class IYP(object):
                         f" FOR (n:{label}) "
                         f" REQUIRE n.{property} IS {constraint} ")
 
+        # Create indexes
+        for label, indexes in NODE_INDEXES.items():
+            for index in indexes:
+                self.session.run(
+                    f" CREATE INDEX {label}_INDEX_{index} IF NOT EXISTS "
+                    f" FOR (n:{label}) "
+                    f" ON (n.{index}) ")
 
     def get_node(self, type, prop, create=False):
         """Find the ID of a node in the graph. Return None if the node does not
@@ -158,7 +172,6 @@ class IYP(object):
         the given ID. Return None if the node does not exist."""
 
         result = self.session.run(f"MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)").single()
-        print(f"MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)")
 
         if result is not None:
             return result[0]
