@@ -3,6 +3,36 @@ import sys
 import datetime
 from neo4j import GraphDatabase
 
+NODE_CONSTRAINTS = {
+        'AS': {
+                'asn': set(['UNIQUE', 'NOT NULL'])
+                } ,
+
+        'PREFIX': {
+                'prefix': set(['UNIQUE', 'NOT NULL']), 
+                'af': set(['NOT NULL'])
+                },
+        
+        'IP': {
+                'ip': set(['UNIQUE', 'NOT NULL']),
+                'af': set(['NOT NULL'])
+                },
+
+        'DOMAIN_NAME': {
+                'name': set(['UNIQUE', 'NOT NULL'])
+                },
+
+        'COUNTRY': {
+                'country_code': set(['UNIQUE', 'NOT NULL'])
+                },
+
+        'ORGANIZATION': {
+                'name': set(['NOT NULL'])
+                }
+    }
+
+# Set of node labels with constrains (ease search for node merging)
+NODE_CONSTRAINTS_LABELS = set(NODE_CONSTRAINTS.keys())
 
 def format_properties(prop):
     """Make sure certain properties are always formatted the same way.
@@ -26,18 +56,18 @@ def format_properties(prop):
     return prop
 
 
-def dict2str(d):
+def dict2str(d, eq=':', pfx=''):
     """Converts a python dictionary to a Cypher map."""
 
     data = [] 
     for key, value in d.items():
         if isinstance(value, str) and '"' in value:
             escaped = value.replace("'", r"\'")
-            data.append(f"{key}: '{escaped}'")
+            data.append(f"{pfx+key}{eq} '{escaped}'")
         elif isinstance(value, str) or isinstance(value, datetime.datetime):
-            data.append(f'{key}: "{value}"')
+            data.append(f'{pfx+key}{eq} "{value}"')
         else:
-            data.append(f'{key}: {value}')
+            data.append(f'{pfx+key}{eq} {value}')
 
     return '{'+','.join(data)+'}'
 
@@ -65,66 +95,19 @@ class IYP(object):
 
         self._db_init()
 
+
     def _db_init(self):
-        """Add usual constrains"""
+        """Add constraints (implictly add indexes for corresponding keys)"""
 
-        # Constrains for ASes
-        self.session.run(
-            " CREATE CONSTRAINT AS_UNIQUE_ASN IF NOT EXISTS "
-            " FOR (n:AS) "
-            " REQUIRE n.asn IS UNIQUE ")
-        self.session.run(
-            " CREATE CONSTRAINT AS_NOTNULL_ASN IF NOT EXISTS "
-            " FOR (n:AS) "
-            " REQUIRE n.asn IS NOT NULL ")
+        for label, prop_constraints in NODE_CONSTRAINTS.items():
+            for property, constraints in prop_constraints.items():
 
-        # Constrains for prefixes
-        self.session.run(
-            " CREATE CONSTRAINT PREFIX_UNIQUE_PREFIX IF NOT EXISTS "
-            " FOR (n:PREFIX) "
-            " REQUIRE n.prefix IS UNIQUE ")
-        self.session.run(
-            " CREATE CONSTRAINT PREFIX_NOTNULL_PREFIX IF NOT EXISTS "
-            " FOR (n:PREFIX) "
-            " REQUIRE n.prefix IS NOT NULL ")
-        self.session.run(
-            " CREATE CONSTRAINT PREFIX_NOTNULL_AF IF NOT EXISTS "
-            " FOR (n:PREFIX) "
-            " REQUIRE n.af IS NOT NULL ")
-
-        # Constrains for IPs
-        self.session.run(
-            " CREATE CONSTRAINT IP_UNIQUE_IP IF NOT EXISTS "
-            " FOR (n:IP) "
-            " REQUIRE n.ip IS UNIQUE ")
-        self.session.run(
-            " CREATE CONSTRAINT IP_NOTNULL_IP IF NOT EXISTS "
-            " FOR (n:IP) "
-            " REQUIRE n.ip IS NOT NULL ")
-        self.session.run(
-            " CREATE CONSTRAINT IP_NOTNULL_AF IF NOT EXISTS "
-            " FOR (n:IP) "
-            " REQUIRE n.af IS NOT NULL ")
-
-        # Constrains for domain names
-        self.session.run(
-            " CREATE CONSTRAINT DN_UNIQUE_NAME IF NOT EXISTS "
-            " FOR (n:DOMAIN_NAME) "
-            " REQUIRE n.name IS UNIQUE ")
-        self.session.run(
-            " CREATE CONSTRAINT DN_NOTNULL_NAME IF NOT EXISTS "
-            " FOR (n:DOMAIN_NAME) "
-            " REQUIRE n.name IS NOT NULL ")
-
-        # Constrains for countries
-        self.session.run(
-            " CREATE CONSTRAINT COUNTRY_UNIQUE_CC IF NOT EXISTS "
-            " FOR (n:COUNTRY) "
-            " REQUIRE n.country_code IS UNIQUE ")
-        self.session.run(
-            " CREATE CONSTRAINT COUNTRY_NOTNULL_CC IF NOT EXISTS "
-            " FOR (n:COUNTRY) "
-            " REQUIRE n.country_code IS NOT NULL ")
+                for constraint in constraints:
+                    constraint_formated = constraint.replace(' ', '')
+                    self.session.run(
+                        f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
+                        f" FOR (n:{label}) "
+                        f" REQUIRE n.{property} IS {constraint} ")
 
 
     def get_node(self, type, prop, create=False):
@@ -133,13 +116,36 @@ class IYP(object):
 
         prop = format_properties(prop)
 
+        # put type in a list
         type_str = str(type)
         if isinstance(type, list):
             type_str = ':'.join(type)
+        else:
+            type = [type]
 
         if create:
-            result = self.session.run(f"MERGE (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
+            has_constraints = NODE_CONSTRAINTS_LABELS.intersection(type)
+            if len( has_constraints ):
+                ### MERGE node with constraints
+                ### Search on the constraints and set other values
+                label = has_constraints.pop()
+                constraint_prop = dict([ (c, prop[c]) for c in NODE_CONSTRAINTS[label].keys() ]) 
+                #values = ', '.join([ f"a.{p} = {val}" for p, val in prop.items() ])
+                labels = ', '.join([ f"a:{l}" for l in type])
+
+                result = self.session.run (
+                    f"""MERGE (a:{label} {dict2str(constraint_prop)}) 
+                        ON MATCH
+                            SET {dict2str(prop, eq='=', pfx='a.')[1:-1]}, {labels}
+                        ON CREATE
+                            SET {dict2str(prop, eq='=', pfx='a.')[1:-1]}, {labels}
+                        RETURN ID(a)"""
+                        ).single()
+            else:
+                ### MERGE node without constraints
+                result = self.session.run(f"MERGE (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
         else:
+            ### MATCH node
             result = self.session.run(f"MATCH (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
 
         if result is not None:
