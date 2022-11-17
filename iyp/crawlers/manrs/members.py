@@ -76,6 +76,8 @@ class Crawler(object):
             self.update_net(row)
             sys.stderr.write(f'\rProcessed {i} organizations')
 
+        self.iyp.close()
+
 
     def update_net(self, one_line):
         """Add the network to wikibase if it's not already there and update its

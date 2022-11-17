@@ -70,6 +70,8 @@ class Crawler(object):
                 self.update(prefix, attributes)
                 sys.stderr.write(f'\rProcessing {self.url}... {i+1} prefixes ({prefix})     ')
 
+        self.iyp.close()
+
     def update(self, prefix, attributes):
         """Add the prefix to IYP if it's not already there and update its
         properties."""

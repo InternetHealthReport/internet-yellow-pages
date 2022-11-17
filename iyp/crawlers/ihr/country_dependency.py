@@ -97,6 +97,8 @@ class Crawler(object):
 
                 sys.stderr.write('\n')
 
+        self.iyp.close()
+
 
     def update_entry(self, asn):
         """Add the network to wikibase if it's not already there and update its

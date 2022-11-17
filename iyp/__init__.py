@@ -100,6 +100,7 @@ class IYP(object):
             self.session = self.db.session()
 
         self._db_init()
+        self.tx = self.session.begin_transaction()
 
 
     def _db_init(self):
@@ -123,6 +124,20 @@ class IYP(object):
                     f" CREATE INDEX {label}_INDEX_{index} IF NOT EXISTS "
                     f" FOR (n:{label}) "
                     f" ON (n.{index}) ")
+
+    def commit(self):
+        """Commit all pending queries (node/link creation) and start a new
+        transaction."""
+
+        self.tx.commit()
+        self.tx = self.session.begin_transaction()
+
+    def rollback(self):
+        """Rollback all pending queries (node/link creation) and start a new
+        transaction."""
+
+        self.tx.rollback()
+        self.tx = self.session.begin_transaction()
 
     def get_node(self, type, prop, create=False):
         """Find the ID of a node in the graph. Return None if the node does not
@@ -189,8 +204,11 @@ class IYP(object):
         By convention link_type is written in UPPERCASE and keys in prop_dict are
         in lowercase."""
 
+        matches = ' MATCH (x)' 
+        where = f" WHERE ID(a) = {src_node}"
+        merges = ''
         
-        for type, dst_node, prop in links:
+        for i, (type, dst_node, prop) in enumerate(links):
 
             assert 'source' in prop
             assert 'reference_url' in prop
@@ -198,14 +216,16 @@ class IYP(object):
 
             prop = format_properties(prop)
 
-            self.session.run(
-                " MATCH (a), (b) " 
-                " WHERE ID(a) = $src_node AND ID(b) = $dst_node "
-                f" MERGE (a)-[:{type}  {dict2str(prop)}]->(b) ",
-                src_node=src_node, dst_node=dst_node).consume()
+            matches += f", (x{i})"
+            where += f" AND ID(x{i}) = {dst_node}"
+            merges += f" MERGE (x)-[:{type}  {dict2str(prop)}]->(x{i}) "
+
+        self.session.run( matches+where+merges).consume()
 
 
     def close(self):
+        """Commit pending queries and close IYP"""
+        self.tx.commit()
         self.session.close()
         self.db.close()
 

@@ -41,6 +41,8 @@ class Crawler(object):
                     sys.stderr.write(f'\rProcessed {i} domains \t {row}')
                     self.update(row)
 
+        self.iyp.close()
+
 
     def update(self, one_line):
         """Add the network to wikibase if it's not already there and update its

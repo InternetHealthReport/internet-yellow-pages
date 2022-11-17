@@ -41,6 +41,8 @@ class Crawler(object):
                 sys.stderr.write(f'\rProcessing... {i+1}/{ranking["totalCount"]}')
                 i+=1
 
+        self.iyp.close()
+
 
     def update_net(self, asn):
         """Add the network to iyp if it's not already there and update its

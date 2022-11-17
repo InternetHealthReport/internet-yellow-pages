@@ -46,6 +46,8 @@ class Crawler(object):
         for i, _ in enumerate(map(self.update_org, organizations)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(organizations)}')
 
+        self.iyp.close()
+
     def update_org(self, organization):
         """Add the organization to wikibase if it's not there and update properties"""
 

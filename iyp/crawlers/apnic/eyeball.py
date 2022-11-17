@@ -54,6 +54,8 @@ class Crawler(object):
             for i, _ in enumerate(map(self.update_net, ranking)):
                 sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(ranking)}')
 
+        self.iyp.close()
+
     def update_net(self, asn):
         """Add the network to wikibase if it's not already there and update its
         properties."""

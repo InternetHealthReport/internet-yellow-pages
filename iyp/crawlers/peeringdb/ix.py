@@ -32,7 +32,6 @@ class Crawler(object):
         """Initialisation for pushing peeringDB IXPs to IYP"""
     
         self.headers = {"Authorization": "Api-Key " + API_KEY}
-        print(self.headers)
     
         self.reference_ix = {
             'source': ORG,
@@ -46,7 +45,7 @@ class Crawler(object):
             'point_in_time': datetime.combine(datetime.utcnow(), time.min)
             }
 
-        # keep track of added networksi
+        # keep track of added networks
         self.nets = {}
 
         # connection to IYP database
@@ -73,6 +72,8 @@ class Crawler(object):
 
             sys.stderr.write(f'\rProcessing... {i+1}/{len(self.ixs)}')
 
+        self.iyp.close()
+
 
     def update_ix(self, ix):
         """Add the IXP to IYP if it's not already there and update its
@@ -86,6 +87,11 @@ class Crawler(object):
                 #req = requests.get( pfx_url, headers=self.headers )
                 #if req.status_code != 200:
                 #    sys.exit(f'Error while fetching IX LAN data ({req.status_code})')
+
+                if ixlan['id'] not in self.ixlans:
+                    logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in {self.ixlans}')
+                    continue
+
                 lan = self.ixlans[ ixlan["id"] ]
 
                 for prefix in lan['ixpfx_set']:
