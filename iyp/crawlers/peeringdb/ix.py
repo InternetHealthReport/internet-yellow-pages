@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-import requests
+import requests_cache
 import json
 from datetime import datetime, time
 from iyp import IYP
@@ -48,6 +48,9 @@ class Crawler(object):
         # keep track of added networks
         self.nets = {}
 
+        # Using cached queries
+        self.requests = requests_cache.CachedSession(ORG)
+
         # connection to IYP database
         self.iyp = IYP()
 
@@ -55,12 +58,12 @@ class Crawler(object):
         """Fetch ixs information from PeeringDB and push to IYP. 
         Using multiple threads for better performances."""
 
-        req = requests.get( URL_PDB_IXS, headers=self.headers)
+        req = self.requests.get( URL_PDB_IXS, headers=self.headers)
         if req.status_code != 200:
             sys.exit(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
         self.ixs = json.loads(req.text)['data']
 
-        req = requests.get( URL_PDB_LANS, headers=self.headers)
+        req = self.requests.get( URL_PDB_LANS, headers=self.headers)
         if req.status_code != 200:
             sys.exit(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
         self.ixlans = json.loads(req.text)['data']

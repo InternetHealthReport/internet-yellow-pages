@@ -82,7 +82,7 @@ class IYP(object):
 
     def __init__(self):
 
-        logging.debug('Wikihandy: Enter initialization')
+        logging.debug('IYP: Enter initialization')
 
         # TODO: get config from configuration file
         self.server = 'localhost'
@@ -162,7 +162,7 @@ class IYP(object):
                 #values = ', '.join([ f"a.{p} = {val}" for p, val in prop.items() ])
                 labels = ', '.join([ f"a:{l}" for l in type])
 
-                result = self.session.run (
+                result = self.tx.run(
                     f"""MERGE (a:{label} {dict2str(constraint_prop)}) 
                         ON MATCH
                             SET {dict2str(prop, eq='=', pfx='a.')[1:-1]}, {labels}
@@ -172,10 +172,10 @@ class IYP(object):
                         ).single()
             else:
                 ### MERGE node without constraints
-                result = self.session.run(f"MERGE (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
+                result = self.tx.run(f"MERGE (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
         else:
             ### MATCH node
-            result = self.session.run(f"MATCH (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
+            result = self.tx.run(f"MATCH (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
 
         if result is not None:
             return result[0]
@@ -186,7 +186,7 @@ class IYP(object):
         """Find a node in the graph which has an EXTERNAL_ID relationship with
         the given ID. Return None if the node does not exist."""
 
-        result = self.session.run(f"MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)").single()
+        result = self.tx.run(f"MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)").single()
 
         if result is not None:
             return result[0]
@@ -205,7 +205,7 @@ class IYP(object):
         in lowercase."""
 
         matches = ' MATCH (x)' 
-        where = f" WHERE ID(a) = {src_node}"
+        where = f" WHERE ID(x) = {src_node}"
         merges = ''
         
         for i, (type, dst_node, prop) in enumerate(links):
@@ -220,7 +220,7 @@ class IYP(object):
             where += f" AND ID(x{i}) = {dst_node}"
             merges += f" MERGE (x)-[:{type}  {dict2str(prop)}]->(x{i}) "
 
-        self.session.run( matches+where+merges).consume()
+        self.tx.run( matches+where+merges).consume()
 
 
     def close(self):
