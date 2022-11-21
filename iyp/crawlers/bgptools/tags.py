@@ -2,7 +2,7 @@ import sys
 import logging
 import requests
 from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 
 #curl -s https://bgp.tools/asns.csv | head -n 5
 URL = 'https://bgp.tools/tags/'
@@ -28,16 +28,14 @@ TAGS = {
         'corp': 'Corporate/Enterprise'
        }
 
-class Crawler(object):
-    def __init__(self):
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
 
         self.headers = {
             'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
         }
 
-        # connection to IYP database
-        self.iyp = IYP()
-
+        super().__init__(organization, url)
 
     def run(self):
         """Fetch the AS name file from BGP.Tools website and process lines one by one"""
@@ -101,5 +99,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asnames = Crawler()
+    asnames = Crawler(ORG, URL)
     asnames.run()
+    asnames.close()

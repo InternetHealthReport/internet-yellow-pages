@@ -6,7 +6,7 @@ from datetime import datetime, time
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import json
-from iyp import IYP
+from iyp import BaseCrawler
 import iso3166
 
 # URL to the API
@@ -15,8 +15,8 @@ URL = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4
 ORG = 'Internet Health Report'
 MIN_HEGE = 0.01
 
-class Crawler(object):
-    def __init__(self):
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
         """Initialize IYP """
     
         # list of countries
@@ -30,7 +30,7 @@ class Crawler(object):
         self.http_session = requests.Session()
         self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
 
-        self.iyp = IYP()
+        super().__init__(organization, url)
 
     def run(self):
         """Fetch data from API and push to IYP. """
@@ -92,13 +92,10 @@ class Crawler(object):
                     asn['rank']=i 
 
                 # Push data to wiki
-                for i, res in enumerate(map(self.update_entry, selected)):
+                for i, _ in enumerate(map(self.update_entry, selected)):
                     sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(selected)}')
 
                 sys.stderr.write('\n')
-
-        self.iyp.close()
-
 
     def update_entry(self, asn):
         """Add the network to wikibase if it's not already there and update its
@@ -135,5 +132,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler()
+    crawler = Crawler(ORG, URL)
     crawler.run()
+    crawler.close()

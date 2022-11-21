@@ -3,8 +3,7 @@ import sys
 import logging
 import json
 import iso3166
-from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 import requests
 
 ORG = 'PeeringDB'
@@ -19,21 +18,14 @@ API_KEY = ""
 if os.path.exists('config.json'): 
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
-class Crawler(object):
-    def __init__(self):
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
         """Initialisation for pushing peeringDB organizations to IYP. """
 
         self.headers = {"Authorization": "Api-Key " + API_KEY}
+
+        super().__init__(organization, url)
     
-        self.reference = {
-            'source': ORG,
-            'reference_url': URL_PDB_ORGS,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-            }
-
-        # connection to IYP database
-        self.iyp = IYP()
-
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP"""
 
@@ -45,8 +37,6 @@ class Crawler(object):
 
         for i, _ in enumerate(map(self.update_org, organizations)):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(organizations)}')
-
-        self.iyp.close()
 
     def update_org(self, organization):
         """Add the organization to wikibase if it's not there and update properties"""
@@ -88,5 +78,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    pdbo = Crawler()
+    pdbo = Crawler(ORG, '')
     pdbo.run()
+    pdbo.close()

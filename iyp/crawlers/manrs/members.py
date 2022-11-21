@@ -2,18 +2,18 @@ import sys
 import logging
 import requests
 from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 
 # URL to MANRS csv file
 URL = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
 ORG = 'MANRS'
 
-class Crawler(object):
-    def __init__(self):
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
         """Fetch nodes for MANRS actions (create them if they are not in IYP).""" 
     
-        # connection to IYP database
-        self.iyp = IYP()
+        # connect to IYP database
+        super().__init__(organization, url)
 
         self.manrs_qid = self.iyp.get_node(
                                         'ORGANIZATION', 
@@ -76,8 +76,6 @@ class Crawler(object):
             self.update_net(row)
             sys.stderr.write(f'\rProcessed {i} organizations')
 
-        self.iyp.close()
-
 
     def update_net(self, one_line):
         """Add the network to wikibase if it's not already there and update its
@@ -120,5 +118,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    manrs = Crawler()
+    manrs = Crawler(ORG, URL)
     manrs.run()
+    manrs.close()

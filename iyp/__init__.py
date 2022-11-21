@@ -1,6 +1,6 @@
 import logging
 import sys
-import datetime
+from datetime import datetime, time
 from neo4j import GraphDatabase
 
 # Usual constraints on nodes' properties
@@ -70,7 +70,7 @@ def dict2str(d, eq=':', pfx=''):
         if isinstance(value, str) and '"' in value:
             escaped = value.replace("'", r"\'")
             data.append(f"{pfx+key}{eq} '{escaped}'")
-        elif isinstance(value, str) or isinstance(value, datetime.datetime):
+        elif isinstance(value, str) or isinstance(value, datetime):
             data.append(f'{pfx+key}{eq} "{value}"')
         else:
             data.append(f'{pfx+key}{eq} {value}')
@@ -230,4 +230,21 @@ class IYP(object):
         self.db.close()
 
 
+class BaseCrawler(object):
+    def __init__(self, organization, url):
+        """IYP and references initialization"""
+
+        self.reference = {
+            'source': organization,
+            'reference_url': url,
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+            }
+
+        # connection to IYP database
+        self.iyp = IYP()
+    
+    
+    def close(self):
+        # Commit changes to IYP
+        self.iyp.close()
 

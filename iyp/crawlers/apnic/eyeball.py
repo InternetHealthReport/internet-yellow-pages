@@ -2,31 +2,20 @@ import sys
 import logging
 import requests
 import iso3166
-from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 
 # URL to APNIC API
 URL = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
 ORG = 'APNIC'
 MIN_POP_PERC = 0.01 # ASes with less population will be ignored
 
-class Crawler(object):
-    def __init__(self):
-        """Initialize wikihandy and qualifiers for pushed data"""
-    
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
+        """Initialize IYP and list of countries"""
 
-        # Added properties will have this additional information
         self.url = URL  # url will change for each country
-        self.reference = {
-            'source': ORG,
-            'reference_url': URL,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-            }
-
         self.countries = iso3166.countries_by_alpha2
-
-        # connection to IYP database
-        self.iyp = IYP()
+        super().__init__(organization, url)
 
     def run(self):
         """Fetch data from APNIC and push to wikibase. """
@@ -53,8 +42,6 @@ class Crawler(object):
             # Push data to iyp
             for i, _ in enumerate(map(self.update_net, ranking)):
                 sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(ranking)}')
-
-        self.iyp.close()
 
     def update_net(self, asn):
         """Add the network to wikibase if it's not already there and update its
@@ -105,5 +92,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    apnic = Crawler()
+    apnic = Crawler(ORG, URL)
     apnic.run()
+    apnic.close()

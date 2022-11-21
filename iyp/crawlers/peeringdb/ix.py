@@ -4,7 +4,7 @@ import logging
 import requests_cache
 import json
 from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 
 # NOTES
 # This script should be executed after peeringdb.org
@@ -27,8 +27,8 @@ API_KEY = ""
 if os.path.exists('config.json'): 
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
-class Crawler(object):
-    def __init__(self):
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
         """Initialisation for pushing peeringDB IXPs to IYP"""
     
         self.headers = {"Authorization": "Api-Key " + API_KEY}
@@ -52,7 +52,7 @@ class Crawler(object):
         self.requests = requests_cache.CachedSession(ORG)
 
         # connection to IYP database
-        self.iyp = IYP()
+        super().__init__(organization, url)
 
     def run(self):
         """Fetch ixs information from PeeringDB and push to IYP. 
@@ -81,8 +81,6 @@ class Crawler(object):
             sys.stderr.write(f'\rProcessing... {i+1}/{len(self.ixs)}')
 
         sys.stderr.write('\n')
-        self.iyp.close()
-
 
     def update_ix(self, ix):
         """Add the IXP to IYP if it's not already there and update its
@@ -220,6 +218,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    pdbn = Crawler()
+    pdbn = Crawler(ORG, '')
     pdbn.run()
-
+    pdbn.close()

@@ -1,25 +1,12 @@
 import sys
 import logging
 import requests
-from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 
 URL = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 ORG = 'RIPE NCC'
 
-class Crawler(object):
-    def __init__(self):
-
-        # Reference information for data pushed to the wikibase
-        self.reference = {
-            'source': ORG,
-            'reference_url': URL,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-            }
-
-        # connection to IYP database
-        self.iyp = IYP()
-
+class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch the AS name file from RIPE website and process lines one by one"""
@@ -32,7 +19,6 @@ class Crawler(object):
             sys.stderr.write(f'\rProcessed {i} ASes')
 
         sys.stderr.write('\n')
-        self.iyp.close()
 
     def update_asn(self, one_line):
         # Parse given line to get ASN, name, and country code 
@@ -71,5 +57,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asnames = Crawler()
+    asnames = Crawler(URL, ORG)
     asnames.run()
+    asnames.close()

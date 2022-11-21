@@ -2,9 +2,9 @@ from datetime import date
 import sys
 import logging
 from collections import defaultdict
+from datetime import datetime, timedelta
 import requests
-from datetime import datetime, time, timedelta
-from iyp import IYP
+from iyp import BaseCrawler
 
 # URL to RIPE repository
 URL = 'https://ftp.ripe.net/rpki/'
@@ -12,18 +12,10 @@ ORG = 'RIPE NCC'
 
 TALS = ['afrinic.tal', 'apnic.tal', 'arin.tal', 'lacnic.tal', 'ripencc.tal']
 
-class Crawler(object):
-    def __init__(self):
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
         """Initialize IYP and statements for pushed data"""
 
-        # Reference information for data pushed to IYP
-        self.reference = {
-            'source': ORG,
-            'reference_url': URL,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-            }
-
-        
         now = datetime.utcnow()
         self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
 
@@ -36,8 +28,7 @@ class Crawler(object):
             logging.warning("Today's data not yet available!")
             logging.warning("Using yesterday's data: "+self.date_path)
 
-        # connection to IYP database
-        self.iyp = IYP()
+        super().__init__(organization, url)
 
     def run(self):
         """Fetch data from RIPE and push to IYP. """
@@ -69,8 +60,6 @@ class Crawler(object):
             for i, (prefix, attributes) in enumerate(prefix_info.items()):
                 self.update(prefix, attributes)
                 sys.stderr.write(f'\rProcessing {self.url}... {i+1} prefixes ({prefix})     ')
-
-        self.iyp.close()
 
     def update(self, prefix, attributes):
         """Add the prefix to IYP if it's not already there and update its
@@ -120,5 +109,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler()
+    crawler = Crawler(ORG, URL)
     crawler.run()
+    crawler.close()

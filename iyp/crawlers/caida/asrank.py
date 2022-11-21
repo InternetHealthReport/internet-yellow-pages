@@ -2,25 +2,13 @@ import sys
 import logging
 import requests
 import json
-from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 
 # URL to ASRank API
 URL = 'https://api.asrank.caida.org/v2/restful/asns/'
 ORG = 'CAIDA'
 
-class Crawler(object):
-    def __init__(self):
-        """Initialize iyp connection and qualifiers for pushed data"""
-    
-        self.reference = {
-            'source': ORG,
-            'reference_url': URL,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-            }
-
-        # connection to IYP database
-        self.iyp = IYP()
+class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch networks information from ASRank and push to IYP. """
@@ -40,9 +28,6 @@ class Crawler(object):
             for _ in map(self.update_net, ranking['edges']):
                 sys.stderr.write(f'\rProcessing... {i+1}/{ranking["totalCount"]}')
                 i+=1
-
-        self.iyp.close()
-
 
     def update_net(self, asn):
         """Add the network to iyp if it's not already there and update its
@@ -87,5 +72,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asrank = Crawler()
+    asrank = Crawler(ORG, URL)
     asrank.run()
+    asrank.close()

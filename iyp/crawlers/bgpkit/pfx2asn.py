@@ -1,27 +1,14 @@
 import sys
 import logging
 import requests
-from datetime import datetime, time
-from iyp import IYP
+from iyp import BaseCrawler
 import bz2
 import json
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
 ORG = 'BGPKIT'
 
-class Crawler(object):
-    def __init__(self):
-
-        # Reference information for data pushed to IYP
-        self.reference = {
-            'source': ORG,
-            'reference_url': URL,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
-            }
-
-        # connection to IYP database
-        self.iyp = IYP()
-
+class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch the prefix to ASN file from BGPKIT website and process lines one by one"""
@@ -34,7 +21,6 @@ class Crawler(object):
             sys.stderr.write(f'\rProcessed {i} relationships')
 
         sys.stderr.write('\n')
-        self.iyp.close()
 
     def update_asn(self, entry):
         af = 6
@@ -77,6 +63,7 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asnames = Crawler()
+    asnames = Crawler(URL, ORG)
     asnames.run()
+    asnames.close()
 
