@@ -24,7 +24,7 @@ TAGS = {
         'event': 'Event',
         'mobile': 'Mobile Data/Carrier',
         'satnet': 'Satellite Internet',
-        'biznet': ' Business Broadband',
+        'biznet': 'Business Broadband',
         'corp': 'Corporate/Enterprise'
        }
 

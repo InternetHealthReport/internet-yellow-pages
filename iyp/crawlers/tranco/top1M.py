@@ -45,7 +45,7 @@ class Crawler(object):
 
 
     def update(self, one_line):
-        """Add the network to wikibase if it's not already there and update its
+        """Add the network to IYP if it's not already there and update its
         properties."""
 
         rank, domain = one_line.split(',')
