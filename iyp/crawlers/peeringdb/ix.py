@@ -66,7 +66,12 @@ class Crawler(object):
         req = self.requests.get( URL_PDB_LANS, headers=self.headers)
         if req.status_code != 200:
             sys.exit(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
-        self.ixlans = json.loads(req.text)['data']
+        ixlans = json.loads(req.text)['data']
+        
+        # index ixlans by their id
+        self.ixlans = {}
+        for ixlan in ixlans:
+            self.ixlans[ixlan['id']] = ixlan
 
         for i, ix_info in enumerate(self.ixs):
 
@@ -75,6 +80,7 @@ class Crawler(object):
 
             sys.stderr.write(f'\rProcessing... {i+1}/{len(self.ixs)}')
 
+        sys.stderr.write('\n')
         self.iyp.close()
 
 
@@ -136,7 +142,7 @@ class Crawler(object):
             if org_qid is not None:
                 statements.append( ['MANAGED_BY', org_qid, self.reference_lan])
             else:
-                print('Error this organization is not in IYP: ',network['org_id'])
+                logging.error(f'Error this organization is not in IYP: {network["org_id"]}')
 
             # set property website
             if network['website']:
@@ -157,10 +163,8 @@ class Crawler(object):
 
 
     def ix_qid(self, ix):
-        """Find the ix QID for the given ix.
-        If this ix is not yet registered in IYP then add it.
-
-        Return the ix QID."""
+        """Add the IX to IYP and return corresponding node's ID.
+        """
         
         # Set properties for this ix
         statements = []
@@ -170,7 +174,7 @@ class Crawler(object):
         if org_qid is not None:
             statements.append( ['MANAGED_BY', org_qid, self.reference_ix])
         else:
-            print('Error this organization is not in IYP: ',ix['org_id'])
+            logging.error(f'Error this organization is not in IYP: {ix["org_id"]}')
 
         # set property country
         if ix['country']:
@@ -211,7 +215,7 @@ if __name__ == '__main__':
     logging.basicConfig(
             format=FORMAT, 
             filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
+            level=logging.WARNING, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
     logging.info("Started: %s" % sys.argv)
