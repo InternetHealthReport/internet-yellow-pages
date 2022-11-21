@@ -18,7 +18,14 @@ TAGS = {
         'perso': 'Personal ASN', 
         'ddosm': 'DDoS Mitigation',
         'vpn': 'VPN Host',
-        'vpsh': 'Server Hosting'
+        'vpsh': 'Server Hosting',
+        'uni': 'Academic',
+        'gov': 'Government',
+        'event': 'Event',
+        'mobile': 'Mobile Data/Carrier',
+        'satnet': 'Satellite Internet',
+        'biznet': ' Business Broadband',
+        'corp': 'Corporate/Enterprise'
        }
 
 class Crawler(object):
