@@ -2,7 +2,7 @@ import sys
 import logging
 import arrow
 import requests
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import json
@@ -48,7 +48,7 @@ class Crawler(BaseCrawler):
             self.reference = {
                 'source': ORG,
                 'reference_url': URL,
-                'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+                'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
             # Setup rankings' node

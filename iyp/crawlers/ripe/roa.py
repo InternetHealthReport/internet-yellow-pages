@@ -1,4 +1,3 @@
-from datetime import date
 import sys
 import logging
 from collections import defaultdict

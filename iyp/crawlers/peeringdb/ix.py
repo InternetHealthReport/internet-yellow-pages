@@ -3,7 +3,7 @@ import sys
 import logging
 import requests_cache
 import json
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from iyp import BaseCrawler
 
 # NOTES
@@ -36,13 +36,13 @@ class Crawler(BaseCrawler):
         self.reference_ix = {
             'source': ORG,
             'reference_url': URL_PDB_IXS,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         self.reference_lan = {
             'source': ORG,
             'reference_url': URL_PDB_LANS,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         # keep track of added networks

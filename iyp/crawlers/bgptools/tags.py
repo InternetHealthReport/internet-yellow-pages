@@ -1,7 +1,7 @@
 import sys
 import logging
 import requests
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from iyp import BaseCrawler
 
 #curl -s https://bgp.tools/asns.csv | head -n 5
@@ -48,7 +48,7 @@ class Crawler(BaseCrawler):
             self.reference = {
                 'source': ORG,
                 'reference_url': url,
-                'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+                'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
                 }
 
             req = requests.get(url, headers=self.headers)

@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from neo4j import GraphDatabase
 
 # Usual constraints on nodes' properties
@@ -237,7 +237,7 @@ class BaseCrawler(object):
         self.reference = {
             'source': organization,
             'reference_url': url,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min)
+            'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         # connection to IYP database
