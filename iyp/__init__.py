@@ -210,9 +210,9 @@ class IYP(object):
         
         for i, (type, dst_node, prop) in enumerate(links):
 
-            assert 'source' in prop
+            assert 'reference_source' in prop
             assert 'reference_url' in prop
-            assert 'point_in_time' in prop
+            assert 'reference_time' in prop
 
             prop = format_properties(prop)
 
@@ -235,9 +235,9 @@ class BaseCrawler(object):
         """IYP and references initialization"""
 
         self.reference = {
-            'source': organization,
+            'reference_source': organization,
             'reference_url': url,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         # connection to IYP database

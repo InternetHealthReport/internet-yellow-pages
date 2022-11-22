@@ -46,9 +46,9 @@ class Crawler(BaseCrawler):
             url = URL+tag+'.csv'
             # Reference information for data pushed to the wikibase
             self.reference = {
-                'source': ORG,
+                'reference_source': ORG,
                 'reference_url': url,
-                'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+                'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
                 }
 
             req = requests.get(url, headers=self.headers)

@@ -54,9 +54,9 @@ class Crawler(BaseCrawler):
 
         # Reference information for data pushed to IYP
         self.reference = {
-            'source': ORG,
+            'reference_source': ORG,
             'reference_url': URL,
-            'point_in_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
 

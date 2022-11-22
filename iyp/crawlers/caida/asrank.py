@@ -49,10 +49,13 @@ class Crawler(BaseCrawler):
             statements.append([ 'COUNTRY', cc_qid, self.reference])
 
         # set rank
-        statements.append([ 'RANK', 
-            self.asrank_qid, 
-            dict({'rank': asn['rank']}, **self.reference), 
-            ])
+        ## flatten all attributes into one dictionary
+        cone = { 'cone_'+key:val for key, val in asn['cone'].items() }
+        asnDegree = { 'asnDegree_'+key:val for key, val in asn['asnDegree'].items()}
+        attr = dict(cone, **asnDegree) 
+        attr['rank'] = asn['rank'] 
+
+        statements.append([ 'RANK', self.asrank_qid, dict(attr, **self.reference) ])
 
         # Commit to iyp
         # Get the AS (create if AS is not yet registered) and commit changes

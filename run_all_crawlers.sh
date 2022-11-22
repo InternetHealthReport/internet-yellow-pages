@@ -16,10 +16,12 @@ python -m iyp.crawlers.ihr.country_dependency
 # BGP data
 python -m iyp.crawlers.bgpkit.pfx2asns
 python -m iyp.crawlers.bgpkit.as2rel   
+python -m iyp.crawlers.bgpkit.peerstats   
 python -m iyp.crawlers.ripe.roa                                                                                                                                                                                                                                                                                                            
 
 # DNS
 python -m iyp.crawlers.tranco.top1M
+python -m iyp.crawlers.cloudflare.top100
 
 #BGP.Tools tags
 python -m iyp.crawlers.bgptools.tags
