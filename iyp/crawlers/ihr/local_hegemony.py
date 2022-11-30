@@ -7,7 +7,7 @@ from datetime import datetime, time, timezone
 from iyp import BaseCrawler
 
 # URL to the API
-URL = 'https://ihr-archive.iijlab.net/ihr/rov/{year}/{month:02d}/{day:02d}/ihr_rov_{year}-{month:02d}-{day:02d}.csv.lz4'
+URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv4/local/{year}/{month:02d}/{day:02d}/ihr_hegemony_ipv4_local_{year}-{month:02d}-{day:02d}.csv.lz4'
 ORG = 'Internet Health Report'
 
 class Crawler(BaseCrawler):
@@ -22,9 +22,6 @@ class Crawler(BaseCrawler):
             today = today.shift(days=-1)
             url = URL.format(year=today.year, month=today.month, day=today.day)
             req = requests.head(url)
-            if req.status_code != 200:
-                today = today.shift(days=-1)
-                url = URL.format(year=today.year, month=today.month, day=today.day)
 
         self.reference = {
             'reference_url': url,
@@ -38,8 +35,7 @@ class Crawler(BaseCrawler):
         
         with lz4.frame.open(req.raw, 'r') as fp:
             # header
-            # id,timebin,prefix,hege,af,visibility,rpki_status,irr_status, delegated_prefix_status,
-            #delegated_asn_status,descr,moas,asn_id,country_id,originasn_id
+            # timebin,originasn,asn,hege
             line = fp.readline()
             self.fields = line.decode('utf-8').rstrip().split(',')
 
@@ -54,32 +50,23 @@ class Crawler(BaseCrawler):
                 line = fp.readline()
 
     def update(self, line):
-        """Add the prefix to iyp if it's not already there and update its
+        """Add the AS to iyp if it's not already there and update its
         properties."""
         
         rec = dict( zip(self.fields, line.decode('utf-8').rstrip().split(',')) )
 
-        rpki_status = self.iyp.get_node('TAG', {'label': 'RPKI '+rec['rpki_status']}, create=True)
-        irr_status = self.iyp.get_node('TAG', {'label': 'IRR '+rec['irr_status']}, create=True)
         asn_qid = self.iyp.get_node('AS', {'asn': rec['asn_id']}, create=True)
-        originasn_qid = self.iyp.get_node('AS', {'asn': rec['originasn_id']}, create=True)
-        country_qid = self.iyp.get_node('COUNTRY', {'country_code': rec['country_id']}, create=True)
 
         # Properties
         statements = []
 
-        # set links
-        statements.append( [ 'CLASSIFIED', rpki_status, self.reference ])
-        statements.append( [ 'CLASSIFIED', irr_status, self.reference ])
+        # set dependency
         statements.append( [ 'DEPENDS_ON', asn_qid, dict({'hegemony': rec['hege']}, *self.reference) ])
-        statements.append( [ 'ORIGINATE', originasn_qid, self.reference ])
-        statements.append( [ 'COUNTRY', country_qid, self.reference ])
 
         # Commit to IYP
-        # Get the prefix node ID (create if AS is not yet registered) and commit changes
-        prefix_qid = self.iyp.get_node('PREFIX', 
-            {'prefix': rec['prefix'], 'af': rec['af'], 'description': rec['descr']}, create=True)
-        self.iyp.add_links( prefix_qid, statements )
+        # Get the AS node ID (create if AS is not yet registered) and commit changes
+        originasn_qid = self.iyp.get_node('AS', {'asn': rec['originasn_id']}, create=True)
+        self.iyp.add_links( originasn_qid, statements )
         
 # Main program
 if __name__ == '__main__':
@@ -97,3 +84,4 @@ if __name__ == '__main__':
     crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
+

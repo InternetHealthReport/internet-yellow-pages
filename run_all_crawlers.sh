@@ -19,6 +19,10 @@ python -m iyp.crawlers.bgpkit.as2rel
 python -m iyp.crawlers.bgpkit.peerstats   
 python -m iyp.crawlers.ripe.roa                                                                                                                                                                                                                                                                                                            
 
+# IHR
+python -m iyp.crawlers.ihr.local_hegemony
+python -m iyp.crawlers.ihr.rov
+
 # DNS
 python -m iyp.crawlers.tranco.top1M
 python -m iyp.crawlers.cloudflare.top100
