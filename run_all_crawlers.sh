@@ -30,5 +30,8 @@ python -m iyp.crawlers.bgptools.tags
 python -m iyp.crawlers.peeringdb.org
 python -m iyp.crawlers.peeringdb.ix
 
+# Delegated files
+python -m iyp.crawlers.ripe.delegated_stats
+
 echo "All crawlers finished"
 date
