@@ -46,7 +46,7 @@ class Crawler(BaseCrawler):
 
             # Setup references
             self.reference = {
-                'reference_source': ORG,
+                'reference_org': ORG,
                 'reference_url': URL,
                 'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }

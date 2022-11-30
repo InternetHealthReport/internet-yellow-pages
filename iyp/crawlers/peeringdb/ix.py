@@ -34,13 +34,13 @@ class Crawler(BaseCrawler):
         self.headers = {"Authorization": "Api-Key " + API_KEY}
     
         self.reference_ix = {
-            'reference_source': ORG,
+            'reference_org': ORG,
             'reference_url': URL_PDB_IXS,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         self.reference_lan = {
-            'reference_source': ORG,
+            'reference_org': ORG,
             'reference_url': URL_PDB_LANS,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
