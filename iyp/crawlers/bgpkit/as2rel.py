@@ -27,7 +27,7 @@ class Crawler(BaseCrawler):
         as2_qid = self.iyp.get_node('AS', {'asn': rel['asn2']}, create=True)
 
         statements = []
-        statements.append( ['PEERS_WITH', as2_qid, self.reference] )  # Set relationship
+        statements.append( ['PEERS_WITH', as2_qid, dict(rel, *self.reference)] )  # Set relationship
 
         try:
             # Update AS name and country
