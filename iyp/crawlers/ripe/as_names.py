@@ -57,6 +57,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    asnames = Crawler(URL, ORG)
+    asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
