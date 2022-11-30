@@ -5,3 +5,4 @@ arrow
 tldextract
 py-radix
 requests-cache
+lz4
