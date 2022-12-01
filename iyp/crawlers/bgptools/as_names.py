@@ -3,15 +3,23 @@ import logging
 import requests
 from iyp import BaseCrawler
 
-URL = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
-ORG = 'RIPE NCC'
+#curl -s https://bgp.tools/asns.csv | head -n 5
+URL = 'https://bgp.tools/asns.csv'
+ORG = 'BGP.Tools'
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
+
+        self.headers = {
+            'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
+        }
+
+        super().__init__(organization, url)
 
     def run(self):
-        """Fetch the AS name file from RIPE website and process lines one by one"""
+        """Fetch the AS name file from BGP.Tools website and process lines one by one"""
 
-        req = requests.get(URL)
+        req = requests.get(URL, headers=self.headers)
         if req.status_code != 200:
             sys.exit('Error while fetching AS names')
 
@@ -21,18 +29,18 @@ class Crawler(BaseCrawler):
         sys.stderr.write('\n')
 
     def update_asn(self, one_line):
-        # Parse given line to get ASN, name, and country code 
-        asn, _, name_cc = one_line.partition(' ')
-        name, _, cc = name_cc.rpartition(', ')
 
-        asn_qid = self.iyp.get_node('AS', {'asn': asn}, create=True)
-        cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
+        # skip header
+        if one_line.startswith('asn'):
+            return
+
+        # Parse given line to get ASN, name, and country code 
+        asn, _, name = one_line.partition(',')
+
+        asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
         name_qid = self.iyp.get_node('NAME', {'name': name}, create=True)
 
-        statements = []
-        statements.append( ['NAME', name_qid, self.reference] ) # Set AS name
-        if cc_qid is not None:
-            statements.append( ['COUNTRY', cc_qid, self.reference] )  # Set country
+        statements = [ [ 'NAME', name_qid, self.reference ] ] # Set AS name
 
         try:
             # Update AS name and country

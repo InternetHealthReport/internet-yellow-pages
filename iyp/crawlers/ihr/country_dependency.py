@@ -2,27 +2,24 @@ import sys
 import logging
 import arrow
 import requests
+from datetime import datetime, time, timezone
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import json
-from iyp.wiki.wikihandy import Wikihandy
+from iyp import BaseCrawler
 import iso3166
 
 # URL to the API
-URL_API = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4'
+URL = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4'
 # Name of the organization providing the data
 ORG = 'Internet Health Report'
 MIN_HEGE = 0.01
 
-class Crawler(object):
-    def __init__(self):
-        """Initialize wikihandy """
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
+        """Initialize IYP """
     
-        # Helper for wiki access
-        self.wh = Wikihandy()
-
-        # Added properties will have this additional information
-        self.org_qid = self.wh.get_qid(ORG)
+        # list of countries
         self.countries = iso3166.countries_by_alpha2
 
         # Session object to fetch peeringdb data
@@ -33,12 +30,14 @@ class Crawler(object):
         self.http_session = requests.Session()
         self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
 
+        super().__init__(organization, url)
+
     def run(self):
-        """Fetch data from API and push to wikibase. """
+        """Fetch data from API and push to IYP. """
 
         for cc, country in self.countries.items():
             # Query IHR
-            self.url = URL_API.format(country=cc)
+            self.url = URL.format(country=cc)
             req = self.http_session.get( self.url+'&format=json' )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
@@ -46,19 +45,23 @@ class Crawler(object):
             ranking = data['results']
 
             # Setup references
-            today = self.wh.today()
-            self.references = [
-                (self.wh.get_pid('source'), self.org_qid),
-                (self.wh.get_pid('reference URL'), self.url),
-                (self.wh.get_pid('point in time'), today),
-                ]
+            self.reference = {
+                'reference_org': ORG,
+                'reference_url': URL,
+                'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            }
 
-            # Setup qualifiers
-            country_qid = self.wh.country2qid(country.name)
+            # Setup rankings' node
+            country_qid = self.iyp.get_node('COUNTRY', 
+                                            {
+                                                'country_code': cc, 
+                                            },
+                                            create = True
+                                            )
+
+            countryrank_statements = []
             if country_qid is not None:
-                self.qualifiers = [ (self.wh.get_pid('country'), country_qid) ]
-            else:
-                self.qualifiers = []
+                 countryrank_statements = [ ('COUNTRY', country_qid, self.reference) ]
 
             # Find the latest timebin in the data
             last_timebin = '1970-01-01'
@@ -69,13 +72,11 @@ class Crawler(object):
             # Make ranking and push data
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
 
-                # Get the QID of the selected country / create this country if needed
-                self.countryrank_qid = self.wh.get_qid(f'IHR country ranking: {metric} ({cc})',
-                    create={                        # Create it if it doesn't exist
-                        'summary': f'add IHR {metric} ranking for '+cc,       
-                        'description': f"IHR's ranking of networks ({metric}) for "+country.name,
-                        'statements': [[self.wh.get_pid('managed by'), self.org_qid]]
-                        })
+                self.countryrank_qid = self.iyp.get_node( 'RANKING',
+                        {'name': f'IHR country ranking: {metric} ({cc})'},
+                        create=True
+                        )
+                self.iyp.add_links(self.countryrank_qid, countryrank_statements)
 
                 # Filter out unnecessary data
                 selected = [r for r in ranking 
@@ -90,13 +91,11 @@ class Crawler(object):
                 for i, asn in enumerate(selected):
                     asn['rank']=i 
 
-
                 # Push data to wiki
-                for i, res in enumerate(map(self.update_entry, selected)):
+                for i, _ in enumerate(map(self.update_entry, selected)):
                     sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(selected)}')
 
                 sys.stderr.write('\n')
-
 
     def update_entry(self, asn):
         """Add the network to wikibase if it's not already there and update its
@@ -106,20 +105,19 @@ class Crawler(object):
         statements = []
 
         # set rank
-        statements.append(
-                [ self.wh.get_pid('ranking'), 
-                    { 
-                    'amount': asn['rank'], 
-                    'unit': self.countryrank_qid,
-                    },
-                    self.references,
-                    self.qualifiers])
+        # set rank
+        statements.append( [ 
+                    'RANK',
+                    self.countryrank_qid,
+                    dict({ 'rank': asn['rank'], 'hegemony': asn['hege'] }, **self.reference) 
+                    ])
 
-        # Commit to wikibase
+        # TODO add hegemony value?
+
+        # Commit to IYP
         # Get the AS QID (create if AS is not yet registered) and commit changes
-        net_qid = self.wh.asn2qid(asn['asn'], create=True) 
-        self.wh.upsert_statements('update from IHR country ranking', 
-                net_qid, statements, asynchronous=False)
+        as_qid = self.iyp.get_node('AS', {'asn': str(asn['asn'])}, create=True) 
+        self.iyp.add_links( as_qid, statements )
         
 # Main program
 if __name__ == '__main__':
@@ -134,5 +132,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler()
+    crawler = Crawler(ORG, URL)
     crawler.run()
+    crawler.close()

@@ -1,82 +1,44 @@
-from datetime import date
 import sys
 import logging
 from collections import defaultdict
+from datetime import datetime, timedelta
 import requests
-from iyp.wiki.wikihandy import Wikihandy
-from ftplib import FTP
+from iyp import BaseCrawler
 
 # URL to RIPE repository
-URL_API = 'https://ftp.ripe.net/'
-FTP_URL = 'ftp.ripe.net'
-FTP_ROOT = '/ripe/rpki'
+URL = 'https://ftp.ripe.net/rpki/'
+ORG = 'RIPE NCC'
 
-class Crawler(object):
-    def __init__(self):
-        """Initialize wikihandy and qualifiers for pushed data"""
-    
-        # Helper for wiki access
-        self.wh = Wikihandy()
+TALS = ['afrinic.tal', 'apnic.tal', 'arin.tal', 'lacnic.tal', 'ripencc.tal']
 
-        # Added properties will have this additional information
-        today = self.wh.today()
-        self.org_qid = self.wh.get_qid('RIPE NCC')
-        self.url = URL_API  # url will change for each country
-        self.reference = [
-                (self.wh.get_pid('source'), self.org_qid),
-                (self.wh.get_pid('reference URL'), self.url),
-                (self.wh.get_pid('point in time'), today)
-                ]
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
+        """Initialize IYP and statements for pushed data"""
 
-    def get_last_line(self,line):
-        """Keep the end of the last given line"""
+        now = datetime.utcnow()
+        self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
 
-        self.last_line = line.rpartition(' ')[2]
+        # Check if today's data is available
+        self.url = f'{URL}/afrinic.tal/{self.date_path}/roas.csv'
+        req = requests.head( self.url )
+        if req.status_code != 200:
+            now -= timedelta(days=1)
+            self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
+            logging.warning("Today's data not yet available!")
+            logging.warning("Using yesterday's data: "+self.date_path)
 
-    def get_all_lines(self, line):
-        """Keep the end of each given lines"""
-
-        self.all_lines.append(line.rpartition(' ')[2])
+        super().__init__(organization, url)
 
     def run(self):
-        """Fetch data from RIPE and push to wikibase. """
+        """Fetch data from RIPE and push to IYP. """
 
-        now = date.today()
-        today = f'{now.year}/{now.month:02d}/{now.day:02d}'
+        for tal in TALS:
 
-        logging.info('Connecting to the FTP server..')
-        # Find latest roa files
-        filepaths = []
-        ftp = FTP(FTP_URL)
-        ftp.login()
-        ftp.cwd(FTP_ROOT)
-
-        self.all_lines = []
-        self.last_line = ''
-        ftp.retrlines('LIST', callback=self.get_all_lines)
-
-        logging.info('Listing directories...')
-        logging.info(f'{self.all_lines}')
-        for dir in self.all_lines:
-            path = FTP_ROOT+'/'+dir
-            ftp.cwd(path)
-            self.last_line = ''
-            while self.last_line not in ['roas.csv', 'repo.tar.gz']:
-                ftp.cwd(self.last_line)
-                path += self.last_line + '/'
-                ftp.retrlines('LIST', callback=self.get_last_line)
-
-            if self.last_line == 'roas.csv' and today in path:
-                path += 'roas.csv'
-                logging.info(f'Found ROA file: {path}')
-                filepaths.append(path)
-
-        for filepath in filepaths:
-            self.url = URL_API+filepath
+            self.url = f'{URL}/{tal}/{self.date_path}/roas.csv'
             logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get( self.url )
             if req.status_code != 200:
-                sys.exit('Error while fetching data for '+filepath)
+                sys.exit('Error while fetching data for '+self.url)
             
             # Aggregate data per prefix
             prefix_info = defaultdict(list)
@@ -96,42 +58,42 @@ class Crawler(object):
 
             for i, (prefix, attributes) in enumerate(prefix_info.items()):
                 self.update(prefix, attributes)
-                sys.stderr.write(f'\rProcessing {filepath}... {i+1} prefixes ({prefix})     ')
+                sys.stderr.write(f'\rProcessing {self.url}... {i+1} prefixes ({prefix})     ')
 
     def update(self, prefix, attributes):
-        """Add the prefix to wikibase if it's not already there and update its
+        """Add the prefix to IYP if it's not already there and update its
         properties."""
 
         statements = []
         for att in attributes:
         
-            qualifiers = [
-                    [self.wh.get_pid('start time'), self.wh.to_wbtime(att['start'])],
-                    [self.wh.get_pid('end time'), self.wh.to_wbtime(att['end'])],
-                #    [self.wh.get_pid('reference URL'), url ] 
-                    ]
-
-            if att['max_length']:
-                qualifiers.append( [self.wh.get_pid('maxLength'), {'amount': att['max_length']} ] )
+            vrp = {
+                    'notBefore': att['start'],
+                    'notAfter': att['end'],
+                    'uri': att['url'],
+                    'maxLength': att['max_length']
+                  }
 
             # Properties
-            asn_qid = self.wh.asn2qid(att['asn'], create=True)
+            asn_qid = self.iyp.get_node('AS', {'asn': att['asn'].replace('AS','')}, create=True)
             if asn_qid is None:
-                print('Error: ', line)
+                print('Error: ', prefix, attributes)
                 return
 
             statements.append(
-                        [ self.wh.get_pid('route origin authorization'), 
+                        [ 'ROUTE_ORIGIN_AUTHORIZATION',
                             asn_qid,
-                            self.reference,
-                            qualifiers
+                            dict(vrp, **self.reference),
                         ]
                     )
 
-        # Commit to wikibase
+        # Commit to IYP
         # Get the prefix QID (create if prefix is not yet registered) and commit changes
-        prefix_qid = self.wh.prefix2qid(prefix, create=True) 
-        self.wh.upsert_statements('update from RIPE RPKI data', prefix_qid, statements )
+        af = 6
+        if '.' in prefix:
+            af = 4
+        prefix_qid = self.iyp.get_node( 'PREFIX', {'prefix': prefix, 'af': af}, create=True ) 
+        self.iyp.add_links( prefix_qid, statements )
         
 # Main program
 if __name__ == '__main__':
@@ -146,5 +108,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler()
+    crawler = Crawler(ORG, URL)
     crawler.run()
+    crawler.close()

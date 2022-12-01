@@ -2,6 +2,7 @@ import sys
 import pywikibot
 from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
+import ipaddress
 import iso3166
 import arrow
 from collections import defaultdict
@@ -35,6 +36,7 @@ class Wikihandy(object):
 
         self._asn2qid = {}
         self._prefix2qid = {}
+        self._ip2qid = {}
         self._domain2qid = {}
         self.repo = pywikibot.DataSite(lang, wikidata_project, 
                 user=pywikibot.config.usernames[wikidata_project][lang])
@@ -46,6 +48,8 @@ class Wikihandy(object):
         if preload:
             self.asn2qid(1)
             self.prefix2qid('10.0.0.0/8')
+            self.domain2qid('example.com')
+            self.ip2qid('10.0.0.0')
 
         logging.debug('Wikihandy: Leave initialization')
 
@@ -465,6 +469,7 @@ class Wikihandy(object):
 
         self.pending_requests -= 1
         if error is not None:
+            logging.error(f'!!! ERROR (on_delivery)!!!: {entity} {error}')
             print('!!! ERROR (on_delivery)!!!')
             print(entity)
             print(error)
@@ -694,7 +699,66 @@ class Wikihandy(object):
                     ],)
 
         return qid
-        
+       
+
+
+    @decorators.thread_safe
+    def ip2qid(self, ip_address: str, create=False):
+        """Retrive QID of items assigned with the given IP address.
+
+        param: ip_address (str)
+
+        returns None if the given address is invalid or if the address is not in
+        IYP (and create=False)."""
+
+        try:
+            ip = ipaddress.ip_address(ip_address)
+        except ValueError:
+            return None
+
+        if len( self._ip2qid ) == 0:
+            # Bootstrap : retrieve all existing IP/QID pairs
+
+            logging.info('Wikihandy: downloading IP QIDs')
+
+            QUERY = """
+            #Items that have a pKa value set
+            SELECT ?item ?ip
+            WHERE 
+            {
+                    ?item wdt:%s wd:%s.
+                    ?item rdfs:label ?ip. 
+            } 
+            """ % (
+                    self.get_pid('instance of'), 
+                    self.get_qid(f'IP address') , 
+                  )
+
+            self.sparql.setQuery(QUERY)
+            self.sparql.setReturnFormat(JSON)
+            results = self.sparql.query().convert()
+            
+            for res in results['results']['bindings']:
+                res_qid = res['item']['value'].rpartition('/')[2]
+                res_ip = res['ip']['value']
+
+                self._ip2qid[res_ip] = res_qid
+
+            logging.info(f'Wikihandy: downloaded QIDs for {len(self._ip2qid)} IP addresses ')
+
+        # Find the IP QID or add it to wikibase
+        qid = self._ip2qid.get(ip.compressed, None)
+        if create and qid is None:
+            # if this IP is unknown, create corresponding item
+            qid = self.add_item('new IP address', ip.compressed,
+                    statements=[
+                        [self.get_pid('instance of'), self.get_qid('IP address'), []],
+                        [self.get_pid('IP version'), self.get_qid(f'IPv{ip.version}'), []],
+                    ],)
+
+        return qid
+
+
     @decorators.thread_safe
     def domain2qid(self, domain, create=False):
         """Retrive QID of items assigned to the given domain name.
@@ -838,21 +902,20 @@ class Wikihandy(object):
                 OPTIONAL{
                     ?item wdt:%s ?instance.
                 }
-                FILTER( !bound(?instance) || ?instance NOT IN (wd:%s, wd:%s, wd:%s))
+                FILTER( !bound(?instance) || ?instance NOT IN (wd:%s, wd:%s, wd:%s, wd:%s))
                 OPTIONAL{
                     ?item wdt:%s ?extID.
                 }
-                FILTER( bound(?extID) )
+                FILTER( !bound(?extID) )
                 
             } """ % (
                     self.label2id('instance of'), 
                     self.label2id('autonomous system'),
                     self.label2id('IP routing prefix'),
+                    self.label2id('IP address'),
                     self.label2id('domain name'),
                     self.label2id('external ID'), 
                     ) 
-
-        print(QUERY)
 
         # Fetch existing entities
         self.sparql.setQuery(QUERY)

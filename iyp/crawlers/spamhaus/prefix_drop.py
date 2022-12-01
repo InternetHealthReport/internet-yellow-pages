@@ -69,6 +69,8 @@ class Crawler(object):
             sys.stderr.write(f'\rProcessed {i+1} prefixes')
         sys.stderr.write(f'\n')
 
+        self.iyp.close()
+
 
     def update_net(self, one_line):
         """Add the prefix to wikibase if it's not already there and update its

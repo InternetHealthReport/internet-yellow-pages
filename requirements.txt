@@ -1,8 +1,9 @@
-SPARQLWrapper
+neo4j
 iso3166
 progressbar2
-requests-oauthlib
-mwoauth
 arrow
 tldextract
 py-radix
+requests-cache
+lz4
+frozendict

@@ -1,19 +1,26 @@
 import sys
 import logging
 import requests
-from iyp.wiki.wikihandy import Wikihandy
+from datetime import datetime, time, timezone
+from iyp import BaseCrawler
 
 # URL to MANRS csv file
-URL_MANRS = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
+URL = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
+ORG = 'MANRS'
 
-class Crawler(object):
-    def __init__(self):
-        """Fetch QIDs for MANRS actions (create them if they are not in the 
-        wikibase)."""
+class Crawler(BaseCrawler):
+    def __init__(self, organization, url):
+        """Fetch nodes for MANRS actions (create them if they are not in IYP).""" 
     
-        # Helper for wiki access
-        self.wh = Wikihandy()
+        # connect to IYP database
+        super().__init__(organization, url)
 
+        self.manrs_qid = self.iyp.get_node(
+                                        'ORGANIZATION', 
+                                        { 'name': 'MANRS' },
+                                        create=True
+                                        )
+        
         # Actions defined by MANRS
         self.actions = [
               {
@@ -34,28 +41,30 @@ class Crawler(object):
               }
             ]
 
-        # Get the QID for the four items representing MANRS actions
+        # Get the ID for the four items representing MANRS actions
         for action in self.actions:
-            action['qid'] = self.wh.get_qid(action['label'],
-                create={                                    # Create it if it doesn't exist
-                    'summary': 'add MANRS actions',         # Commit message
-                    'description': action['description']    # Item description
-                    })
+            action['qid'] = self.iyp.get_node(
+                                            'MANRS_ACTION', 
+                                            {
+                                                'name': action['label'],
+                                                'description': action['description']
+                                            },
+                                            create=True
+                                           )
 
-        # Added properties will have this additional information
-        today = self.wh.today()
-        self.reference = [
-                (self.wh.get_pid('source'), self.wh.get_qid('MANRS')),
-                (self.wh.get_pid('reference URL'), URL_MANRS),
-                (self.wh.get_pid('point in time'), today)
-                ]
+        # Reference information for data pushed to IYP
+        self.reference = {
+            'reference_org': ORG,
+            'reference_url': URL,
+            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            }
 
 
 
     def run(self):
         """Fetch networks information from MANRS and push to wikibase. """
 
-        req = requests.get(URL_MANRS)
+        req = requests.get(URL)
         if req.status_code != 200:
             sys.exit('Error while fetching MANRS csv file')
 
@@ -76,24 +85,25 @@ class Crawler(object):
 
         # Properties
         statements = [ 
-                [self.wh.get_pid('member of'), self.wh.get_qid('MANRS'), self.reference],
+                ['MEMBER_OF', self.manrs_qid, self.reference],
                 ] 
 
         # set countries
         for cc in areas.split(';'):
-            statements.append([ self.wh.get_pid('country'), self.wh.country2qid(cc), self.reference])
+            country_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
+            statements.append([ 'COUNTRY', country_qid, self.reference])
 
         # set actions
         for i, action_bool in enumerate([act1, act2, act3, act4]):
             if action_bool == 'Yes':
-                statements.append([ self.wh.get_pid('implements'), self.actions[i]['qid'], self.reference])
+                statements.append([ 'IMPLEMENT', self.actions[i]['qid'], self.reference])
 
-        # Commit to wikibase
+        # Commit to IYP
         for asn in asns.split(';'):
             if asn:     # ignore organizations with no ASN
                 # Get the AS QID (create if AS is not yet registered) and commit changes
-                net_qid = self.wh.asn2qid(asn, create=True) 
-                self.wh.upsert_statements('update from MANRS membership', net_qid, statements )
+                as_qid = self.iyp.get_node('AS', {'asn': str(asn)}, create=True) 
+                self.iyp.add_links( as_qid, statements )
         
 # Main program
 if __name__ == '__main__':
@@ -108,5 +118,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    manrs = Crawler()
+    manrs = Crawler(ORG, URL)
     manrs.run()
+    manrs.close()

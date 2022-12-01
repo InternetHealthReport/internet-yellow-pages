@@ -44,7 +44,7 @@ class Crawler(object):
                 'statements': [ [self.wh.get_pid('part of'), self.atlas_qid] ]
                 })
 
-        # Get the QID of the item representing PeeringDB IX IDs
+        # Get the QID of the item representing Atlas probe IDs
         self.probeid_qid = self.wh.get_qid(PROBEID_LABEL,
                 create={                                                            # Create it if it doesn't exist
                     'summary': 'add RIPE Atlas probes',                             # Commit message
@@ -150,14 +150,14 @@ class Crawler(object):
         self.wh.upsert_statements('update from RIPE Atlas probes', probe_qid, statements )
         
     def probe_qid(self, probe):
-        """Find the ix QID for the given probe ID.
+        """Find the probe QID for the given probe ID.
         If this probe is not yet registered in the wikibase then add it.
 
         Return the probe QID."""
 
         id = str(probe['id'])
 
-        # Check if the IX is in the wikibase
+        # Check if the probe is in the wikibase
         if id not in self.probeid2qid :
             # Set properties for this new probe
             probeid_qualifiers = [
