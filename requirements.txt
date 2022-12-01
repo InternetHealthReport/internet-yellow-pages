@@ -6,3 +6,4 @@ tldextract
 py-radix
 requests-cache
 lz4
+frozendict

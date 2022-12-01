@@ -14,7 +14,7 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch the delegated stat file from RIPE website and process lines one by one"""
 
-        req = requests.get(URL, stream=True)
+        req = requests.get(URL)
         if req.status_code != 200:
             sys.exit('Error while fetching delegated file')
 

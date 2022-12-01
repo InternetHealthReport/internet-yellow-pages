@@ -1,4 +1,5 @@
 import sys
+import os
 import logging
 import arrow
 import requests
@@ -13,10 +14,10 @@ ORG = 'Internet Health Report'
 
 
 class lz4Csv:
-    def __init__(self, response):
-        """Start reading a lz4 compress file fetched with requests"""
+    def __init__(self, filename):
+        """Start reading a lz4 compress csv file """
     
-        self.fp = lz4.frame.open(response.raw, 'rb')
+        self.fp = lz4.frame.open(filename)
 
     def __iter__(self):
         """Read file header line and set self.fields"""
@@ -54,11 +55,11 @@ class Crawler(BaseCrawler):
             'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
-        req = requests.get(url, stream=True)
-        if req.status_code != 200:
-            sys.exit('Error while fetching data '+url)
+        os.makedirs('tmp/', exist_ok=True)
+        os.system(f'wget {url} -P tmp/')
         
-        self.csv = lz4Csv(req)
+        local_filename = 'tmp/'+url.rpartition('/')[2]
+        self.csv = lz4Csv(local_filename)
 
         for i, line in  enumerate(csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True) ):
             # header
@@ -71,6 +72,9 @@ class Crawler(BaseCrawler):
             # commit every 10k lines
             if i % 10000 == 0:
                 self.iyp.commit()
+
+        # Remove downloaded file
+        os.remove(local_filename)
 
 
     def update(self, line):
@@ -99,7 +103,7 @@ class Crawler(BaseCrawler):
         # Commit to IYP
         # Get the prefix node ID (create if AS is not yet registered) and commit changes
         prefix_qid = self.iyp.get_node('PREFIX', 
-            {'prefix': rec['prefix'], 'af': int(rec['af']), 'description': rec['descr']}, create=True)
+            {'prefix': rec['prefix'], 'af': int(rec['af'])}, create=True)
         self.iyp.add_links( prefix_qid, statements )
         
 # Main program

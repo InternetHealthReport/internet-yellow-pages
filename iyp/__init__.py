@@ -2,6 +2,9 @@ import logging
 import sys
 from datetime import datetime, time, timezone
 from neo4j import GraphDatabase
+from neo4j.exceptions import ConstraintError
+from frozendict import frozendict
+import functools
 
 # Usual constraints on nodes' properties
 NODE_CONSTRAINTS = {
@@ -11,7 +14,7 @@ NODE_CONSTRAINTS = {
 
         'PREFIX': {
                 'prefix': set(['UNIQUE', 'NOT NULL']), 
-                'af': set(['NOT NULL'])
+                #'af': set(['NOT NULL'])
                 },
         
         'IP': {
@@ -45,6 +48,8 @@ def format_properties(prop):
     For example IPv6 addresses are stored in lowercase, or ASN are kept as 
     integer not string."""
 
+    prop = dict(prop)
+
     # asn is stored as an int
     if 'asn' in prop:
         prop['asn'] = int(prop['asn'])
@@ -77,6 +82,19 @@ def dict2str(d, eq=':', pfx=''):
 
     return '{'+','.join(data)+'}'
 
+
+def freezeargs(func):
+    """Transform mutable dictionnary
+    Into immutable
+    Useful to be compatible with cache
+    """
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        args = tuple([frozendict(arg) if isinstance(arg, dict) else arg for arg in args])
+        kwargs = {k: frozendict(v) if isinstance(v, dict) else v for k, v in kwargs.items()}
+        return func(*args, **kwargs)
+    return wrapped
 
 class IYP(object):
 
@@ -139,6 +157,8 @@ class IYP(object):
         self.tx.rollback()
         self.tx = self.session.begin_transaction()
 
+    @freezeargs
+    @functools.lru_cache(maxsize=100000) 
     def get_node(self, type, prop, create=False):
         """Find the ID of a node in the graph. Return None if the node does not
         exist or create the node if create=True."""
@@ -162,7 +182,10 @@ class IYP(object):
                 #values = ', '.join([ f"a.{p} = {val}" for p, val in prop.items() ])
                 labels = ', '.join([ f"a:{l}" for l in type])
 
-                result = self.tx.run(
+                # TODO: fix this. Not working as expected. e.g. getting prefix
+                # with a descr in prop
+                try:
+                    result = self.tx.run(
                     f"""MERGE (a:{label} {dict2str(constraint_prop)}) 
                         ON MATCH
                             SET {dict2str(prop, eq='=', pfx='a.')[1:-1]}, {labels}
@@ -170,6 +193,11 @@ class IYP(object):
                             SET {dict2str(prop, eq='=', pfx='a.')[1:-1]}, {labels}
                         RETURN ID(a)"""
                         ).single()
+                except ConstraintError:
+                    sys.stderr.write(f'cannot merge {prop}')
+                    result = self.tx.run(
+                    f"""MATCH (a:{label} {dict2str(constraint_prop)}) RETURN ID(a)""").single()
+
             else:
                 ### MERGE node without constraints
                 result = self.tx.run(f"MERGE (a:{type_str} {dict2str(prop)}) RETURN ID(a)").single()
@@ -182,6 +210,7 @@ class IYP(object):
         else:
             return None
 
+    @functools.lru_cache(maxsize=100000)
     def get_node_extid(self, id_type, id):
         """Find a node in the graph which has an EXTERNAL_ID relationship with
         the given ID. Return None if the node does not exist."""
