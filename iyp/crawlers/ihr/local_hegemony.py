@@ -4,11 +4,32 @@ import arrow
 import requests
 import lz4.frame
 from datetime import datetime, time, timezone
+import csv
 from iyp import BaseCrawler
 
 # URL to the API
 URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv4/local/{year}/{month:02d}/{day:02d}/ihr_hegemony_ipv4_local_{year}-{month:02d}-{day:02d}.csv.lz4'
 ORG = 'Internet Health Report'
+
+class lz4Csv:
+    def __init__(self, response):
+        """Start reading a lz4 compress file fetched with requests"""
+    
+        self.fp = lz4.frame.open(response.raw, 'rb')
+
+    def __iter__(self):
+        """Read file header line and set self.fields"""
+        line = self.fp.readline()
+        self.fields = line.decode('utf-8').rstrip().split(',')
+        return self
+
+    def __next__(self):
+        line = self.fp.readline().decode('utf-8').rstrip()
+    
+        if len(line) > 0:
+            return line
+        else:
+            raise StopIteration
 
 class Crawler(BaseCrawler):
 
@@ -22,50 +43,53 @@ class Crawler(BaseCrawler):
             today = today.shift(days=-1)
             url = URL.format(year=today.year, month=today.month, day=today.day)
             req = requests.head(url)
+            if req.status_code != 200:
+                today = today.shift(days=-1)
+                url = URL.format(year=today.year, month=today.month, day=today.day)
+                req = requests.head(url)
+
 
         self.reference = {
             'reference_url': url,
-            'reference_time': today
+            'reference_org': ORG,
+            'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
         req = requests.get(url, stream=True)
         if req.status_code != 200:
             sys.exit('Error while fetching data '+url)
         
+        self.csv = lz4Csv(req)
         
-        with lz4.frame.open(req.raw, 'r') as fp:
+        for i, line in  enumerate(csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True) ):
             # header
             # timebin,originasn,asn,hege
-            line = fp.readline()
-            self.fields = line.decode('utf-8').rstrip().split(',')
 
-            # first line of data
-            line = fp.readline()
-            i = 0
+            self.update(line)
+            sys.stderr.write(f'\rProcessed {i+1} lines...')
 
-            while len(line) > 0:
-                self.update(line)
-                sys.stderr.write(f'\rProcessed {i+1} lines...')
-                i+=1
-                line = fp.readline()
+            # commit every 10k lines
+            if i % 10000 == 0:
+                self.iyp.commit()
+
 
     def update(self, line):
         """Add the AS to iyp if it's not already there and update its
         properties."""
         
-        rec = dict( zip(self.fields, line.decode('utf-8').rstrip().split(',')) )
+        rec = dict( zip(self.csv.fields, line) )
 
-        asn_qid = self.iyp.get_node('AS', {'asn': rec['asn_id']}, create=True)
+        asn_qid = self.iyp.get_node('AS', {'asn': rec['asn']}, create=True)
 
         # Properties
         statements = []
 
         # set dependency
-        statements.append( [ 'DEPENDS_ON', asn_qid, dict({'hegemony': rec['hege']}, *self.reference) ])
+        statements.append( [ 'DEPENDS_ON', asn_qid, dict({'hegemony': rec['hege']}, **self.reference) ])
 
         # Commit to IYP
         # Get the AS node ID (create if AS is not yet registered) and commit changes
-        originasn_qid = self.iyp.get_node('AS', {'asn': rec['originasn_id']}, create=True)
+        originasn_qid = self.iyp.get_node('AS', {'asn': rec['originasn']}, create=True)
         self.iyp.add_links( originasn_qid, statements )
         
 # Main program

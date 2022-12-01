@@ -23,6 +23,10 @@ class Crawler(BaseCrawler):
         self.fields_name = ['registry', 'cc', 'type', 'start', 'value', 'date', 'status', 'opaque-id']
 
         for i, _ in enumerate(map(self.update, req.text.splitlines())):
+            # commit every 10k lines
+            if i % 10000 ==0:
+                self.iyp.commit()
+
             sys.stderr.write(f'\rProcessed {i} lines')
 
         sys.stderr.write('\n')
