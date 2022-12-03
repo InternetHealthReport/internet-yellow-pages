@@ -24,7 +24,6 @@ class Crawler(BaseCrawler):
             if i % 1000 == 0:
                 self.iyp.commit()
 
-
         sys.stderr.write('\n')
 
     def update_asn(self, entry):
