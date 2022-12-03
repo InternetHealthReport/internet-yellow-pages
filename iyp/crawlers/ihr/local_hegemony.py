@@ -73,8 +73,8 @@ class Crawler(BaseCrawler):
 
             sys.stderr.write(f'\rProcessed {i+1} lines...')
 
-            # commit every 10k lines
-            if i % 10000 == 0:
+            # commit every 1k lines
+            if i % 1000 == 0:
                 self.iyp.commit()
 
         # Remove downloaded file

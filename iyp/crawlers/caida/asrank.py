@@ -29,6 +29,12 @@ class Crawler(BaseCrawler):
                 sys.stderr.write(f'\rProcessing... {i+1}/{ranking["totalCount"]}')
                 i+=1
 
+            # commit every 1k lines
+            if i % 1000 == 0:
+                self.iyp.commit()
+                
+        sys.stderr.write('\n')
+
     def update_net(self, asn):
         """Add the network to iyp if it's not already there and update its
         properties."""

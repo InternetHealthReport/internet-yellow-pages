@@ -20,6 +20,10 @@ class Crawler(BaseCrawler):
         for i, _ in enumerate(map(self.update_asn, json.load(bz2.open(req.raw)))):
             sys.stderr.write(f'\rProcessed {i} relationships')
 
+            # commit every 1k lines
+            if i % 1000 == 0:
+                self.iyp.commit()
+
         sys.stderr.write('\n')
 
     def update_asn(self, rel):

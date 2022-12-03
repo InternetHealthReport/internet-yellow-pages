@@ -97,6 +97,9 @@ class Crawler(BaseCrawler):
 
                 sys.stderr.write('\n')
 
+                # commit to IYP
+                self.iyp.commit()
+
     def update_entry(self, asn):
         """Add the network to wikibase if it's not already there and update its
         properties."""

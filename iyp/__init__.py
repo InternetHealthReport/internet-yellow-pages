@@ -101,6 +101,7 @@ class IYP(object):
     def __init__(self):
 
         logging.debug('IYP: Enter initialization')
+        self.neo4j_enterprise = False
 
         # TODO: get config from configuration file
         self.server = 'localhost'
@@ -125,15 +126,16 @@ class IYP(object):
         """Add constraints and indexes."""
 
         # Create constraints (implicitly add corresponding indexes)
-        for label, prop_constraints in NODE_CONSTRAINTS.items():
-            for property, constraints in prop_constraints.items():
+        if self.neo4j_enterprise:
+            for label, prop_constraints in NODE_CONSTRAINTS.items():
+                for property, constraints in prop_constraints.items():
 
-                for constraint in constraints:
-                    constraint_formated = constraint.replace(' ', '')
-                    self.session.run(
-                        f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
-                        f" FOR (n:{label}) "
-                        f" REQUIRE n.{property} IS {constraint} ")
+                    for constraint in constraints:
+                        constraint_formated = constraint.replace(' ', '')
+                        self.session.run(
+                            f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
+                            f" FOR (n:{label}) "
+                            f" REQUIRE n.{property} IS {constraint} ")
 
         # Create indexes
         for label, indexes in NODE_INDEXES.items():

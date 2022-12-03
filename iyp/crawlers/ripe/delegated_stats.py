@@ -24,7 +24,7 @@ class Crawler(BaseCrawler):
 
         for i, _ in enumerate(map(self.update, req.text.splitlines())):
             # commit every 10k lines
-            if i % 10000 ==0:
+            if i % 1000 ==0:
                 self.iyp.commit()
 
             sys.stderr.write(f'\rProcessed {i} lines')

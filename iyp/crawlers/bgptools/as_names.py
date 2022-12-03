@@ -26,6 +26,10 @@ class Crawler(BaseCrawler):
         for i, _ in enumerate(map(self.update_asn, req.text.splitlines())):
             sys.stderr.write(f'\rProcessed {i} ASes')
 
+            # commit every 1k lines
+            if i % 1000 == 0:
+                self.iyp.commit()
+
         sys.stderr.write('\n')
 
     def update_asn(self, one_line):

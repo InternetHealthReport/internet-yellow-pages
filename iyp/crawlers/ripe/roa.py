@@ -60,6 +60,13 @@ class Crawler(BaseCrawler):
                 self.update(prefix, attributes)
                 sys.stderr.write(f'\rProcessing {self.url}... {i+1} prefixes ({prefix})     ')
 
+                # commit every 1k lines
+                if i % 1000 == 0:
+                    self.iyp.commit()
+
+                sys.stderr.write('\n')
+
+
     def update(self, prefix, attributes):
         """Add the prefix to IYP if it's not already there and update its
         properties."""

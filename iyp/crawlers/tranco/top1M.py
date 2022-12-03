@@ -29,6 +29,12 @@ class Crawler(BaseCrawler):
                     sys.stderr.write(f'\rProcessed {i} domains \t {row}')
                     self.update(row)
 
+                    # commit every 1k lines
+                    if i % 1000 == 0:
+                        self.iyp.commit()
+
+        sys.stderr.write('\n')
+
 
     def update(self, one_line):
         """Add the network to IYP if it's not already there and update its
