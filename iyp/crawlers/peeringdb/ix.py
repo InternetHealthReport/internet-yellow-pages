@@ -12,7 +12,7 @@ from iyp import BaseCrawler
 ORG = 'PeeringDB'
 
 # URL to peeringdb API for exchange points
-URL_PDB_IXS = 'https://peeringdb.com/api/ix?depth=2'
+URL = 'https://peeringdb.com/api/ix?depth=2'
 # API endpoint for LAN prefixes
 URL_PDB_LANS = 'https://peeringdb.com/api/ixlan?depth=2'
 
@@ -35,7 +35,7 @@ class Crawler(BaseCrawler):
     
         self.reference_ix = {
             'reference_org': ORG,
-            'reference_url': URL_PDB_IXS,
+            'reference_url': URL,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
@@ -58,7 +58,7 @@ class Crawler(BaseCrawler):
         """Fetch ixs information from PeeringDB and push to IYP. 
         Using multiple threads for better performances."""
 
-        req = self.requests.get( URL_PDB_IXS, headers=self.headers)
+        req = self.requests.get( URL, headers=self.headers)
         if req.status_code != 200:
             sys.exit(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
         self.ixs = json.loads(req.text)['data']

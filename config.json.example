@@ -1,0 +1,32 @@
+{
+    "peeringdb": {
+        "apikey": "bi5mmGC9.fFQ27XoAu5zjsNYnN8wLXh0zK8ALnYLj"
+    },
+
+    "cloudflare":{
+        "apikey": "OxnarR034jWxNN45C8bXhSz1xkcFckgqff-lIrOk"
+    },
+
+    "iyp": {
+        "crawlers": [
+            "iyp.crawlers.manrs.members",
+            "iyp.crawlers.ripe.as_names",
+            "iyp.crawlers.bgptools.as_names",
+            "iyp.crawlers.apnic.eyeball",
+            "iyp.crawlers.caida.asrank",
+            "iyp.crawlers.ihr.country_dependency",
+            "iyp.crawlers.bgpkit.pfx2asn",
+            "iyp.crawlers.bgpkit.as2rel",
+            "iyp.crawlers.bgpkit.peerstats",
+            "iyp.crawlers.ripe.roa",
+            "iyp.crawlers.ihr.local_hegemony",
+            "iyp.crawlers.ihr.rov",
+            "iyp.crawlers.tranco.top1M",
+            "iyp.crawlers.cloudflare.top100",
+            "iyp.crawlers.bgptools.tags",
+            "iyp.crawlers.peeringdb.org",
+            "iyp.crawlers.peeringdb.ix",
+            "iyp.crawlers.ripe.delegated_stats"
+        ]
+    }
+}
