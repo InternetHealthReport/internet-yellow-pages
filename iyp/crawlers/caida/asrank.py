@@ -5,7 +5,7 @@ import json
 from iyp import BaseCrawler
 
 # URL to ASRank API
-URL = 'https://api.asrank.caida.org/v2/restful/asns/'
+URL = 'https://api.asrank.caida.org/v2/restful/asns/?first=10000'
 ORG = 'CAIDA'
 
 class Crawler(BaseCrawler):
@@ -23,7 +23,7 @@ class Crawler(BaseCrawler):
         has_next = True
         i = 0
         while has_next:
-            req = requests.get(URL+f'?offset={i}')
+            req = requests.get(URL+f'&offset={i*10000}')
             if req.status_code != 200:
                 sys.exit('Error while fetching data from API')
             
@@ -40,7 +40,6 @@ class Crawler(BaseCrawler):
                 names.add(asn['asnName'])
                 asns.add(int(asn['asn']))
                 countries.add(asn['country']['iso'])
-
 
             # Compute links
             country_links = []
