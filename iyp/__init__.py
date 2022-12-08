@@ -14,7 +14,7 @@ NODE_CONSTRAINTS = {
 
         'PREFIX': {
                 'prefix': set(['UNIQUE', 'NOT NULL']), 
-                #'af': set(['NOT NULL'])
+                'af': set(['NOT NULL'])
                 },
         
         'IP': {
@@ -126,16 +126,19 @@ class IYP(object):
         """Add constraints and indexes."""
 
         # Create constraints (implicitly add corresponding indexes)
-        if self.neo4j_enterprise:
-            for label, prop_constraints in NODE_CONSTRAINTS.items():
-                for property, constraints in prop_constraints.items():
+        for label, prop_constraints in NODE_CONSTRAINTS.items():
+            for property, constraints in prop_constraints.items():
 
-                    for constraint in constraints:
-                        constraint_formated = constraint.replace(' ', '')
-                        self.session.run(
-                            f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
-                            f" FOR (n:{label}) "
-                            f" REQUIRE n.{property} IS {constraint} ")
+                for constraint in constraints:
+                    # neo4j-community only implements the UNIQUE constraint
+                    if not self.neo4j_enterprise and constraint != 'UNIQUE':
+                        continue
+
+                    constraint_formated = constraint.replace(' ', '')
+                    self.session.run(
+                        f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
+                        f" FOR (n:{label}) "
+                        f" REQUIRE n.{property} IS {constraint} ")
 
         # Create indexes
         for label, indexes in NODE_INDEXES.items():
