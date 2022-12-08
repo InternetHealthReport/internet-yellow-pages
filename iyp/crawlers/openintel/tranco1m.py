@@ -120,24 +120,18 @@ class Crawler(BaseCrawler):
         #sld_a_mappings.to_csv(args.out_file, sep=",", header=True, index=False)
         #print("Written results to '{}' [{:.2f}MiB].".format(args.out_file, os.path.getsize(args.out_file) / (1024 * 1024)))
 
-        for i, ind in enumerate(df.index):
-            self.update(df['query_name'][ind], df['ip4_address'][ind])
-            sys.stderr.write(f'\rProcessed {i} lines')
+        domain_id = self.iyp.batch_get_nodes('DOMAIN_NAME', 'name', set(df['query_name']))
+        ip_id = self.iyp.batch_get_nodes('IP', 'ip', set(df['ip4_address']))
 
-            # commit every 1k lines
-            if i % 10000 == 0:
-                self.iyp.commit()
+        links = []
+        for ind in df.index:
+            domain_qid = domain_id[ df['query_name'][ind] ] 
+            ip_qid =  ip_id[ df['ip4_address'][ind] ]
+            
+            links.append( { 'src_id':domain_qid, 'dst_id':ip_qid, 'props':[self.reference] } )
 
-        sys.stderr.write('\n')
-
-    def update(self, domain, ip):
-
-        name_qid = self.iyp.get_node('DOMAIN_NAME', {'name': domain}, create=True)
-        ip_qid = self.iyp.get_node('IP', {'ip': ip, 'af': 4}, create=True)
-        statements = [ [ 'RESOLVES_TO', ip_qid, self.reference ] ] # Set AS name
-
-        # Update domain name relationships
-        self.iyp.add_links(name_qid, statements)
+        # Push all links to IYP
+        self.iyp.batch_add_links('RESOLVES_TO:FORWARD_DNS', links)
 
 
 if __name__ == '__main__':
@@ -150,9 +144,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
 
+    logging.info("End: %s" % sys.argv)
