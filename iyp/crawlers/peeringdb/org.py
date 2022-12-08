@@ -80,10 +80,10 @@ class Crawler(BaseCrawler):
 
             flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
 
+            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference, flat_org] } )
             name_links.append( { 'src_id':org_qid, 'dst_id':name_qid, 'props':[self.reference, flat_org] } ) 
             website_links.append( { 'src_id':org_qid, 'dst_id':website_qid, 'props':[self.reference, flat_org] } )
             country_links.append( { 'src_id':org_qid, 'dst_id':country_qid, 'props':[self.reference, flat_org] } )
-            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference, flat_org] } )
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
