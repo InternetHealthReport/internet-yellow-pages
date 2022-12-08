@@ -61,51 +61,89 @@ class Crawler(BaseCrawler):
         local_filename = 'tmp/'+url.rpartition('/')[2]
         self.csv = lz4Csv(local_filename)
 
-        for i, line in  enumerate(csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True) ):
+        asn_id = self.iyp.batch_get_nodes('AS', 'asn', set())
+        prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', set())
+        tag_id = self.iyp.batch_get_nodes('TAG', 'label', set())
+        country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', set())
+
+        orig_links = []
+        tag_links = []
+        dep_links = []
+        country_links = []
+
+        for line in  csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
             # header
             # id,timebin,prefix,hege,af,visibility,rpki_status,irr_status, delegated_prefix_status,
             #delegated_asn_status,descr,moas,asn_id,country_id,originasn_id
 
-            self.update(line)
-            sys.stderr.write(f'\rProcessed {i+1} lines...')
+            rec = dict( zip(self.csv.fields, line) )
 
-            # commit every 10k lines
-            if i % 10000 == 0:
-                self.iyp.commit()
+            # Make sure all nodes exist
+            prefix = rec['prefix']
+            if prefix not in prefix_id:
+                prefix_id[prefix] = self.iyp.get_node('PREFIX', {'prefix': prefix}, create=True)
+
+            originasn = int(rec['originasn_id'])
+            if originasn not in asn_id:
+                asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn}, create=True)
+
+            asn = int(rec['asn_id'])
+            if asn not in asn_id:
+                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
+
+            rpki_status = 'RPKI '+rec['rpki_status']
+            if rpki_status not in tag_id:
+                tag_id[rpki_status] = self.iyp.get_node('TAG', {'label': rpki_status}, create=True)
+
+            irr_status = 'IRR '+rec['irr_status']
+            if irr_status not in tag_id:
+                tag_id[irr_status] = self.iyp.get_node('TAG', {'label': irr_status}, create=True)
+
+            cc = rec['country_id']
+            if cc not in country_id:
+                country_id[cc] = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
+
+            # Compute links
+            orig_links.append( {
+                'src_id': asn_id[originasn],
+                'dst_id': prefix_id[prefix],
+                'props': [self.reference, rec]
+                } )
+
+            tag_links.append( {
+                'src_id': prefix_id[prefix],
+                'dst_id': tag_id[rpki_status],
+                'props': [self.reference, rec]
+                } )
+
+            tag_links.append( {
+                'src_id': prefix_id[prefix],
+                'dst_id': tag_id[irr_status],
+                'props': [self.reference, rec]
+                } )
+
+            dep_links.append( {
+                'src_id': prefix_id[prefix],
+                'dst_id': asn_id[asn],
+                'props': [self.reference, rec]
+                } )
+
+            country_links.append( {
+                'src_id': prefix_id[prefix],
+                'dst_id': country_id[cc],
+                'props': [self.reference]
+                } )
+
+        # Push links to IYP
+        self.iyp.batch_add_links('ORIGINATE', orig_links)
+        self.iyp.batch_add_links('CATEGORIZED', tag_links)
+        self.iyp.batch_add_links('DEPENDS_ON', dep_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
 
         # Remove downloaded file
         os.remove(local_filename)
 
 
-    def update(self, line):
-        """Add the prefix to iyp if it's not already there and update its
-        properties."""
-        
-        rec = dict( zip(self.csv.fields, line) )
-
-        rpki_status = self.iyp.get_node('TAG', {'label': 'RPKI '+rec['rpki_status']}, create=True)
-        irr_status = self.iyp.get_node('TAG', {'label': 'IRR '+rec['irr_status']}, create=True)
-        asn_qid = self.iyp.get_node('AS', {'asn': rec['asn_id']}, create=True)
-        originasn_qid = self.iyp.get_node('AS', {'asn': rec['originasn_id']}, create=True)
-        country_qid = self.iyp.get_node('COUNTRY', {'country_code': rec['country_id']}, create=True)
-
-        # Properties
-        statements = []
-
-        # set links
-        statements.append( [ 'CLASSIFIED', rpki_status, self.reference ])
-        statements.append( [ 'CLASSIFIED', irr_status, self.reference ])
-        statements.append( [ 'DEPENDS_ON', asn_qid, dict({'hegemony': rec['hege']}, **self.reference) ])
-        # TODO fix link direction?
-        statements.append( [ 'ORIGINATE', originasn_qid, self.reference ])
-        statements.append( [ 'COUNTRY', country_qid, self.reference ])
-
-        # Commit to IYP
-        # Get the prefix node ID (create if AS is not yet registered) and commit changes
-        prefix_qid = self.iyp.get_node('PREFIX', 
-            {'prefix': rec['prefix'], 'af': int(rec['af'])}, create=True)
-        self.iyp.add_links( prefix_qid, statements )
-        
 # Main program
 if __name__ == '__main__':
 
@@ -117,8 +155,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
+
+    logging.info("End: %s" % sys.argv)

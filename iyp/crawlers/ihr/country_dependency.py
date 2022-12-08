@@ -70,6 +70,7 @@ class Crawler(BaseCrawler):
                     last_timebin = r['timebin']
 
             # Make ranking and push data
+            links = []
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
 
                 self.countryrank_qid = self.iyp.get_node( 'RANKING',
@@ -88,40 +89,24 @@ class Crawler(BaseCrawler):
 
                 # Make sure the ranking is sorted and add rank field
                 selected.sort(key=lambda x: x['hege'], reverse=True)
+                asns = set()
                 for i, asn in enumerate(selected):
+                    asns.add(asn['asn'])
                     asn['rank']=i 
 
-                # Push data to wiki
-                for i, _ in enumerate(map(self.update_entry, selected)):
-                    sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(selected)}')
+                self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
 
-                sys.stderr.write('\n')
+                # Compute links 
+                for asn in selected:
+                    links.append( {
+                        'src_id': self.asn_id[asn['asn']], 
+                        'dst_id': self.countryrank_qid,
+                        'props':[self.reference, asn]
+                        } )
+                    
+            # Push links to IYP
+            self.iyp.batch_add_links('RANK', links)
 
-                # commit to IYP
-                self.iyp.commit()
-
-    def update_entry(self, asn):
-        """Add the network to wikibase if it's not already there and update its
-        properties."""
-        
-        # Properties
-        statements = []
-
-        # set rank
-        # set rank
-        statements.append( [ 
-                    'RANK',
-                    self.countryrank_qid,
-                    dict({ 'rank': asn['rank'], 'hegemony': asn['hege'] }, **self.reference) 
-                    ])
-
-        # TODO add hegemony value?
-
-        # Commit to IYP
-        # Get the AS QID (create if AS is not yet registered) and commit changes
-        as_qid = self.iyp.get_node('AS', {'asn': str(asn['asn'])}, create=True) 
-        self.iyp.add_links( as_qid, statements )
-        
 # Main program
 if __name__ == '__main__':
 
@@ -133,8 +118,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
+
+    logging.info("End: %s" % sys.argv)
