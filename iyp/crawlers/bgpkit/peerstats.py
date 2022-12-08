@@ -52,36 +52,30 @@ class Crawler(BaseCrawler):
 
             # keep track of collector and reference url
             stats = json.load(bz2.open(req.raw))
-            self.collector_qid = self.iyp.get_node(
+            collector_qid = self.iyp.get_node(
                     'BGP_COLLECTOR', 
                     {'name': stats['collector'], 'project': stats['project']},
                     create=True
                     )
             self.reference['reference_url'] = url
 
-            for i, _ in enumerate(map(self.update_peer, stats['peers'].values())):
-                sys.stderr.write(f'\rProcessed {i} peers')
+            asns = set()
 
-        sys.stderr.write('\n')
+            # Collect all ASNs and names
+            for peer in stats['peers'].values():
+                asns.add(peer['asn'])
 
-    def update_peer(self, peer):
+            # get ASNs' IDs
+            self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
 
-# {
-#      "asn": 328474,
-#      "ip": "102.67.56.1",
-#      "num_connected_asns": 330,
-#      "num_v4_pfxs": 919443,
-#      "num_v6_pfxs": 0
-#    }
+            # Compute links
+            links = []
+            for peer in stats['peers'].values():
+                as_qid = self.asn_id[peer['asn']]
+                links.append( { 'src_id':as_qid, 'dst_id':collector_qid, 'props':[self.reference, peer] } ) # Set AS name
 
-        as_qid = self.iyp.get_node('AS', {'asn': peer['asn']}, create=True)
-
-        statements = []
-        statements.append( ['PEERS_WITH', self.collector_qid, dict(peer, **self.reference)] )  # Set relationship
-
-        self.iyp.add_links(as_qid, statements)
-
-        return as_qid
+            # Push all links to IYP
+            self.iyp.batch_add_links('PEERS_WITH', links)
 
 if __name__ == '__main__':
 
@@ -93,9 +87,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
 
+    logging.info("End: %s" % sys.argv)

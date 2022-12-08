@@ -74,7 +74,7 @@ class Crawler(BaseCrawler):
 
         asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
 
-        statements = [ [ 'CLASSIFIED', self.tag_qid, self.reference ] ] # Set AS name
+        statements = [ [ 'CATEGORIZED', self.tag_qid, self.reference ] ] # Set AS name
 
         try:
             # Update AS name and country

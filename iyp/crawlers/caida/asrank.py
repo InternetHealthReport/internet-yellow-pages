@@ -13,6 +13,11 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch networks information from ASRank and push to IYP. """
 
+        # get ASNs, names, and countries IDs
+        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', set())
+        self.names_id = self.iyp.batch_get_nodes('NAME', 'name', set())
+        self.countries_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', set())
+
         self.asrank_qid = self.iyp.get_node('RANKING', {'name': f'CAIDA ASRank'}, create=True)
 
         has_next = True
@@ -25,48 +30,51 @@ class Crawler(BaseCrawler):
             ranking = json.loads(req.text)['data']['asns']
             has_next = ranking['pageInfo']['hasNextPage']
 
-            for _ in map(self.update_net, ranking['edges']):
-                sys.stderr.write(f'\rProcessing... {i+1}/{ranking["totalCount"]}')
-                i+=1
+            asns = set()
+            names = set()
+            countries = set()
 
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
+            # Collect all ASNs and names
+            for node in ranking['edges']:
+                asn = node['node']
+                names.add(asn['asnName'])
+                asns.add(int(asn['asn']))
+                countries.add(asn['country']['iso'])
+
+
+            # Compute links
+            country_links = []
+            name_links = []
+            rank_links = []
+            for node in ranking['edges']:
+                asn = node['node']
+
+                if int(asn['asn']) not in self.asn_id:
+                    self.asn_id[int(asn['asn'])] = self.iyp.get_node('AS', {'asn':int(asn['asn'])}, create=True)
+                if asn['asnName'] not in self.names_id:
+                    self.names_id[asn['asnName']] = self.iyp.get_node('NAME', {'name':asn['asnName']}, create=True)
+                if asn['country']['iso'] not in self.names_id:
+                    self.countries_id[asn['country']['iso']] = self.iyp.get_node('COUNTRY', {'country_code':asn['country']['iso']}, create=True)
+
+                asn_qid = self.asn_id[int(asn['asn'])]
+                name_qid = self.names_id[asn['asnName']]
+                country_qid = self.countries_id[asn['country']['iso']]
+
+                country_links.append( { 'src_id':asn_qid, 'dst_id':country_qid, 'props':[self.reference] } ) # Set AS name
+                name_links.append( { 'src_id':asn_qid, 'dst_id':name_qid, 'props':[self.reference] } ) # Set AS name
                 
-        sys.stderr.write('\n')
+                ## flatten all attributes into one dictionary
+                cone = { 'cone_'+key:val for key, val in asn['cone'].items() }
+                asnDegree = { 'asnDegree_'+key:val for key, val in asn['asnDegree'].items()}
+                attr = dict(cone, **asnDegree) 
+                attr['rank'] = asn['rank'] 
 
-    def update_net(self, asn):
-        """Add the network to iyp if it's not already there and update its
-        properties."""
-        
-        asn = asn['node']
+                rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, attr] } ) # Set AS name
 
-        # Properties
-        statements = []
-
-        if asn['asnName']:
-            name_qid = self.iyp.get_node('NAME', {'name': asn['asnName']}, create=True) 
-            statements.append([ 'NAME', name_qid, self.reference])
-
-        # set countries
-        cc = asn['country']['iso']
-        if cc:
-            cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
-            statements.append([ 'COUNTRY', cc_qid, self.reference])
-
-        # set rank
-        ## flatten all attributes into one dictionary
-        cone = { 'cone_'+key:val for key, val in asn['cone'].items() }
-        asnDegree = { 'asnDegree_'+key:val for key, val in asn['asnDegree'].items()}
-        attr = dict(cone, **asnDegree) 
-        attr['rank'] = asn['rank'] 
-
-        statements.append([ 'RANK', self.asrank_qid, dict(attr, **self.reference) ])
-
-        # Commit to iyp
-        # Get the AS (create if AS is not yet registered) and commit changes
-        asn_qid = self.iyp.get_node('AS', {'asn': asn['asn']}, create=True) 
-        self.iyp.add_links( asn_qid, statements )
+            # Push all links to IYP
+            self.iyp.batch_add_links('NAME', name_links)
+            self.iyp.batch_add_links('COUNTRY', country_links)
+            self.iyp.batch_add_links('RANK', rank_links)
         
 # Main program
 if __name__ == '__main__':
@@ -79,8 +87,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     asrank = Crawler(ORG, URL)
     asrank.run()
     asrank.close()
+
+    logging.info("End: %s" % sys.argv)
