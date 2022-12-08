@@ -21,34 +21,25 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             sys.exit('Error while fetching Tranco csv file')
 
+        links = []
+        domains = set()
         # open zip file and read top list
         with  ZipFile(io.BytesIO(req.content)) as z:
             with z.open('top-1m.csv') as list:
                 for i, row in enumerate(io.TextIOWrapper(list)):
                     row = row.rstrip()
-                    sys.stderr.write(f'\rProcessed {i} domains \t {row}')
-                    self.update(row)
+                    rank, domain = row.split(',')
 
-                    # commit every 1k lines
-                    if i % 1000 == 0:
-                        self.iyp.commit()
+                    domains.add( domain )
+                    links.append( { 'src_name':domain, 'dst_id':self.tranco_qid, 'props':[self.reference, {'rank': rank}] } ) # Set AS name
 
-        sys.stderr.write('\n')
+        name_id = self.iyp.batch_get_nodes('DOMAIN_NAME', 'name', domains)
 
+        for link in links:
+            link['src_id'] = name_id[link['src_name']]
 
-    def update(self, one_line):
-        """Add the network to IYP if it's not already there and update its
-        properties."""
-
-        rank, domain = one_line.split(',')
-
-        # set rank
-        statements = [[ 'RANK', self.tranco_qid, dict({'rank': rank}, **self.reference) ]]
-
-        # Commit to IYP
-        # Get the domain name QID (create if it is not yet registered) and commit changes
-        domain_qid = self.iyp.get_node('DOMAIN_NAME', {'name': domain}, create=True) 
-        self.iyp.add_links( domain_qid, statements )
+        # Push all links to IYP
+        self.iyp.batch_add_links('RANK', links)
         
 # Main program
 if __name__ == '__main__':
@@ -61,8 +52,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler()
+    crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
+    
+    logging.info("End: %s" % sys.argv)

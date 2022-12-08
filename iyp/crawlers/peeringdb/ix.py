@@ -58,10 +58,19 @@ class Crawler(BaseCrawler):
         """Fetch ixs information from PeeringDB and push to IYP. 
         Using multiple threads for better performances."""
 
+        # get organization, country nodes
+        self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)
+        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code')
+
         req = self.requests.get( URL_PDB_IXS, headers=self.headers)
         if req.status_code != 200:
             sys.exit(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
         self.ixs = json.loads(req.text)['data']
+
+        # Register IXPs
+        logging.warning('Pushing IXP info...')
+        self.register_ixs()
+        self.ix_id = self.iyp.batch_get_node_extid(IXID_LABEL)
 
         req = self.requests.get( URL_PDB_LANS, headers=self.headers)
         if req.status_code != 200:
@@ -73,120 +82,142 @@ class Crawler(BaseCrawler):
         for ixlan in ixlans:
             self.ixlans[ixlan['id']] = ixlan
 
-        for i, ix_info in enumerate(self.ixs):
-
-            # Push data to IYP
-            self.update_ix(ix_info)
-
-            sys.stderr.write(f'\rProcessing... {i+1}/{len(self.ixs)}')
-
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
+        logging.warning('Pushing IXP LAN and members...')
+        self.register_ix_membership()
                 
-        sys.stderr.write('\n')
 
-    def update_ix(self, ix):
-        """Add the IXP to IYP if it's not already there and update its
-        properties."""
+    def register_ix_membership(self ):
+        """Add IXPs LAN and members."""
 
-        ix_qid = self.ix_qid(ix) 
-
-        # update LAN corresponding to this IX
-        if 'ixlan_set' in ix:
-            for ixlan in ix['ixlan_set']:
-                #req = requests.get( pfx_url, headers=self.headers )
-                #if req.status_code != 200:
-                #    sys.exit(f'Error while fetching IX LAN data ({req.status_code})')
-
-                if ixlan['id'] not in self.ixlans:
-                    logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in {self.ixlans}')
-                    continue
-
-                lan = self.ixlans[ ixlan["id"] ]
-
-                for prefix in lan['ixpfx_set']:
-                    af = 6
-                    if '.' in prefix['prefix']:
-                        af = 4
-                    pfx_qid = self.iyp.get_node(
-                            ['PREFIX', 'PEERING_LAN'], 
-                            {'prefix': prefix['prefix'], 'af': af}, 
-                            create=True
-                            )
-
-                    pfx_stmts = [ 
-                            ['MANAGED_BY', ix_qid, self.reference_lan]
-                            ]
-
-                    self.iyp.add_links( pfx_qid, pfx_stmts )
-
-                for network in lan['net_set']:
-                    net_qid = self.update_net(network)
-
-                    # Update membership
-                    statements = [ ['MEMBER_OF', ix_qid, self.reference_lan] ]
-                    self.iyp.add_links(net_qid, statements)
-
-        return ix_qid
-
-
-    def update_net(self, network):
-        """Add the network to IYP and corresponding properties."""
-
-        if network['id'] not in self.nets:
-            # set property name
-            name_qid = self.iyp.get_node('NAME', {'name': network['name'].strip()}, create=True)
-            statements = [ ['NAME', name_qid, self.reference_lan] ] 
-
-            # link to corresponding organization
-            org_qid = self.iyp.get_node_extid(ORGID_LABEL, network['org_id'])
-            if org_qid is not None:
-                statements.append( ['MANAGED_BY', org_qid, self.reference_lan])
-            else:
-                logging.error(f'Error this organization is not in IYP: {network["org_id"]}')
-
-            # set property website
-            if network['website']:
-                website_qid = self.iyp.get_node('URL', {'url': network['website']}, create=True)
-                statements.append( ['WEBSITE', website_qid, self.reference_lan] )
-
-            netid_qid = self.iyp.get_node(NETID_LABEL, {'id': network['id']}, create=True)
-            statements.append( ['EXTERNAL_ID', netid_qid,  self.reference_lan] )
-
-            # Add this network to IYP
-            net_qid = self.iyp.get_node('AS', {'asn': network['asn']}, create=True)
-            self.iyp.add_links( net_qid, statements)
-
-            # keep track of the node id
-            self.nets[network['id']] = net_qid
-
-        return self.nets[network['id']]
-
-
-    def ix_qid(self, ix):
-        """Add the IX to IYP and return corresponding node's ID.
-        """
+        # Create prefix nodes
+        prefixes = set()
+        net_names = set()
+        net_extid = set()
+        net_website = set()
+        net_asn = set()
         
-        # Set properties for this ix
-        statements = []
+        for ix in self.ixs:
+            if 'ixlan_set' in ix:
+                for ixlan in ix['ixlan_set']:
+                    if ixlan['id'] not in self.ixlans:
+                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in {self.ixlans}')
+                        continue
 
-        # link to corresponding organization
-        org_qid = self.iyp.get_node_extid(ORGID_LABEL, ix['org_id'])
-        if org_qid is not None:
-            statements.append( ['MANAGED_BY', org_qid, self.reference_ix])
-        else:
-            logging.error(f'Error this organization is not in IYP: {ix["org_id"]}')
+                    lan = self.ixlans[ ixlan["id"] ]
 
-        # set property country
-        if ix['country']:
-            country_qid = self.iyp.get_node('COUNTRY', {'country_code': ix['country']}, create=True)
-            statements.append(['COUNTRY', country_qid, self.reference_ix])
+                    for prefix in lan['ixpfx_set']:
+                        prefixes.add(prefix['prefix'])
 
-        # set property website
-        if ix['website']:
-            website_qid = self.iyp.get_node('URL', {'url': ix['website']}, create=True)
-            statements.append( ['WEBSITE', website_qid, self.reference_ix] )
+                    for network in lan['net_set']:
+                        net_names.add(network['name'])
+                        net_asn.add(int(network['asn']))
+                        net_extid.add(network['id'])
+                        net_website.add(network['website'])
+
+
+        self.prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
+        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', net_names)
+        self.website_id = self.iyp.batch_get_nodes('URL', 'url', net_website)
+        self.netid_id = self.iyp.batch_get_nodes(NETID_LABEL, 'id', net_extid)
+        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', net_asn)
+
+        # compute links
+        prefix_links = []
+        name_links = []
+        website_links = []
+        netid_links = []
+        netorg_links = []
+        member_links = []
+
+        for ix in self.ixs:
+            if 'ixlan_set' in ix:
+                for ixlan in ix['ixlan_set']:
+                    if ixlan['id'] not in self.ixlans:
+                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in {self.ixlans}')
+                        continue
+
+                    ix_qid = self.ix_id[ix['id']]
+                    lan = self.ixlans[ ixlan["id"] ]
+
+                    for prefix in lan['ixpfx_set']:
+                        prefix_qid = self.prefix_id[prefix['prefix']]
+                        prefix_links.append( { 'src_id':prefix_qid, 'dst_id':ix_qid, 
+                                              'props':[self.reference] } )
+                        
+
+                    for network in lan['net_set']:
+                        network_qid = self.asn_id[int(network['asn'])]
+                        org_qid = self.org_id[network['org_id']]
+                        name_qid = self.name_id[network['name']]
+                        website_qid = self.website_id[network['website']]
+                        netid_qid = self.netid_id[network['id']]
+                        flat_net = dict(flatdict.FlatDict(network))
+
+                        netorg_links.append( { 'src_id':network_qid, 'dst_id':org_qid, 
+                                           'props':[self.reference, flat_net] })
+                        name_links.append( { 'src_id':network_qid, 'dst_id':name_qid, 
+                                           'props':[self.reference, flat_net] })
+                        website_links.append( { 'src_id':network_qid, 'dst_id':website_qid, 
+                                           'props':[self.reference, flat_net] })
+                        netid_links.append( { 'src_id':network_qid, 'dst_id':netid_qid, 
+                                           'props':[self.reference, flat_net] })
+                        member_links.append( { 'src_id':network_qid, 'dst_id':ix_qid, 
+                                           'props':[self.reference, flat_net] })
+
+        # Push all links to IYP
+        self.iyp.batch_add_links('MANAGED_BY', prefix_links)
+        self.iyp.batch_add_links('NAME', name_links)
+        self.iyp.batch_add_links('MEMBER_OF', member_links)
+        self.iyp.batch_add_links('WEBSITE', website_links)
+        self.iyp.batch_add_links('EXTERNAL_ID', netid_links)
+        self.iyp.batch_add_links('MANAGED_BY', netorg_links)
+
+
+    def register_ixs(self):
+        """Add IXs to IYP and populate corresponding nodes' ID.
+        """
+
+        # Create nodes
+        all_ixs_id = set([ix['id'] for ix in self.ixs])
+        all_ixs_name = set([ix['name'] for ix in self.ixs])
+        all_ixs_website = set([ix['website'] for ix in self.ixs if ix['website']])
+        self.ixext_id = self.iyp.batch_get_nodes(IXID_LABEL, 'id', all_ixs_id)
+        self.ix_id = self.iyp.batch_get_nodes('IXP', 'name', all_ixs_name)
+        self.website_id = self.iyp.batch_get_nodes('URL', 'url', all_ixs_website)
+        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', all_ixs_name)
+
+        # Compute links
+        name_links = []
+        org_links = []
+        country_links = []
+        id_links = []
+        website_links = []
+
+        for ix in self.ixs:
+            ix_qid = self.ix_id[ix['name']]
+            org_qid = self.org_id.get(ix['org_id'], None)
+        
+            # link to corresponding organization
+            if org_qid is not None:
+                org_links.append({'src_id': ix_qid, 'dst_id': org_qid, 'props':[self.reference_ix] })
+            else:
+                logging.error(f'Error this organization is not in IYP: {ix["org_id"]}')
+
+            # set country
+            if ix['country']:
+                country_qid = self.country_id[ix['country']]
+                country_links.append({'src_id': ix_qid, 'dst_id': country_qid, 'props':[self.reference_ix] })
+
+            # set website
+            if ix['website']:
+                website_qid = self.website_id[ix['website']]
+                country_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props':[self.reference_ix] })
+
+            id_qid = self.ixext_id[ix['id']]
+            id_links.append({'src_id': ix_qid, 'dst_id': id_qid, 'props':[self.reference_ix] })
+
+            id_name = self.name_id[ix['name']]
+            name_links.append({'src_id': ix_qid, 'dst_id': id_name, 'props':[self.reference_ix] })
 
         # set traffic webpage 
         #if ix['url_stats']:
@@ -196,18 +227,12 @@ class Crawler(BaseCrawler):
                 #[ (self.wh.get_pid('instance of'), self.wh.get_qid('traffic statistics')), ] # qualifier
                 #])
 
-        ixid_qid = self.iyp.get_node(IXID_LABEL, {'id': ix['id']}, create=True)
-        statements.append( ['EXTERNAL_ID', ixid_qid, self.reference_ix] )
-
-        name_qid = self.iyp.get_node('NAME', {'name': ix['name'].strip()}, create=True)
-        statements.append( ['NAME', name_qid, self.reference_ix] )
-
-        # Add this ix to the wikibase
-        ixp_qid = self.iyp.get_node('IXP', {'name': ix['name']}, create=True)
-        self.iyp.add_links(ixp_qid, statements)
-
-        return ixp_qid
-
+        # Push all links to IYP
+        self.iyp.batch_add_links('MANAGED_BY', org_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('WEBSITE', website_links)
+        self.iyp.batch_add_links('EXTERNAL_ID', id_links)
+        self.iyp.batch_add_links('NAME', name_links)
 
 # Main program
 if __name__ == '__main__':
@@ -220,8 +245,10 @@ if __name__ == '__main__':
             level=logging.WARNING, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     pdbn = Crawler(ORG, '')
     pdbn.run()
     pdbn.close()
+
+    logging.info("End: %s" % sys.argv)

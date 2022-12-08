@@ -36,6 +36,7 @@ class Crawler(BaseCrawler):
         """Fetch data from API and push to IYP. """
 
         for cc, country in self.countries.items():
+            print(cc)
             # Query IHR
             self.url = URL.format(country=cc)
             req = self.http_session.get( self.url+'&format=json' )

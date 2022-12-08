@@ -1,5 +1,6 @@
 import sys
 import logging
+import flatdict
 import requests
 import json
 from iyp import BaseCrawler
@@ -23,13 +24,19 @@ class Crawler(BaseCrawler):
         has_next = True
         i = 0
         while has_next:
-            req = requests.get(URL+f'&offset={i*10000}')
+            url = URL+f'&offset={i*10000}'
+            i += 1
+            print(url)
+            req = requests.get(url)
             if req.status_code != 200:
                 sys.exit('Error while fetching data from API')
             
+            print(req.status_code)
             ranking = json.loads(req.text)['data']['asns']
             has_next = ranking['pageInfo']['hasNextPage']
 
+            print(len(ranking['edges']))
+            print(ranking['edges'][0])
             asns = set()
             names = set()
             countries = set()
@@ -48,6 +55,7 @@ class Crawler(BaseCrawler):
             for node in ranking['edges']:
                 asn = node['node']
 
+                # FIXME: this is slow. We should use batch updates
                 if int(asn['asn']) not in self.asn_id:
                     self.asn_id[int(asn['asn'])] = self.iyp.get_node('AS', {'asn':int(asn['asn'])}, create=True)
                 if asn['asnName'] not in self.names_id:
@@ -63,12 +71,9 @@ class Crawler(BaseCrawler):
                 name_links.append( { 'src_id':asn_qid, 'dst_id':name_qid, 'props':[self.reference] } ) # Set AS name
                 
                 ## flatten all attributes into one dictionary
-                cone = { 'cone_'+key:val for key, val in asn['cone'].items() }
-                asnDegree = { 'asnDegree_'+key:val for key, val in asn['asnDegree'].items()}
-                attr = dict(cone, **asnDegree) 
-                attr['rank'] = asn['rank'] 
+                flat_asn = dict(flatdict.FlatDict(asn, delimiter='_'))
 
-                rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, attr] } ) # Set AS name
+                rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, flat_asn] } ) # Set AS name
 
             # Push all links to IYP
             self.iyp.batch_add_links('NAME', name_links)

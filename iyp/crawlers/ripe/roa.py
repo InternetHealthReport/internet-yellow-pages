@@ -41,6 +41,8 @@ class Crawler(BaseCrawler):
                 sys.exit('Error while fetching data for '+self.url)
             
             # Aggregate data per prefix
+            asns = set()
+
             prefix_info = defaultdict(list)
             for line in req.text.splitlines():
                 url, asn, prefix, max_length, start, end = line.split(',')
@@ -49,6 +51,7 @@ class Crawler(BaseCrawler):
                 if url=='URI':
                     continue
 
+                asns.add(asn)
                 prefix_info[prefix].append({
                     'url': url, 
                     'asn': asn, 
@@ -56,51 +59,28 @@ class Crawler(BaseCrawler):
                     'start': start, 
                     'end': end})
 
-            for i, (prefix, attributes) in enumerate(prefix_info.items()):
-                self.update(prefix, attributes)
-                sys.stderr.write(f'\rProcessing {self.url}... {i+1} prefixes ({prefix})     ')
+            # get ASNs and prefixes IDs
+            asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
+            prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', set(prefix_info.keys()))
 
-                # commit every 1k lines
-                if i % 1000 == 0:
-                    self.iyp.commit()
+            links = []
+            for prefix, attributes in prefix_info.items():
+                for att in attributes:
+                
+                    vrp = {
+                            'notBefore': att['start'],
+                            'notAfter': att['end'],
+                            'uri': att['url'],
+                            'maxLength': att['max_length']
+                        }
+                    asn_qid = asn_id[att['asn'].replace('AS', '')]
+                    prefix_qid = prefix_id[ prefix ]
+                    links.append( { 'src_id':asn_qid, 'dst_id':prefix_qid, 
+                                   'props':[self.reference, vrp] } ) # Set AS name
 
-                sys.stderr.write('\n')
+            # Push all links to IYP
+            self.iyp.batch_add_links('ROUTE_ORIGIN_AUTHORIZATION', links)
 
-
-    def update(self, prefix, attributes):
-        """Add the prefix to IYP if it's not already there and update its
-        properties."""
-
-        statements = []
-        for att in attributes:
-        
-            vrp = {
-                    'notBefore': att['start'],
-                    'notAfter': att['end'],
-                    'uri': att['url'],
-                    'maxLength': att['max_length']
-                  }
-
-            # Properties
-            asn_qid = self.iyp.get_node('AS', {'asn': att['asn'].replace('AS','')}, create=True)
-            if asn_qid is None:
-                print('Error: ', prefix, attributes)
-                return
-
-            statements.append(
-                        [ 'ROUTE_ORIGIN_AUTHORIZATION',
-                            asn_qid,
-                            dict(vrp, **self.reference),
-                        ]
-                    )
-
-        # Commit to IYP
-        # Get the prefix QID (create if prefix is not yet registered) and commit changes
-        af = 6
-        if '.' in prefix:
-            af = 4
-        prefix_qid = self.iyp.get_node( 'PREFIX', {'prefix': prefix, 'af': af}, create=True ) 
-        self.iyp.add_links( prefix_qid, statements )
         
 # Main program
 if __name__ == '__main__':
@@ -113,8 +93,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
+
+    logging.info("End: %s" % sys.argv)

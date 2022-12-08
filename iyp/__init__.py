@@ -12,12 +12,12 @@ NODE_CONSTRAINTS = {
 
         'PREFIX': {
                 'prefix': set(['UNIQUE', 'NOT NULL']), 
-                'af': set(['NOT NULL'])
+                #                'af': set(['NOT NULL'])
                 },
         
         'IP': {
                 'ip': set(['UNIQUE', 'NOT NULL']),
-                'af': set(['NOT NULL'])
+                #'af': set(['NOT NULL'])
                 },
 
         'DOMAIN_NAME': {
@@ -149,7 +149,7 @@ class IYP(object):
         self.tx.rollback()
         self.tx = self.session.begin_transaction()
 
-    def batch_get_nodes(self, type, prop_name: str, prop_set: set, all=True):
+    def batch_get_nodes(self, type, prop_name, prop_set=set(), all=True):
         """Find the ID of all nodes in the graph for the given type (label)
         and check that a node exists for each value in prop_set for the property
         prop. Create these nodes if they don't exist.
@@ -243,6 +243,20 @@ class IYP(object):
             return result[0]
         else:
             return None
+
+    def batch_get_node_extid(self, id_type):
+        """Find all nodes in the graph which have an EXTERNAL_ID relationship with
+        the given id_type. Return None if the node does not exist."""
+
+        result = self.tx.run(f"MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id as extid, ID(a) as nodeid")
+
+        ids = {}
+        for node in result:
+            ids[node['extid']] = node['id']
+
+
+        return ids
+
 
     def get_node_extid(self, id_type, id):
         """Find a node in the graph which has an EXTERNAL_ID relationship with

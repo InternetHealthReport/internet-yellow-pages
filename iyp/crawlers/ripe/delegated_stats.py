@@ -1,3 +1,4 @@
+from collections import defaultdict
 import sys
 import math
 import logging
@@ -18,73 +19,104 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             sys.exit('Error while fetching delegated file')
 
+        asn_id = self.iyp.batch_get_nodes('AS', 'asn')
+
         # Read delegated-stats file. see documentation:
         # https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt
         self.fields_name = ['registry', 'cc', 'type', 'start', 'value', 'date', 'status', 'opaque-id']
 
-        for i, _ in enumerate(map(self.update, req.text.splitlines())):
-            # commit every 10k lines
-            if i % 1000 ==0:
-                self.iyp.commit()
+        # Compute nodes
+        opaqueids = set()
+        prefixes = set()
+        countries = set()
 
-            sys.stderr.write(f'\rProcessed {i} lines')
+        for line in req.text.splitlines():
+            # skip comments
+            if line.strip().startswith('#'):
+                return
 
-        sys.stderr.write('\n')
+            # skip version and summary lines
+            fields_value = line.split('|')
+            if len(fields_value) < 8:
+                return
 
-    def update(self, line):
+            # parse records
+            rec = dict( zip(self.fields_name, fields_value))
+            rec['value'] = int(rec['value'])
 
-        # skip comments
-        if line.strip().startswith('#'):
-            return
+            countries.add( rec['cc'] )
+            opaqueids.add( rec['opaque-id'] )
 
-        # skip version and summary lines
-        fields_value = line.split('|')
-        if len(fields_value) < 8:
-            return
+            if rec['type'] == 'ipv4' or rec['type'] == 'ipv6':
+                # compute prefix length
+                prefix_len = rec['value']
+                if rec['type'] == 'ipv4':
+                    prefix_len = int(32-math.log2(rec['value']))
 
-        # parse records
-        rec = dict( zip(self.fields_name, fields_value))
-        rec['value'] = int(rec['value'])
+                prefix = f"{rec['start']}/{prefix_len}"
+                prefixes.add( prefix )
 
-        statements = []
-        self.reference['registry'] = rec['registry']
+        # Create all nodes
+        opaqueid_id = self.iyp.batch_get_nodes('OPAQUE_ID', 'id', opaqueids)
+        prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
+        country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
 
-        # Add country statement
-        cc_qid = self.iyp.get_node('COUNTRY', {'country_code': rec['cc']}, create=True)
-        statements.append( ['COUNTRY', cc_qid, self.reference] )
+        # Compute links
+        country_links = []
+        status_links = defaultdict(list)
+        
+        for line in req.text.splitlines():
+            # skip comments
+            if line.strip().startswith('#'):
+                return
 
-        # Add opaque-id statement
-        oid_qid = self.iyp.get_node('OPAQUE_ID', {'id': rec['opaque-id']}, create=True)
-        statements.append( [rec['status'].upper(), oid_qid, self.reference] )
+            # skip version and summary lines
+            fields_value = line.split('|')
+            if len(fields_value) < 8:
+                return
 
-        # ASN records
-        if rec['type'] == 'asn':
-            rec['start'] = int(rec['start'])
+            # parse records
+            rec = dict( zip(self.fields_name, fields_value))
+            rec['value'] = int(rec['value'])
 
-            # Find all nodes corresponding to the range of ASN values
-            # NOTE: this is not adding new AS nodes!
-            for as_qid in self.iyp.tx.run(f"""MATCH (a:AS)
-            WHERE a.asn >= {rec['start']} and a.asn < {rec['start']+rec['value']}
-            RETURN ID(a)""").values():
+            reference = dict(self.reference)
+            reference['registry'] = rec['registry']
+            country_qid = country_id[rec['cc']]
+            opaqueid_qid = opaqueid_id[rec['opaque-id']]
 
-                # Update AS 
-                self.iyp.add_links(as_qid[0], statements)
+            # ASN record
+            if rec['type'] == 'asn':
+                for i in range(int(rec['start']), int(rec['start'])+int(rec['value']), 1):
+                    if i not in asn_id:
+                        continue
 
-        # prefix records
-        elif rec['type'] == 'ipv4' or rec['type'] == 'ipv6':
+                    asn_qid = asn_id[i]
 
-            # compute prefix length
-            prefix_len = rec['value']
-            af = 6
-            if rec['type'] == 'ipv4':
-                prefix_len = int(32-math.log2(rec['value']))
-                af = 4
+                    country_links.append( { 'src_id':asn_qid, 'dst_id':country_qid, 'props':[reference] } )
+                    status_links[rec['status'].upper()].append(
+                        { 'src_id':asn_qid, 'dst_id':opaqueid_qid, 'props':[reference] } )
 
-            prefix = f"{rec['start']}/{prefix_len}"
-            prefix_qid = self.iyp.get_node('PREFIX', {'prefix': prefix, 'af': af}, create=True)
+            # prefix record
+            elif rec['type'] == 'ipv4' or rec['type'] == 'ipv6':
 
-            # Update prefix 
-            self.iyp.add_links(prefix_qid, statements)
+                # compute prefix length
+                prefix_len = rec['value']
+                if rec['type'] == 'ipv4':
+                    prefix_len = int(32-math.log2(rec['value']))
+
+                prefix = f"{rec['start']}/{prefix_len}"
+                prefix_qid = prefix_id[prefix]
+
+                country_links.append( { 'src_id':prefix_qid, 'dst_id':country_qid, 'props':[reference] } )
+                status_links[rec['status'].upper()].append(
+                    { 'src_id':prefix_qid, 'dst_id':opaqueid_qid, 'props':[reference] } )
+
+
+        # Push all links to IYP
+        self.iyp.batch_add_links('COUNTRY', country_links)
+        for label, links in status_links.items():
+            self.iyp.batch_add_links(label, links)
+
 
 if __name__ == '__main__':
 
@@ -96,9 +128,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
 
+    logging.info("End: %s" % sys.argv)

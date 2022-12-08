@@ -47,8 +47,8 @@ class Crawler(BaseCrawler):
         links = []
         for (asn, name) in enumerate(lines):
 
-            asn_qid = self.asn_id[asn] #self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
-            name_qid = self.name_id[name] #self.iyp.get_node('NAME', {'name': name}, create=True)
+            asn_qid = self.asn_id[asn] 
+            name_qid = self.name_id[name]
 
             links.append( { 'src_id':asn_qid, 'dst_id':name_qid, 'props':[self.reference] } ) # Set AS name
 
