@@ -31,7 +31,7 @@ class Crawler(BaseCrawler):
                     rank, domain = row.split(',')
 
                     domains.add( domain )
-                    links.append( { 'src_name':domain, 'dst_id':self.tranco_qid, 'props':[self.reference, {'rank': rank}] } )
+                    links.append( { 'src_name':domain, 'dst_id':self.tranco_qid, 'props':[self.reference, {'rank': int(rank)}] } )
 
         name_id = self.iyp.batch_get_nodes('DOMAIN_NAME', 'name', domains)
 
