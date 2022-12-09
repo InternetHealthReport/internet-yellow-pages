@@ -39,11 +39,9 @@ with open('config.json', 'r') as fp:
 # Start a new neo4j container
 client = docker.from_env()
 
-# docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password -e NEO4J_server_memory_heap_initial__size=1G -e
-# NEO4J_server_memory_heap_max__size=8G  -v /home/romain/Projects/perso/internet-yellow-pages/neo4j/test1/data:/data --name iyp-2020-12-06 neo4j 
 
+########## Start a new docker image ##########
 
-# Start a new docker image
 logging.warning('Starting new container...')
 container = client.containers.run(
         'neo4j:'+NEO4J_VERSION, 
@@ -76,7 +74,9 @@ while container.status != 'running' and elapsed_time < timeout:
     #container.reload()
     continue
 
-# Fetch data and feed to neo4j 
+
+########## Fetch data and feed to neo4j ##########
+
 logging.warning('Fetching data...')
 status = {}
 no_error = True
@@ -100,17 +100,33 @@ for module_name in conf['iyp']['crawlers']:
         status[module_name] = e
 
 
+########## Post processing scripts ##########
 
-# Stop container
+logging.warning('Post-processing...')
+for module_name in conf['iyp']['post']:
+    module = importlib.import_module(module_name)
+
+    try:
+        print(module)
+        logging.warning(f'start {module}')
+        post = module.PostProcess()
+        post.run()
+        post.close()
+        status[module_name] = "OK"
+        logging.warning(f'end {module}')
+
+    except Exception as e:
+        no_error = False
+        logging.error('crawler crashed!!\n')
+        logging.error(e)
+        logging.error('\n')
+        status[module_name] = e
+
+
+########## Stop container and dump DB ##########
+
 logging.warning('Stopping container...')
 container.stop(timeout=180)
-
-# Dump the database
-#docker run --interactive --tty --rm \
-#   --volume=$HOME/neo4j/data:/data \  
-#   --volume=$HOME/neo4j/backups:/backups \  
-#   neo4j/neo4j-admin:5.2.0 \
-#neo4j-admin database dump neo4j --to-path=/backups
 
 logging.warning('Dumping database...')
 if os.path.exists(f'{dump_dir}/neo4j.dump'):

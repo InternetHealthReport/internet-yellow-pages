@@ -329,6 +329,24 @@ class IYP(object):
         self.session.close()
         self.db.close()
 
+class BasePostProcess(object):
+    def __init__(self):
+        """IYP and references initialization"""
+
+        self.reference = {
+            'reference_org': 'Internet Yellow Pages',
+            'reference_url': 'https://iyp.iijlab.net',
+            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            }
+
+        # connection to IYP database
+        self.iyp = IYP()
+    
+    
+    def close(self):
+        # Commit changes to IYP
+        self.iyp.close()
+
 
 class BaseCrawler(object):
     def __init__(self, organization, url):
