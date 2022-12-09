@@ -39,7 +39,6 @@ with open('config.json', 'r') as fp:
 # Start a new neo4j container
 client = docker.from_env()
 
-
 ########## Start a new docker image ##########
 
 logging.warning('Starting new container...')
@@ -150,13 +149,16 @@ container = client.containers.run(
 # rename dump
 os.rename(f'{dump_dir}/neo4j.dump', f'{dump_dir}/iyp-{date}.dump')
 
-
+final_words = ''
 if not no_error:
     # TODO send an email
-    print('there was errors!')
-    print(status)
+    final_words += 'There was errors!'
+    logging.error('there was errors!\n')
+    logging.error(status)
     pass
 else:
+    final_words = 'No error :)'
     shutil.rmtree(tmp_dir)
     pass
-logging.warning("Finished: %s" % sys.argv)
+
+logging.warning(f"Finished: {sys.argv} {final_words}")
