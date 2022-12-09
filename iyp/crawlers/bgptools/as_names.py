@@ -45,7 +45,7 @@ class Crawler(BaseCrawler):
 
         # Compute links
         links = []
-        for (asn, name) in enumerate(lines):
+        for (asn, name) in lines:
 
             asn_qid = self.asn_id[asn] 
             name_qid = self.name_id[name]
