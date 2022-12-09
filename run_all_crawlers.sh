@@ -35,7 +35,7 @@ python3 -m iyp.crawlers.peeringdb.org
 python3 -m iyp.crawlers.peeringdb.ix
 
 # Delegated files
-python3 -m iyp.crawlers.ripe.delegated_stats
+python3 -m iyp.crawlers.nro.delegated_stats
 
 echo "All crawlers finished"
 date
