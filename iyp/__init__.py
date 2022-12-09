@@ -174,7 +174,6 @@ class IYP(object):
         existing_nodes_set = set(ids.keys())
         missing_props = prop_set.difference(existing_nodes_set)
         missing_nodes = [{prop_name: val} for val in missing_props]
-
         
         # Create missing nodes
         for i in range(0, len(missing_nodes), BATCH_SIZE):
@@ -252,7 +251,7 @@ class IYP(object):
 
         ids = {}
         for node in result:
-            ids[node['extid']] = node['id']
+            ids[node['extid']] = node['nodeid']
 
 
         return ids

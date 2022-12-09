@@ -33,7 +33,9 @@ class Crawler(BaseCrawler):
         sys.stderr.write('Fetching PeeringDB data...\n')
         req = requests.get(URL_PDB_ORGS, headers=self.headers)
         if req.status_code != 200:
-            sys.exit('Error while fetching AS names')
+            logging.error('Error while fetching peeringDB data')
+            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+
         organizations = json.loads(req.text)['data']
 
         sys.stderr.write('Compute nodes\n')
@@ -75,15 +77,16 @@ class Crawler(BaseCrawler):
             org_qid = self.org_id[org['name'].strip()] 
             name_qid = self.name_id[org['name'].strip()] 
             website_qid = self.website_id[org['website'].strip()] 
-            country_qid = self.website_id[org['country']] 
-            orgid_qid = self.website_id[org['country']] 
+            country_qid = self.country_id[org['country']] 
+            orgid_qid = self.orgid_id[org['id']] 
 
-            flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
+            # FIXME: the following raises an error: TypeError: Assignment to invalid type for key name
+            #flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
 
-            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference, flat_org] } )
-            name_links.append( { 'src_id':org_qid, 'dst_id':name_qid, 'props':[self.reference, flat_org] } ) 
-            website_links.append( { 'src_id':org_qid, 'dst_id':website_qid, 'props':[self.reference, flat_org] } )
-            country_links.append( { 'src_id':org_qid, 'dst_id':country_qid, 'props':[self.reference, flat_org] } )
+            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference] } )
+            name_links.append( { 'src_id':org_qid, 'dst_id':name_qid, 'props':[self.reference] } ) 
+            website_links.append( { 'src_id':org_qid, 'dst_id':website_qid, 'props':[self.reference] } )
+            country_links.append( { 'src_id':org_qid, 'dst_id':country_qid, 'props':[self.reference] } )
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
