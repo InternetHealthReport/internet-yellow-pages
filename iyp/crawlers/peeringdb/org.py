@@ -10,7 +10,7 @@ import requests
 ORG = 'PeeringDB'
 
 # URL to peeringdb API for organizations
-URL_PDB_ORGS = 'https://peeringdb.com/api/org'
+URL = 'https://peeringdb.com/api/org'
 
 # Label used for the class/item representing the organization IDs
 ORGID_LABEL = 'PEERINGDB_ORG_ID' 
@@ -31,7 +31,7 @@ class Crawler(BaseCrawler):
         """Fetch organizations information from PeeringDB and push to IYP"""
 
         sys.stderr.write('Fetching PeeringDB data...\n')
-        req = requests.get(URL_PDB_ORGS, headers=self.headers)
+        req = requests.get(URL, headers=self.headers)
         if req.status_code != 200:
             sys.exit('Error while fetching AS names')
         organizations = json.loads(req.text)['data']

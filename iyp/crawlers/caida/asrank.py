@@ -29,6 +29,7 @@ class Crawler(BaseCrawler):
             print(url)
             req = requests.get(url)
             if req.status_code != 200:
+                # FIXME should raise an exception
                 sys.exit('Error while fetching data from API')
             
             print(req.status_code)

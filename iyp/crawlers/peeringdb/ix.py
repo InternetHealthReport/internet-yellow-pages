@@ -10,6 +10,7 @@ from iyp import BaseCrawler
 # This script should be executed after peeringdb.org
 
 ORG = 'PeeringDB'
+URL = ''
 
 # URL to peeringdb API for exchange points
 URL_PDB_IXS = 'https://peeringdb.com/api/ix?depth=2'
@@ -247,7 +248,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    pdbn = Crawler(ORG, '')
+    pdbn = Crawler(ORG, URL)
     pdbn.run()
     pdbn.close()
 
