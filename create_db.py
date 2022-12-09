@@ -9,6 +9,8 @@ import docker
 
 from time import sleep
 
+NEO4J_VERSION = '5.1.0'
+
 today =  arrow.utcnow()
 date =  f'{today.year}-{today.month:02d}-{today.day:02d}'
 
@@ -44,7 +46,7 @@ client = docker.from_env()
 # Start a new docker image
 logging.warning('Starting new container...')
 container = client.containers.run(
-        'neo4j:5.2.0', 
+        'neo4j:'+NEO4J_VERSION, 
         name = f'iyp-{date}',
         ports = {
             7474: 7474,
@@ -55,8 +57,8 @@ container = client.containers.run(
             },
         environment = {
             'NEO4J_AUTH': 'neo4j/password',
-            'NEO4J_server_memory_heap_initial__size': '1G',
-            'NEO4J_server_memory_heap_max__size': '16G'
+            'NEO4J_server_memory_heap_initial__size': '16G',
+            'NEO4J_server_memory_heap_max__size': '16G',
             },
         remove = True,
         detach=True
@@ -66,9 +68,12 @@ container = client.containers.run(
 timeout = 120
 stop_time = 3
 elapsed_time = 0
+
+# FIXME: this is not working?
 while container.status != 'running' and elapsed_time < timeout:
     sleep(stop_time)
     elapsed_time += stop_time
+    #container.reload()
     continue
 
 # Fetch data and feed to neo4j 
@@ -89,6 +94,9 @@ for module_name in conf['iyp']['crawlers']:
 
     except Exception as e:
         no_error = False
+        logging.error('crawler crashed!!\n')
+        logging.error(e)
+        logging.error('\n')
         status[module_name] = e
 
 
@@ -112,7 +120,7 @@ if os.path.exists(f'{dump_dir}/neo4j.dump'):
 os.chmod(dump_dir, 0o777)
 
 container = client.containers.run(
-    'neo4j/neo4j-admin:5.2.0',
+    'neo4j/neo4j-admin:'+NEO4J_VERSION,
     command = 'neo4j-admin database dump neo4j --to-path=/dumps --verbose',
     tty = True,
     stdin_open = True,

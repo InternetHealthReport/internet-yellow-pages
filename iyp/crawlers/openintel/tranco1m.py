@@ -131,7 +131,7 @@ class Crawler(BaseCrawler):
             links.append( { 'src_id':domain_qid, 'dst_id':ip_qid, 'props':[self.reference] } )
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RESOLVES_TO:FORWARD_DNS', links)
+        self.iyp.batch_add_links('RESOLVES_TO', links)
 
 
 if __name__ == '__main__':

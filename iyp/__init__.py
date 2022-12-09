@@ -41,7 +41,7 @@ NODE_INDEXES = {
 # Set of node labels with constrains (ease search for node merging)
 NODE_CONSTRAINTS_LABELS = set(NODE_CONSTRAINTS.keys())
 
-BATCH_SIZE = 100000
+BATCH_SIZE = 50000
 
 def format_properties(prop):
     """Make sure certain properties are always formatted the same way.
