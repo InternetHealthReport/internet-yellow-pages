@@ -68,7 +68,9 @@ container = client.containers.run(
 timeout = 120
 stop_time = 3
 elapsed_time = 0
-while client.containers.get(container.id).status != 'running' and elapsed_time < timeout:
+
+# FIXME: this is not working?
+while container.status != 'running' and elapsed_time < timeout:
     sleep(stop_time)
     elapsed_time += stop_time
     #container.reload()
