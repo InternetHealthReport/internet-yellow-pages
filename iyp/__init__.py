@@ -161,21 +161,19 @@ class IYP(object):
        """
 
         if all:
-            existing_nodes = self.tx.run(f"MATCH (n:{type}) RETURN n.{prop_name} as {prop_name}, ID(n) as id")
+            existing_nodes = self.tx.run(f"MATCH (n:{type}) RETURN n.{prop_name} as {prop_name}, ID(n) as _id")
         else:
             list_prop = list(prop_set)
             existing_nodes = self.tx.run(f"""
             WITH $list_prop as list_prop
             MATCH (n:{type}) 
             WHERE n.{prop_name} IN list_prop
-            RETURN n.{prop_name} as {prop_name}, ID(n) as id""", list_prop=list_prop)
+            RETURN n.{prop_name} as {prop_name}, ID(n) as _id""", list_prop=list_prop)
 
-        ids = {node[prop_name]: node['id'] for node in existing_nodes }
+        ids = {node[prop_name]: node['_id'] for node in existing_nodes }
         existing_nodes_set = set(ids.keys())
         missing_props = prop_set.difference(existing_nodes_set)
         missing_nodes = [{prop_name: val} for val in missing_props]
-
-        self.commit()
         
         # Create missing nodes
         for i in range(0, len(missing_nodes), BATCH_SIZE):
@@ -183,12 +181,12 @@ class IYP(object):
 
             create_query = f"""WITH $batch as batch 
             UNWIND batch as item CREATE (n:{type}) 
-            SET n += item RETURN n.{prop_name} as {prop_name}, ID(n) as id"""
+            SET n += item RETURN n.{prop_name} as {prop_name}, ID(n) as _id"""
 
             new_nodes = self.tx.run(create_query, batch=batch)
 
             for node in new_nodes:
-                ids[node[prop_name]] = node['id']
+                ids[node[prop_name]] = node['_id']
 
             self.commit()
 
@@ -253,7 +251,7 @@ class IYP(object):
 
         ids = {}
         for node in result:
-            ids[node['extid']] = node['id']
+            ids[node['extid']] = node['nodeid']
 
 
         return ids

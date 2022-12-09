@@ -6,9 +6,10 @@ import requests
 from iyp import BaseCrawler
 
 # NOTE: this script is not adding new ASNs. It only adds links for existing ASNs
+# Should be run after crawlers that push many ASNs (e.g. ripe.as_names)
 
 URL = 'https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats'
-ORG = 'RIPE NCC'
+ORG = 'NRO'
 
 class Crawler(BaseCrawler):
 
@@ -33,12 +34,12 @@ class Crawler(BaseCrawler):
         for line in req.text.splitlines():
             # skip comments
             if line.strip().startswith('#'):
-                return
+                continue
 
             # skip version and summary lines
             fields_value = line.split('|')
             if len(fields_value) < 8:
-                return
+                continue
 
             # parse records
             rec = dict( zip(self.fields_name, fields_value))
@@ -57,6 +58,7 @@ class Crawler(BaseCrawler):
                 prefixes.add( prefix )
 
         # Create all nodes
+        logging.warning('Pushing nodes to neo4j...\n')
         opaqueid_id = self.iyp.batch_get_nodes('OPAQUE_ID', 'id', opaqueids)
         prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
         country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
@@ -68,12 +70,12 @@ class Crawler(BaseCrawler):
         for line in req.text.splitlines():
             # skip comments
             if line.strip().startswith('#'):
-                return
+                continue
 
             # skip version and summary lines
             fields_value = line.split('|')
             if len(fields_value) < 8:
-                return
+                continue
 
             # parse records
             rec = dict( zip(self.fields_name, fields_value))
@@ -112,6 +114,7 @@ class Crawler(BaseCrawler):
                     { 'src_id':prefix_qid, 'dst_id':opaqueid_qid, 'props':[reference] } )
 
 
+        logging.warning('Pusing links to neo4j...\n')
         # Push all links to IYP
         self.iyp.batch_add_links('COUNTRY', country_links)
         for label, links in status_links.items():

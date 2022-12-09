@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import flatdict
 import requests_cache
 import json
 from datetime import datetime, time, timezone
@@ -65,7 +66,9 @@ class Crawler(BaseCrawler):
 
         req = self.requests.get( URL_PDB_IXS, headers=self.headers)
         if req.status_code != 200:
-            sys.exit(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
+            logging.error(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
+            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+
         self.ixs = json.loads(req.text)['data']
 
         # Register IXPs
@@ -75,7 +78,9 @@ class Crawler(BaseCrawler):
 
         req = self.requests.get( URL_PDB_LANS, headers=self.headers)
         if req.status_code != 200:
-            sys.exit(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
+            logging.error(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
+            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+
         ixlans = json.loads(req.text)['data']
         
         # index ixlans by their id
@@ -116,6 +121,7 @@ class Crawler(BaseCrawler):
                         net_website.add(network['website'])
 
 
+        # TODO add the type PEERING_LAN? may break the unique constraint
         self.prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
         self.name_id = self.iyp.batch_get_nodes('NAME', 'name', net_names)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', net_website)
@@ -143,27 +149,33 @@ class Crawler(BaseCrawler):
                     for prefix in lan['ixpfx_set']:
                         prefix_qid = self.prefix_id[prefix['prefix']]
                         prefix_links.append( { 'src_id':prefix_qid, 'dst_id':ix_qid, 
-                                              'props':[self.reference] } )
+                                              'props':[self.reference_lan] } )
                         
 
                     for network in lan['net_set']:
+
+
                         network_qid = self.asn_id[int(network['asn'])]
-                        org_qid = self.org_id[network['org_id']]
                         name_qid = self.name_id[network['name']]
                         website_qid = self.website_id[network['website']]
                         netid_qid = self.netid_id[network['id']]
                         flat_net = dict(flatdict.FlatDict(network))
 
-                        netorg_links.append( { 'src_id':network_qid, 'dst_id':org_qid, 
-                                           'props':[self.reference, flat_net] })
+                        if network['org_id'] in self.org_id:
+                            org_qid = self.org_id[network['org_id']]
+                            netorg_links.append( { 'src_id':network_qid, 'dst_id':org_qid, 
+                                           'props':[self.reference_lan, flat_net] })
+                        else:
+                            logging.error(f'Organization unknown org_id={network["org_id"]}\n')
+
                         name_links.append( { 'src_id':network_qid, 'dst_id':name_qid, 
-                                           'props':[self.reference, flat_net] })
+                                           'props':[self.reference_lan, flat_net] })
                         website_links.append( { 'src_id':network_qid, 'dst_id':website_qid, 
-                                           'props':[self.reference, flat_net] })
+                                           'props':[self.reference_lan, flat_net] })
                         netid_links.append( { 'src_id':network_qid, 'dst_id':netid_qid, 
-                                           'props':[self.reference, flat_net] })
+                                           'props':[self.reference_lan, flat_net] })
                         member_links.append( { 'src_id':network_qid, 'dst_id':ix_qid, 
-                                           'props':[self.reference, flat_net] })
+                                           'props':[self.reference_lan, flat_net] })
 
         # Push all links to IYP
         self.iyp.batch_add_links('MANAGED_BY', prefix_links)

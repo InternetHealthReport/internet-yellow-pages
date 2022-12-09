@@ -51,7 +51,8 @@ class Crawler(BaseCrawler):
                 if url=='URI':
                     continue
 
-                asns.add(asn)
+                asn = int(asn.replace('AS', ''))
+                asns.add( asn )
                 prefix_info[prefix].append({
                     'url': url, 
                     'asn': asn, 
@@ -73,7 +74,7 @@ class Crawler(BaseCrawler):
                             'uri': att['url'],
                             'maxLength': att['max_length']
                         }
-                    asn_qid = asn_id[att['asn'].replace('AS', '')]
+                    asn_qid = asn_id[ att['asn'] ]
                     prefix_qid = prefix_id[ prefix ]
                     links.append( { 'src_id':asn_qid, 'dst_id':prefix_qid, 
                                    'props':[self.reference, vrp] } ) # Set AS name

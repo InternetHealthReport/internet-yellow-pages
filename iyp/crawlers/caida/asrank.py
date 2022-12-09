@@ -15,10 +15,8 @@ class Crawler(BaseCrawler):
         """Fetch networks information from ASRank and push to IYP. """
 
         # get ASNs, names, and countries IDs
-        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', set())
-        self.names_id = self.iyp.batch_get_nodes('NAME', 'name', set())
-        self.countries_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', set())
-
+        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn')
+        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code')
         self.asrank_qid = self.iyp.get_node('RANKING', {'name': f'CAIDA ASRank'}, create=True)
 
         has_next = True
@@ -53,28 +51,38 @@ class Crawler(BaseCrawler):
             country_links = []
             name_links = []
             rank_links = []
+            asns = set()
+            names = set()
+            countries = set()
+
             for node in ranking['edges']:
                 asn = node['node']
 
-                # FIXME: this is slow. We should use batch updates
+                names.add( asn['asnName'] )
+
+                # This may be slow if countries and ASes are not already registered
                 if int(asn['asn']) not in self.asn_id:
                     self.asn_id[int(asn['asn'])] = self.iyp.get_node('AS', {'asn':int(asn['asn'])}, create=True)
-                if asn['asnName'] not in self.names_id:
-                    self.names_id[asn['asnName']] = self.iyp.get_node('NAME', {'name':asn['asnName']}, create=True)
-                if asn['country']['iso'] not in self.names_id:
-                    self.countries_id[asn['country']['iso']] = self.iyp.get_node('COUNTRY', {'country_code':asn['country']['iso']}, create=True)
+                if asn['country']['iso'] not in self.country_id:
+                    self.country_id[asn['country']['iso']] = self.iyp.get_node('COUNTRY', {'country_code':asn['country']['iso']}, create=True)
 
                 asn_qid = self.asn_id[int(asn['asn'])]
-                name_qid = self.names_id[asn['asnName']]
-                country_qid = self.countries_id[asn['country']['iso']]
+                country_qid = self.country_id[asn['country']['iso']]
 
                 country_links.append( { 'src_id':asn_qid, 'dst_id':country_qid, 'props':[self.reference] } ) # Set AS name
-                name_links.append( { 'src_id':asn_qid, 'dst_id':name_qid, 'props':[self.reference] } ) # Set AS name
+                name_links.append( { 'src_id':asn_qid, 'dst_name':asn['asnName'], 'props':[self.reference] } ) # Set AS name
                 
                 ## flatten all attributes into one dictionary
                 flat_asn = dict(flatdict.FlatDict(asn, delimiter='_'))
 
                 rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, flat_asn] } ) # Set AS name
+
+            # Push nodes
+            self.names_id = self.iyp.batch_get_nodes('NAME', 'name', names, all=False)
+
+            # Add dst_id in name_links
+            for link in name_links :
+                link['dst_id'] = self.names_id[link['dst_name']]
 
             # Push all links to IYP
             self.iyp.batch_add_links('NAME', name_links)
