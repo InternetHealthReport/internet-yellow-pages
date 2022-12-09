@@ -39,8 +39,7 @@ with open('config.json', 'r') as fp:
 # Start a new neo4j container
 client = docker.from_env()
 
-# docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password -e NEO4J_server_memory_heap_initial__size=1G -e
-# NEO4J_server_memory_heap_max__size=8G  -v /home/romain/Projects/perso/internet-yellow-pages/neo4j/test1/data:/data --name iyp-2020-12-06 neo4j 
+# docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password -e NEO4J_server_memory_heap_initial__size=8G -e NEO4J_server_memory_heap_max__size=8G  -v $HOME/Projects/perso/internet-yellow-pages/tmp/data:/data --name iyp neo4j 
 
 
 # Start a new docker image
@@ -134,13 +133,16 @@ container = client.containers.run(
 # rename dump
 os.rename(f'{dump_dir}/neo4j.dump', f'{dump_dir}/iyp-{date}.dump')
 
-
+final_words = ''
 if not no_error:
     # TODO send an email
-    print('there was errors!')
-    print(status)
+    final_words += 'There was errors!'
+    logging.error('there was errors!\n')
+    logging.error(status)
     pass
 else:
+    final_words = 'No error :)'
     shutil.rmtree(tmp_dir)
     pass
-logging.warning("Finished: %s" % sys.argv)
+
+logging.warning(f"Finished: {sys.argv} {final_words}")
