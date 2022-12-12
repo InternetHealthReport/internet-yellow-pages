@@ -61,7 +61,6 @@ class Crawler(BaseCrawler):
                 sys.stderr.write(f'\rProcessed {i} ASes')
 
             sys.stderr.write('\n')
-        self.iyp.close()
 
     def update_asn(self, one_line):
 
@@ -74,7 +73,7 @@ class Crawler(BaseCrawler):
 
         asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
 
-        statements = [ [ 'CLASSIFIED', self.tag_qid, self.reference ] ] # Set AS name
+        statements = [ [ 'CATEGORIZED', self.tag_qid, self.reference ] ] # Set AS name
 
         try:
             # Update AS name and country
@@ -97,8 +96,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
+
+    logging.info("End: %s" % sys.argv)

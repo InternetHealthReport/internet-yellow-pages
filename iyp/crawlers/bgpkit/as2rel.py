@@ -17,32 +17,28 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             sys.exit('Error while fetching AS relationships')
 
-        for i, _ in enumerate(map(self.update_asn, json.load(bz2.open(req.raw)))):
-            sys.stderr.write(f'\rProcessed {i} relationships')
+        rels = []
+        asns = set()
 
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
+        # Collect all ASNs 
+        for rel in json.load(bz2.open(req.raw)):
+            asns.add(rel['asn1'])
+            asns.add(rel['asn2'])
+            rels.append(rel)
 
-        sys.stderr.write('\n')
+        # get ASNs IDs
+        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
 
-    def update_asn(self, rel):
-        as1_qid = self.iyp.get_node('AS', {'asn': rel['asn1']}, create=True)
-        as2_qid = self.iyp.get_node('AS', {'asn': rel['asn2']}, create=True)
+        # Compute links
+        links = []
+        for rel in rels:
+            as1_qid = self.asn_id[rel['asn1']]
+            as2_qid = self.asn_id[rel['asn2']]
 
-        statements = []
-        statements.append( ['PEERS_WITH', as2_qid, dict(rel, *self.reference)] )  # Set relationship
+            links.append( { 'src_id':as1_qid, 'dst_id':as2_qid, 'props':[self.reference, rel] } ) # Set AS name
 
-        try:
-            # Update AS name and country
-            self.iyp.add_links(as1_qid, statements)
-
-        except Exception as error:
-            # print errors and continue running
-            print('Error for: ', rel)
-            print(error)
-
-        return as1_qid, as2_qid
+        # Push all links to IYP
+        self.iyp.batch_add_links('PEERS_WITH', links)
 
 if __name__ == '__main__':
 
@@ -54,9 +50,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
 
+    logging.info("End: %s" % sys.argv)

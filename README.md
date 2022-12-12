@@ -1,30 +1,54 @@
 # Internet Yellow Pages
 
-## Quick-start to push/pull data
-- [Install and setup pywikibot](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/documentation/install_pywikibot.md)
-- Install required lib
+
+## Loading a dump and playing with it
+
+### Using docker
+Download a dump a rename it neo4j.dump. Assuming this file is in $HOME/iyp/dumps/,
+load the database with this command:
 ```
-sudo pip3 install -r requirements.txt
+docker run --interactive --tty --rm   --volume=$HOME/iyp/data:/data --volume=$HOME/iyp/dumps/:/backups neo4j/neo4j-admin:5.1.0 neo4j-admin database load neo4j --from-path=/backups --verbose
 ```
-- Example to populate iyp with one dataset
+Then run neo4j with the new database:
 ```
-python scripts/spamhaus_asn_drop.py
+docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password  -v $HOME/iyp/data:/data --name iyp neo4j:5.1.0 
 ```
-- You can also use this script ([scripts/spamhaus_asn_drop.py](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/scripts/spamhaus_asn_drop.py)) as a template to create your own.
+Add these options if you are planning to execute large transactions: -e NEO4J_server_memory_heap_initial__size=8G -e NEO4J_server_memory_heap_max__size=8G 
+
+If you modify the database and want to make a new dump, use the following command:
+```
+docker run --interactive --tty --rm   --volume=$HOME/iyp/data:/data --volume=$HOME/iyp/dumps/:/backups neo4j/neo4j-admin:5.1.0 neo4j-admin database dump neo4j --to-path=/backups --verbose
+```
+
+
+## How to create a new dump
+Clone this repository.
+```
+git clone https://github.com/InternetHealthReport/internet-yellow-pages.git
+cd internet-yellow-pages
+```
+
+Create python environment and install python libraries:
+```
+python3 -m venv .
+source bin/activate
+pip install -r requirements.txt
+```
+
+Configuration file, rename example file and add API keys:
+```
+cp config.conf.example config.conf
+# Edit as needed
+```
+
+Create and populate a new database:
+```
+python3 create_db.py
+```
+This will take a couple of hours to download all datasets and push them to neo4j.
 
 ### Tips and Tricks
-- Revert changes: 
-  - if there is only a few modifications to revert, click on 'contributions' on the right-top of the wiki page and then rollback
-  - Revert changes made in the last x minutes with: [wikihandy/revertChanges.py](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/wikihandy/revertChanges.py)
-  - Or use pywikibot RevertBot: https://www.mediawiki.org/wiki/Manual:Pywikibot/revertbot.py
-  (make sure your bot has the 'Rollback changes to pages' selected in its OAuth permissions for rollbacks)
 
-
-
-## Useful ressources
-- Example using python library: https://www.wikidata.org/wiki/Wikidata:Pywikibot_-_Python_3_Tutorial
-- Create new property: https://marc.info/?l=pywikipediabot-users&m=145893355707437&w=2 
-- wikidata homepage: https://wikiba.se/
 
 ## Candidate data sources
 - RIS peers
@@ -36,10 +60,4 @@ python scripts/spamhaus_asn_drop.py
 - CERT/ NOG per countries
 - mobile prefixes (Japan)
 - 
-
-
-## Examples:
-RIS1.2.3.4 is an instance bgp collector peer
-RIS1.2.3.4 is part of RIS project
-
 

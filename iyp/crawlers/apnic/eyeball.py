@@ -18,66 +18,60 @@ class Crawler(BaseCrawler):
         super().__init__(organization, url)
 
     def run(self):
-        """Fetch data from APNIC and push to wikibase. """
+        """Fetch data from APNIC and push to IYP. """
 
         for cc, country in self.countries.items():
+            logging.warning(f'processing {country}')
 
             # Get the QID of the country and corresponding ranking
-            self.cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
-            self.ranking_qid = self.iyp.get_node('RANKING', {'name': f'APNIC eyeball estimates ({cc})'}, create=True)
-            statements = [ ['COUNTRY', self.cc_qid, self.reference] ]
-            self.iyp.add_links(self.ranking_qid, statements)
+            cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
+            ranking_qid = self.iyp.get_node('RANKING', {'name': f'APNIC eyeball estimates ({cc})'}, create=True)
+            statements = [ ['COUNTRY', cc_qid, self.reference] ]
+            self.iyp.add_links(ranking_qid, statements)
 
             self.url = URL+f'{cc}/{cc}.asns.json?m={MIN_POP_PERC}'
             req = requests.get( self.url )
             if req.status_code != 200:
                 sys.exit('Error while fetching data for '+cc)
             
+            asns = set()
+            names = set()
+             
             ranking = req.json()
-            # Make sure the ranking is sorted and add rank field
+            logging.warning(f'{len(ranking)} eyeball ASes')
+
+            # Collect all ASNs and names
+            # and make sure the ranking is sorted and add rank field
             ranking.sort(key=lambda x: x['percent'], reverse=True)
             for i, asn in enumerate(ranking):
                 asn['rank']=i 
+                asns.add(asn['as'])
+                names.add(asn['autnum'])
 
-            # Push data to iyp
-            for i, _ in enumerate(map(self.update_net, ranking)):
-                sys.stderr.write(f'\rProcessing {country.name}... {i+1}/{len(ranking)}')
+            # Get node IDs
+            self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
+            self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names, all=False)
 
-    def update_net(self, asn):
-        """Add the network to wikibase if it's not already there and update its
-        properties."""
-        
-        # Properties
-        statements = []
+            # Compute links
+            country_links = []
+            rank_links = []
+            pop_links = []
+            name_links = []
+            for asn in ranking:
+                asn_qid = self.asn_id[asn['as']] #self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
+                name_qid = self.name_id[asn['autnum']] #self.iyp.get_node('NAME', {'name': name}, create=True)
 
-        # set name
-        if asn['autnum']:
-            name_qid = self.iyp.get_node('NAME', {'name': asn['autnum']}, create=True) 
-            statements.append(['NAME', name_qid, self.reference])
+                name_links.append( {'src_id': asn_qid, 'dst_id': name_qid, 'props':[self.reference]} )
+                country_links.append( {'src_id': asn_qid, 'dst_id': cc_qid, 'props':[self.reference]} )
+                rank_links.append( {'src_id': asn_qid, 'dst_id': ranking_qid, 'props':[self.reference, asn]} )
+                pop_links.append( {'src_id': asn_qid, 'dst_id': cc_qid, 'props':[self.reference, asn]} )
 
-        # set country (APNIC suggest the AS has eyeball in this country)
-        if asn['cc']:
-            statements.append(
-                    [ 'COUNTRY', self.cc_qid, self.reference])
+            # Push all links to IYP
+            self.iyp.batch_add_links('NAME', name_links)
+            self.iyp.batch_add_links('COUNTRY', country_links)
+            self.iyp.batch_add_links('RANK', rank_links)
+            self.iyp.batch_add_links('POPULATION', pop_links)
 
-        # set rank
-        statements.append( [ 
-                            'RANK',
-                            self.ranking_qid,
-                            dict({ 'rank': asn['rank'] }, **self.reference) 
-                            ])
-
-        # set population
-        statements.append( [ 
-                            'POPULATION',
-                            self.cc_qid,
-                            dict({ 'percent': asn['percent'] }, **self.reference),
-                            ])
-
-        # Commit to iyp
-        # Get the AS QID (create if AS is not yet registered) and commit changes
-        as_qid = self.iyp.get_node('AS', {'asn': str(asn['as'])}, create=True) 
-        self.iyp.add_links( as_qid, statements )
         
 # Main program
 if __name__ == '__main__':

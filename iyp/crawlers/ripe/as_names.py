@@ -15,39 +15,50 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             sys.exit('Error while fetching AS names')
 
-        for i, _ in enumerate(map(self.update_asn, req.text.splitlines())):
-            sys.stderr.write(f'\rProcessed {i} ASes')
+        lines = []
+        asns = set()
+        names = set()
+        countries = set()
 
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
+        # Read asn file  
+        for line in req.text.splitlines():
+            asn, _, name_cc = line.partition(' ')
+            name, _, cc = name_cc.rpartition(', ')
+            asn = int(asn)
+            lines.append([ asn, name, cc ])
 
-        sys.stderr.write('\n')
+            asns.add( asn )
+            names.add( name )
+            countries.add( cc )
+            
 
-    def update_asn(self, one_line):
-        # Parse given line to get ASN, name, and country code 
-        asn, _, name_cc = one_line.partition(' ')
-        name, _, cc = name_cc.rpartition(', ')
+        # get node IDs for ASNs, names, and countries 
+        logging.warning('getting node ids\n')
+        asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
+        logging.warning('getting node ids\n')
+        name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
+        logging.warning('getting node ids\n')
+        country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
 
-        asn_qid = self.iyp.get_node('AS', {'asn': asn}, create=True)
-        cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
-        name_qid = self.iyp.get_node('NAME', {'name': name}, create=True)
+        # Compute links
+        logging.warning('computing links\n')
+        name_links = []
+        country_links = []
 
-        statements = []
-        statements.append( ['NAME', name_qid, self.reference] ) # Set AS name
-        if cc_qid is not None:
-            statements.append( ['COUNTRY', cc_qid, self.reference] )  # Set country
+        for asn, name, cc in lines:
+            asn_qid = asn_id[asn] 
+            name_qid = name_id[name]
+            country_qid = country_id[cc]
 
-        try:
-            # Update AS name and country
-            self.iyp.add_links(asn_qid, statements)
+            name_links.append( { 'src_id':asn_qid, 'dst_id':name_qid, 
+                                'props':[self.reference] } ) # Set AS name
+            country_links.append( { 'src_id':asn_qid, 'dst_id':country_qid, 
+                                   'props':[self.reference] } ) # Set country
 
-        except Exception as error:
-            # print errors and continue running
-            print('Error for: ', one_line)
-            print(error)
-
-        return asn_qid
+        # Push all links to IYP
+        logging.warning('pushing links\n')
+        self.iyp.batch_add_links('NAME', name_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
 
 if __name__ == '__main__':
 
@@ -59,8 +70,11 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+
+    logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
+
+    logging.info("End: %s" % sys.argv)

@@ -7,3 +7,9 @@ py-radix
 requests-cache
 lz4
 frozendict
+docker
+boto3
+botocore
+pandas
+fastparquet
+flatdict

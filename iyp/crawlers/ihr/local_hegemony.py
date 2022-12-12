@@ -63,53 +63,41 @@ class Crawler(BaseCrawler):
         self.csv = lz4Csv(local_filename)
 
         self.timebin = None
+        asn_id = self.iyp.batch_get_nodes('AS', 'asn', set())
         
-        for i, line in  enumerate(csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True) ):
+        links = []
+
+        for line in  csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
             # header
             # timebin,originasn,asn,hege
 
-            if not self.update(line):
+            rec = dict( zip(self.csv.fields, line) )
+
+            if self.timebin is None:
+                self.timebin = rec['timebin']
+            elif self.timebin != rec['timebin']:
                 break
 
-            sys.stderr.write(f'\rProcessed {i+1} lines...')
+            originasn = int(rec['originasn'])
+            if originasn not in asn_id:
+                asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn}, create=True)
+            
+            asn = int(rec['asn'])
+            if asn not in asn_id:
+                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
 
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
+            links.append( {
+                'src_id': asn_id[originasn], 
+                'dst_id': asn_id[asn], 
+                'props':[self.reference, rec]
+                } )
+
+        # Push links to IYP
+        self.iyp.batch_add_links('DEPENDS_ON', links)
 
         # Remove downloaded file
         os.remove(local_filename)
 
-
-    def update(self, line):
-        """Add the AS to iyp if it's not already there and update its
-        properties.
-
-        Return false if line is not for the first timebin
-        """
-        
-        rec = dict( zip(self.csv.fields, line) )
-
-        if self.timebin is None:
-            self.timebin = rec['timebin']
-        elif self.timebin != rec['timebin']:
-            return False
-
-        asn_qid = self.iyp.get_node('AS', {'asn': rec['asn']}, create=True)
-
-        # Properties
-        statements = []
-
-        # set dependency
-        statements.append( [ 'DEPENDS_ON', asn_qid, dict({'hegemony': rec['hege']}, **self.reference) ])
-
-        # Commit to IYP
-        # Get the AS node ID (create if AS is not yet registered) and commit changes
-        originasn_qid = self.iyp.get_node('AS', {'asn': rec['originasn']}, create=True)
-        self.iyp.add_links( originasn_qid, statements )
-
-        return True
-        
 # Main program
 if __name__ == '__main__':
 
@@ -121,9 +109,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL)
     crawler.run()
     crawler.close()
 
+    logging.info("End: %s" % sys.argv)

@@ -17,43 +17,34 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             sys.exit('Error while fetching pfx2as relationships')
 
-        for i, _ in enumerate(map(self.update_asn, json.load(bz2.open(req.raw)))):
-            sys.stderr.write(f'\rProcessed {i} relationships')
+        entries = []
+        asns = set()
+        prefixes = set()
 
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
+        for entry in json.load(bz2.open(req.raw)):
+            prefixes.add(entry['prefix'])
+            asns.add(entry['asn'])
+            entries.append(entry)
 
-        sys.stderr.write('\n')
+        req.close()
 
-    def update_asn(self, entry):
-        af = 6
-        if '.' in entry['prefix']:
-            af =4
-        prefix_qid = self.iyp.get_node(
-                                        'PREFIX', 
-                                        {'prefix': entry['prefix'], 'af': af}, 
-                                        create=True
-                                       )
-        asn_qid = self.iyp.get_node('AS', {'asn': entry['asn']}, create=True)
+        logging.warning('Pushing nodes to neo4j...\n')
+        # get ASNs and prefixes IDs
+        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
+        self.prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
 
-        statements = []
-        statements.append( [
-                'ORIGINATE', 
-                prefix_qid, 
-                dict({'nb_observers': entry['count']}, **self.reference)
-            ] )  # Set relationship
+        # Compute links
+        links = []
+        for entry in entries:
+            asn_qid = self.asn_id[entry['asn']]
+            prefix_qid = self.prefix_id[entry['prefix']]
 
-        try:
-            # Add link between AS and prefix
-            self.iyp.add_links(asn_qid, statements)
+            links.append( { 'src_id':asn_qid, 'dst_id':prefix_qid, 'props':[self.reference, entry] } ) # Set AS name
 
-        except Exception as error:
-            # print errors and continue running
-            print('Error for: ', entry)
-            print(error)
+        logging.warning('Pushing links to neo4j...\n')
+        # Push all links to IYP
+        self.iyp.batch_add_links('ORIGINATE', links)
 
-        return asn_qid, prefix_qid
 
 if __name__ == '__main__':
 
@@ -65,9 +56,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL)
     asnames.run()
     asnames.close()
 
+    logging.info("End: %s" % sys.argv)

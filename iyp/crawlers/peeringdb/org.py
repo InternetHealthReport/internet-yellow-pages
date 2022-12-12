@@ -1,3 +1,4 @@
+import flatdict
 import os
 import sys
 import logging
@@ -32,44 +33,67 @@ class Crawler(BaseCrawler):
         sys.stderr.write('Fetching PeeringDB data...\n')
         req = requests.get(URL, headers=self.headers)
         if req.status_code != 200:
-            sys.exit('Error while fetching AS names')
+            logging.error('Error while fetching peeringDB data')
+            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+
         organizations = json.loads(req.text)['data']
 
-        for i, _ in enumerate(map(self.update_org, organizations)):
-            sys.stderr.write(f'\rProcessing... {i+1}/{len(organizations)}')
+        sys.stderr.write('Compute nodes\n')
+        # compute nodes
+        orgs = set()
+        names = set()
+        websites = set()
+        countries = set()
+        orgids = set()
 
-            # commit every 1k lines
-            if i % 1000 == 0:
-                self.iyp.commit()
-                
-        sys.stderr.write('\n')
+        for org in organizations:
+            orgs.add( org['name'].strip() )
+            names.add( org['name'].strip() )
+            orgids.add( org['id'] )
+            
+            if org['website']:
+                websites.add( org['website'].strip() )
 
-    def update_org(self, organization):
-        """Add the organization to wikibase if it's not there and update properties"""
+            if org['country'] in iso3166.countries_by_alpha2:
+                countries.add( org['country'] )
 
-        # set property name
-        name_qid = self.iyp.get_node('NAME', {'name': organization['name'].strip()}, create=True)
-        statements = [ ['NAME', name_qid, self.reference] ] 
+        # push nodes
+        self.org_id = self.iyp.batch_get_nodes('ORGANIZATION', 'name', orgs)
+        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
+        self.website_id = self.iyp.batch_get_nodes('URL', 'url', websites)
+        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
+        self.orgid_id = self.iyp.batch_get_nodes(ORGID_LABEL, 'id', orgids)
 
-        # set property website
-        if organization['website']:
-            website_qid = self.iyp.get_node('URL', {'name': organization['website'].strip()}, create=True)
-            statements.append([ 'WEBSITE', website_qid, self.reference])
+        # compute links
+        sys.stderr.write('Compute links\n')
 
-        # set property country
-        if organization['country'] in iso3166.countries_by_alpha2:
-            country_qid = self.iyp.get_node('COUNTRY', {'country_code': organization['country']}, create=True)
-            statements.append(['COUNTRY', country_qid, self.reference])
+        name_links = []
+        website_links = []
+        country_links = []
+        orgid_links = []
 
-        orgid_qid = self.iyp.get_node(ORGID_LABEL, {'id': organization['id']}, create=True)
-        statements.append( ['EXTERNAL_ID', orgid_qid, self.reference] )
+        for org in organizations:
 
-        # Add this organization to IYP
-        org_qid = self.iyp.get_node('ORGANIZATION', {'name':organization['name'].strip()}, create=True)
-        self.iyp.add_links(org_qid, statements )
+            org_qid = self.org_id[org['name'].strip()] 
+            name_qid = self.name_id[org['name'].strip()] 
+            website_qid = self.website_id[org['website'].strip()] 
+            country_qid = self.country_id[org['country']] 
+            orgid_qid = self.orgid_id[org['id']] 
+
+            # FIXME: the following raises an error: TypeError: Assignment to invalid type for key name
+            #flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
+
+            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference] } )
+            name_links.append( { 'src_id':org_qid, 'dst_id':name_qid, 'props':[self.reference] } ) 
+            website_links.append( { 'src_id':org_qid, 'dst_id':website_qid, 'props':[self.reference] } )
+            country_links.append( { 'src_id':org_qid, 'dst_id':country_qid, 'props':[self.reference] } )
+
+        # Push all links to IYP
+        self.iyp.batch_add_links('NAME', name_links)
+        self.iyp.batch_add_links('WEBSITE', website_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('EXTERNAL_ID', orgid_links)
         
-        return org_qid
-
 
 # Main program
 if __name__ == '__main__':
@@ -82,8 +106,10 @@ if __name__ == '__main__':
             level=logging.INFO, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.info("Start: %s" % sys.argv)
 
     pdbo = Crawler(ORG, '')
     pdbo.run()
     pdbo.close()
+
+    logging.info("End: %s" % sys.argv)

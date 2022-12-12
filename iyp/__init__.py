@@ -3,8 +3,6 @@ import sys
 from datetime import datetime, time, timezone
 from neo4j import GraphDatabase
 from neo4j.exceptions import ConstraintError
-from frozendict import frozendict
-import functools
 
 # Usual constraints on nodes' properties
 NODE_CONSTRAINTS = {
@@ -14,12 +12,12 @@ NODE_CONSTRAINTS = {
 
         'PREFIX': {
                 'prefix': set(['UNIQUE', 'NOT NULL']), 
-                #'af': set(['NOT NULL'])
+                #                'af': set(['NOT NULL'])
                 },
         
         'IP': {
                 'ip': set(['UNIQUE', 'NOT NULL']),
-                'af': set(['NOT NULL'])
+                #'af': set(['NOT NULL'])
                 },
 
         'DOMAIN_NAME': {
@@ -42,6 +40,8 @@ NODE_INDEXES = {
 
 # Set of node labels with constrains (ease search for node merging)
 NODE_CONSTRAINTS_LABELS = set(NODE_CONSTRAINTS.keys())
+
+BATCH_SIZE = 50000
 
 def format_properties(prop):
     """Make sure certain properties are always formatted the same way.
@@ -83,19 +83,6 @@ def dict2str(d, eq=':', pfx=''):
     return '{'+','.join(data)+'}'
 
 
-def freezeargs(func):
-    """Transform mutable dictionnary
-    Into immutable
-    Useful to be compatible with cache
-    """
-
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        args = tuple([frozendict(arg) if isinstance(arg, dict) else arg for arg in args])
-        kwargs = {k: frozendict(v) if isinstance(v, dict) else v for k, v in kwargs.items()}
-        return func(*args, **kwargs)
-    return wrapped
-
 class IYP(object):
 
     def __init__(self):
@@ -126,16 +113,19 @@ class IYP(object):
         """Add constraints and indexes."""
 
         # Create constraints (implicitly add corresponding indexes)
-        if self.neo4j_enterprise:
-            for label, prop_constraints in NODE_CONSTRAINTS.items():
-                for property, constraints in prop_constraints.items():
+        for label, prop_constraints in NODE_CONSTRAINTS.items():
+            for property, constraints in prop_constraints.items():
 
-                    for constraint in constraints:
-                        constraint_formated = constraint.replace(' ', '')
-                        self.session.run(
-                            f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
-                            f" FOR (n:{label}) "
-                            f" REQUIRE n.{property} IS {constraint} ")
+                for constraint in constraints:
+                    # neo4j-community only implements the UNIQUE constraint
+                    if not self.neo4j_enterprise and constraint != 'UNIQUE':
+                        continue
+
+                    constraint_formated = constraint.replace(' ', '')
+                    self.session.run(
+                        f" CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS "
+                        f" FOR (n:{label}) "
+                        f" REQUIRE n.{property} IS {constraint} ")
 
         # Create indexes
         for label, indexes in NODE_INDEXES.items():
@@ -159,8 +149,49 @@ class IYP(object):
         self.tx.rollback()
         self.tx = self.session.begin_transaction()
 
-    @freezeargs
-    @functools.lru_cache(maxsize=100000) 
+    def batch_get_nodes(self, type, prop_name, prop_set=set(), all=True):
+        """Find the ID of all nodes in the graph for the given type (label)
+        and check that a node exists for each value in prop_set for the property
+        prop. Create these nodes if they don't exist.
+
+        Notice: this is a costly operation if there is a lot of nodes for the
+        given type. To return only the nodes corresponding to prop_set values 
+        set all=False.
+        This method commit changes to neo4j.
+       """
+
+        if all:
+            existing_nodes = self.tx.run(f"MATCH (n:{type}) RETURN n.{prop_name} as {prop_name}, ID(n) as _id")
+        else:
+            list_prop = list(prop_set)
+            existing_nodes = self.tx.run(f"""
+            WITH $list_prop as list_prop
+            MATCH (n:{type}) 
+            WHERE n.{prop_name} IN list_prop
+            RETURN n.{prop_name} as {prop_name}, ID(n) as _id""", list_prop=list_prop)
+
+        ids = {node[prop_name]: node['_id'] for node in existing_nodes }
+        existing_nodes_set = set(ids.keys())
+        missing_props = prop_set.difference(existing_nodes_set)
+        missing_nodes = [{prop_name: val} for val in missing_props]
+        
+        # Create missing nodes
+        for i in range(0, len(missing_nodes), BATCH_SIZE):
+            batch = missing_nodes[i:i+BATCH_SIZE]
+
+            create_query = f"""WITH $batch as batch 
+            UNWIND batch as item CREATE (n:{type}) 
+            SET n += item RETURN n.{prop_name} as {prop_name}, ID(n) as _id"""
+
+            new_nodes = self.tx.run(create_query, batch=batch)
+
+            for node in new_nodes:
+                ids[node[prop_name]] = node['_id']
+
+            self.commit()
+
+        return ids 
+
     def get_node(self, type, prop, create=False):
         """Find the ID of a node in the graph. Return None if the node does not
         exist or create the node if create=True."""
@@ -212,7 +243,20 @@ class IYP(object):
         else:
             return None
 
-    @functools.lru_cache(maxsize=100000)
+    def batch_get_node_extid(self, id_type):
+        """Find all nodes in the graph which have an EXTERNAL_ID relationship with
+        the given id_type. Return None if the node does not exist."""
+
+        result = self.tx.run(f"MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id as extid, ID(a) as nodeid")
+
+        ids = {}
+        for node in result:
+            ids[node['extid']] = node['nodeid']
+
+
+        return ids
+
+
     def get_node_extid(self, id_type, id):
         """Find a node in the graph which has an EXTERNAL_ID relationship with
         the given ID. Return None if the node does not exist."""
@@ -224,6 +268,31 @@ class IYP(object):
         else:
             return None
 
+    def batch_add_links(self, type, links):
+        """Create links of the given type in batches (this is faster than add_links).
+        The links parameter is a list of {"src_id":int, "dst_id":int, "props":[dict].
+        The dictionary prop_dict should at least contain a 'source', 'point in time', 
+        and 'reference URL'. Keys in this dictionary should contain no space.
+
+        Notice: this method commit changes to neo4j """
+
+
+        # Create links in batches
+        for i in range(0, len(links), BATCH_SIZE):
+            batch = links[i:i+BATCH_SIZE]
+
+            create_query = f"""WITH $batch as batch 
+            UNWIND batch as link 
+                UNWIND link.props as prop 
+                    MATCH (x), (y)
+                    WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
+                    MERGE (x)-[l:{type}]-(y) 
+                    SET l += prop """
+
+            # FIXME: this overwrites existing properties (e.g. in bgpkit.peerstat)
+
+            self.tx.run(create_query, batch=batch)
+            self.commit()
 
 
     def add_links(self, src_node, links):
@@ -259,6 +328,24 @@ class IYP(object):
         self.tx.commit()
         self.session.close()
         self.db.close()
+
+class BasePostProcess(object):
+    def __init__(self):
+        """IYP and references initialization"""
+
+        self.reference = {
+            'reference_org': 'Internet Yellow Pages',
+            'reference_url': 'https://iyp.iijlab.net',
+            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            }
+
+        # connection to IYP database
+        self.iyp = IYP()
+    
+    
+    def close(self):
+        # Commit changes to IYP
+        self.iyp.close()
 
 
 class BaseCrawler(object):
