@@ -3,6 +3,8 @@
 
 ## Loading a dump and playing with it
 
+A preliminary database dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2022/12/09/iyp-2022-12-09.dump
+
 ### Using docker
 Download a dump a rename it neo4j.dump. Assuming this file is in $HOME/iyp/dumps/,
 load the database with this command:
