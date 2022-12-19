@@ -135,16 +135,15 @@ class Crawler(BaseCrawler):
                     } )
 
             # Dependency links
-            else:
-                asn = int(rec['asn_id'])
-                if asn not in asn_id:
-                    asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
+            asn = int(rec['asn_id'])
+            if asn not in asn_id:
+                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
 
-                dep_links.append( {
-                    'src_id': prefix_id[prefix],
-                    'dst_id': asn_id[asn],
-                    'props': [self.reference, rec]
-                    } )
+            dep_links.append( {
+                'src_id': prefix_id[prefix],
+                'dst_id': asn_id[asn],
+                'props': [self.reference, rec]
+                } )
 
 
         self.csv.close()
