@@ -21,8 +21,10 @@ class Crawler(BaseCrawler):
             sys.exit('Error while fetching data file')
 
         # Process line one after the other
-        for i, _ in enumerate(map(self.update, req.text.splitlines())):
+        for i, line in enumerate(req.text.splitlines()):
+            self.update( line )
             sys.stderr.write(f'\rProcessed {i} lines')
+
         sys.stderr.write('\n')
     
     def update(self, one_line):
@@ -34,12 +36,15 @@ class Crawler(BaseCrawler):
         # create node for value
         val_qid = self.iyp.get_node(
                 'EXAMPLE_NODE_LABEL', 
-                {'example_property':value},
+                { 
+                 'example_property_0': value,
+                 'example_property_1': value,
+                },
                 create=True
-                )
+            )
 
         # set relationship
-        statements = [[ 'EXAMPLE_RELATIONSHIP', val_qid, self.reference ]]
+        statements = [[ 'EXAMPLE_RELATIONSHIP_LABEL', val_qid, self.reference ]]
 
         # Commit to IYP
         # Get the AS's node ID (create if it is not yet registered) and commit changes

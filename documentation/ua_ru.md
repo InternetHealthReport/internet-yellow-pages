@@ -1,5 +1,15 @@
 # Examples  for
 
+## Which country an AS maps to
+### Registration country code (administrative)
+
+### Presence at IXP (biased by peering db)
+
+### Country code of its peers
+
+### Geoloc of prefixes
+
+
 ## Find all nodes that have the word 'crimea' in their name
 match (x)--(n:NAME) WHERE toLower(n.name) contains 'crimea' RETURN  x, n;
 

@@ -193,8 +193,15 @@ class IYP(object):
         return ids 
 
     def get_node(self, type, prop, create=False):
-        """Find the ID of a node in the graph. Return None if the node does not
-        exist or create the node if create=True."""
+        """Find the ID of a node in the graph  with the possibility to create it
+        if it is not in the graph. 
+
+        type: either a string or list of strings giving the type(s) of the node.
+        prop: dictionary of attributes for the node.
+        create: if the node doesn't exist, the node can be added to the database
+        by setting create=True.
+
+        Return the node ID or None if the node does not exist and create=False."""
 
         prop = format_properties(prop)
 
