@@ -9,6 +9,7 @@ from iyp import BaseCrawler
 
 # NOTES
 # This script should be executed after peeringdb.org
+# TODO add the type PEERING_LAN? may break the unique constraint
 
 ORG = 'PeeringDB'
 URL = ''
@@ -92,7 +93,7 @@ class Crawler(BaseCrawler):
         self.register_ix_membership()
                 
 
-    def register_ix_membership(self ):
+    def register_ix_membership(self):
         """Add IXPs LAN and members."""
 
         # Create prefix nodes
