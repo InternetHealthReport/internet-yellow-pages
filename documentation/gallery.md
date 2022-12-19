@@ -17,4 +17,4 @@ MATCH (a:AS {asn:2497})--(n:NAME) RETURN a,n
 MATCH (gdns:PREFIX {prefix:'8.8.8.0/24'})--(neighbor) RETURN gdns, neighbor
 ```
 
-![All nodes related to 8.8.8.0/24](/documentation/assets/gallery/prefixAllRelated.png)
+![All nodes related to 8.8.8.0/24](/documentation/assets/gallery/prefixAllRelated.svg)
