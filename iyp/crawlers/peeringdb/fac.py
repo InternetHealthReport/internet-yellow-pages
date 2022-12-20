@@ -89,7 +89,7 @@ class Crawler(BaseCrawler):
 
             flat_fac = {}
             try:
-                flat_fac = dict(flatdict.FlatDict(fac, delimiter='_'))
+                flat_fac = dict(flatdict.FlatDict(fac))
             except Exception as e:
                 sys.stderr.write(f'Cannot flatten dictionary {fac}\n{e}\n')
                 logging.error(f'Cannot flatten dictionary {fac}\n{e}')

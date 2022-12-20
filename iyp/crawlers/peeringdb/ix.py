@@ -7,8 +7,7 @@ import json
 from datetime import datetime, time, timezone
 from iyp import BaseCrawler
 
-# NOTES
-# This script should be executed after peeringdb.org
+# NOTES This script should be executed after peeringdb.org
 # TODO add the type PEERING_LAN? may break the unique constraint
 
 ORG = 'PeeringDB'
@@ -18,13 +17,17 @@ URL = ''
 URL_PDB_IXS = 'https://peeringdb.com/api/ix?depth=2'
 # API endpoint for LAN prefixes
 URL_PDB_LANS = 'https://peeringdb.com/api/ixlan?depth=2'
+# API endpoint for network/facility links
+URL_PDB_NETFAC = 'https://peeringdb.com/api/netfac'
 
 # Label used for nodes representing the exchange point IDs
 IXID_LABEL = 'PEERINGDB_IX_ID' 
 # Label used for nodes representing the organization IDs
 ORGID_LABEL = 'PEERINGDB_ORG_ID' 
-# Label used for the class/item representing the network IDs
+# Label used for the nodes representing the network IDs
 NETID_LABEL = 'PEERINGDB_NET_ID' 
+# Label used for the nodes representing the facility IDs
+FACID_LABEL = 'PEERINGDB_FAC_ID' 
 
 API_KEY = ""
 if os.path.exists('config.json'): 
@@ -48,6 +51,12 @@ class Crawler(BaseCrawler):
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
+        self.reference_netfac = {
+            'reference_org': ORG,
+            'reference_url': URL_PDB_NETFAC,
+            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            }
+
         # keep track of added networks
         self.nets = {}
 
@@ -63,6 +72,7 @@ class Crawler(BaseCrawler):
 
         # get organization, country nodes
         self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)
+        self.fac_id = self.iyp.batch_get_node_extid(FACID_LABEL)
         self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code')
 
         req = self.requests.get( URL_PDB_IXS, headers=self.headers)
@@ -92,6 +102,43 @@ class Crawler(BaseCrawler):
         logging.warning('Pushing IXP LAN and members...')
         self.register_ix_membership()
                 
+        # Link network to facilities
+        req = self.requests.get( URL_PDB_NETFAC, headers=self.headers)
+        if req.status_code != 200:
+            logging.error(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
+            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+
+        self.netfacs = json.loads(req.text)['data']
+        self.net_id = self.iyp.batch_get_node_extid(NETID_LABEL)
+        self.register_net_fac()
+
+
+    def register_net_fac(self):
+        """Link ASes to facilities."""
+
+        # compute links
+        netfac_links = []
+
+        for netfac in self.netfacs:
+            if netfac['net_id'] not in self.net_id:
+                logging.error(f'Network not found: net ID {netfac["net_id"]} not registered')
+                continue
+
+            if netfac['fac_id'] not in self.fac_id:
+                logging.error(f'Facility not found: net ID {netfac["fac_id"]} not registered')
+                continue
+
+            net_qid = self.net_id[netfac['net_id']]
+            fac_qid = self.fac_id[netfac['fac_id']]
+            flat_netfac = dict(flatdict.FlatDict(netfac))
+
+            netfac_links.append( { 'src_id':net_qid, 'dst_id':fac_qid, 
+                                        'props':[self.reference_netfac, flat_netfac] } )
+                
+        # Push links to IYP
+        self.iyp.batch_add_links('LOCATED_IN', netfac_links)
+
+        self.iyp.commit()
 
     def register_ix_membership(self):
         """Add IXPs LAN and members."""
@@ -186,6 +233,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('EXTERNAL_ID', netid_links)
         self.iyp.batch_add_links('MANAGED_BY', netorg_links)
 
+        self.iyp.commit()
 
     def register_ixs(self):
         """Add IXs to IYP and populate corresponding nodes' ID.
@@ -203,6 +251,7 @@ class Crawler(BaseCrawler):
         # Compute links
         name_links = []
         org_links = []
+        fac_links = []
         country_links = []
         id_links = []
         website_links = []
@@ -216,6 +265,14 @@ class Crawler(BaseCrawler):
                 org_links.append({'src_id': ix_qid, 'dst_id': org_qid, 'props':[self.reference_ix] })
             else:
                 logging.error(f'Error this organization is not in IYP: {ix["org_id"]}')
+
+            # link to corresponding facilities
+            for fac in ix.get('fac_set', []):
+                fac_qid = self.fac_id.get(fac['id'], None)
+                if fac_qid is not None:
+                    fac_links.append({'src_id': ix_qid, 'dst_id': fac_qid, 'props':[self.reference_ix] })
+                else:
+                    logging.error(f'Error this facility is not in IYP: {fac["id"]}')
 
             # set country
             if ix['country']:
@@ -243,10 +300,13 @@ class Crawler(BaseCrawler):
 
         # Push all links to IYP
         self.iyp.batch_add_links('MANAGED_BY', org_links)
+        self.iyp.batch_add_links('LOCATED_IN', fac_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('WEBSITE', website_links)
         self.iyp.batch_add_links('EXTERNAL_ID', id_links)
         self.iyp.batch_add_links('NAME', name_links)
+
+        self.iyp.commit()
 
 # Main program
 if __name__ == '__main__':

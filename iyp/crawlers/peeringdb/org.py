@@ -80,7 +80,7 @@ class Crawler(BaseCrawler):
             # FIXME: the following raises an error: TypeError: Assignment to invalid type for key name
             flat_org = {}
             try:
-                flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
+                flat_org = dict(flatdict.FlatDict(org))
             except Exception as e:
                 sys.stderr.write(f'Cannot flatten dictionary {org}\n{e}\n')
                 logging.error(f'Cannot flatten dictionary {org}\n{e}')

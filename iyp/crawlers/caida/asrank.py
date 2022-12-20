@@ -73,7 +73,7 @@ class Crawler(BaseCrawler):
                 name_links.append( { 'src_id':asn_qid, 'dst_name':asn['asnName'], 'props':[self.reference] } ) # Set AS name
                 
                 ## flatten all attributes into one dictionary
-                flat_asn = dict(flatdict.FlatDict(asn, delimiter='_'))
+                flat_asn = dict(flatdict.FlatDict(asn))
 
                 rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, flat_asn] } ) # Set AS name
 
