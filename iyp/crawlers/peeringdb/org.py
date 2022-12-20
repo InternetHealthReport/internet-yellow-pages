@@ -5,7 +5,7 @@ import logging
 import json
 import iso3166
 from iyp import BaseCrawler
-import requests
+import requests_cache
 
 ORG = 'PeeringDB'
 
@@ -24,13 +24,14 @@ class Crawler(BaseCrawler):
         """Initialisation for pushing peeringDB organizations to IYP. """
 
         self.headers = {"Authorization": "Api-Key " + API_KEY}
+        self.requests = requests_cache.CachedSession(ORG)
 
         super().__init__(organization, url)
     
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP"""
 
-        req = requests.get(URL, headers=self.headers)
+        req = self.requests.get(URL, headers=self.headers)
         if req.status_code != 200:
             logging.error('Error while fetching peeringDB data')
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')

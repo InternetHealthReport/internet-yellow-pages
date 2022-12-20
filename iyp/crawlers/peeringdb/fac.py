@@ -5,7 +5,7 @@ import logging
 import json
 import iso3166
 from iyp import BaseCrawler
-import requests
+import requests_cache
 
 # NOTES This script should be executed after peeringdb.org
 
@@ -14,8 +14,9 @@ ORG = 'PeeringDB'
 # URL to peeringdb API for facilities
 URL = 'https://peeringdb.com/api/fac'
 
-# Label used for the class/item representing the facility IDs
-ORGID_LABEL = 'PEERINGDB_FAC_ID' 
+# Label used for the nodes representing the organization and facility IDs
+ORGID_LABEL = 'PEERINGDB_ORG_ID' 
+FACID_LABEL = 'PEERINGDB_FAC_ID' 
 
 API_KEY = ""
 if os.path.exists('config.json'): 
@@ -26,6 +27,7 @@ class Crawler(BaseCrawler):
         """Initialisation for pushing peeringDB facilities to IYP. """
 
         self.headers = {"Authorization": "Api-Key " + API_KEY}
+        self.requests = requests_cache.CachedSession(ORG)
 
         super().__init__(organization, url)
 
@@ -34,7 +36,7 @@ class Crawler(BaseCrawler):
         """Fetch facilities information from PeeringDB and push to IYP"""
 
         sys.stderr.write('Fetching PeeringDB data...\n')
-        req = requests.get(URL, headers=self.headers)
+        req = self.requests.get(URL, headers=self.headers)
         if req.status_code != 200:
             logging.error('Error while fetching peeringDB data')
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
@@ -64,7 +66,7 @@ class Crawler(BaseCrawler):
         self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', websites)
         self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
-        self.facid_id = self.iyp.batch_get_nodes(ORGID_LABEL, 'id', facids)
+        self.facid_id = self.iyp.batch_get_nodes(FACID_LABEL, 'id', facids)
 
         # get organization nodes
         self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)
