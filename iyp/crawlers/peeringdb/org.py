@@ -30,7 +30,6 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP"""
 
-        sys.stderr.write('Fetching PeeringDB data...\n')
         req = requests.get(URL, headers=self.headers)
         if req.status_code != 200:
             logging.error('Error while fetching peeringDB data')
@@ -38,7 +37,6 @@ class Crawler(BaseCrawler):
 
         organizations = json.loads(req.text)['data']
 
-        sys.stderr.write('Compute nodes\n')
         # compute nodes
         orgs = set()
         names = set()
@@ -65,8 +63,6 @@ class Crawler(BaseCrawler):
         self.orgid_id = self.iyp.batch_get_nodes(ORGID_LABEL, 'id', orgids)
 
         # compute links
-        sys.stderr.write('Compute links\n')
-
         name_links = []
         website_links = []
         country_links = []
@@ -81,9 +77,14 @@ class Crawler(BaseCrawler):
             orgid_qid = self.orgid_id[org['id']] 
 
             # FIXME: the following raises an error: TypeError: Assignment to invalid type for key name
-            #flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
+            flat_org = {}
+            try:
+                flat_org = dict(flatdict.FlatDict(org, delimiter='_'))
+            except Exception as e:
+                sys.stderr.write(f'Cannot flatten dictionary {org}\n{e}\n')
+                logging.error(f'Cannot flatten dictionary {org}\n{e}')
 
-            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference] } )
+            orgid_links.append( { 'src_id':org_qid, 'dst_id':orgid_qid, 'props':[self.reference, flat_org] } )
             name_links.append( { 'src_id':org_qid, 'dst_id':name_qid, 'props':[self.reference] } ) 
             website_links.append( { 'src_id':org_qid, 'dst_id':website_qid, 'props':[self.reference] } )
             country_links.append( { 'src_id':org_qid, 'dst_id':country_qid, 'props':[self.reference] } )
