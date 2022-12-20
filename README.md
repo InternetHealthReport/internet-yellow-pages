@@ -15,7 +15,8 @@ Then run neo4j with the new database:
 ```
 docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password  -v $HOME/iyp/data:/data --name iyp neo4j:5.1.0 
 ```
-Add these options if you are planning to execute large transactions: -e NEO4J_server_memory_heap_initial__size=8G -e NEO4J_server_memory_heap_max__size=8G 
+(Add these options if you are planning to execute large transactions: -e NEO4J_server_memory_heap_initial__size=8G -e NEO4J_server_memory_heap_max__size=8G)
+and open http://localhost:7474 in your favorite browser. To connect the interface to the database you may need the default login and password: neo4j and password.
 
 If you modify the database and want to make a new dump, use the following command:
 ```
@@ -23,7 +24,7 @@ docker run --interactive --tty --rm   --volume=$HOME/iyp/data:/data --volume=$HO
 ```
 
 
-## How to create a new dump
+## How to create a new dump from scratch
 Clone this repository.
 ```
 git clone https://github.com/InternetHealthReport/internet-yellow-pages.git
