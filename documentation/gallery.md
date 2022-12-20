@@ -64,8 +64,8 @@ From the top 10k domain names select domain names that ends with '.jp', the
 corresponding IP, prefix, and ASN.
 
 ```
-MATCH (:RANKING)-[r:RANK]-(dn:DOMAIN_NAME)--(ip:IP)--(pfx:PREFIX)--(cc:COUNTRY), (pfx)-[:ORIGINATE]-(net:AS)
-WHERE dn.name ends with '.jp' and r.rank<10000 and cc.country_code = 'JP'
+MATCH (:RANKING)-[r:RANK]-(dn:DOMAIN_NAME)--(ip:IP)--(pfx:PREFIX)-[:ORIGINATE]-(net:AS)
+WHERE dn.name ends with '.jp' and r.rank<10000
 RETURN dn, ip, pfx, net
 ```
 
