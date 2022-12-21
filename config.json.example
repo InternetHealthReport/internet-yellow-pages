@@ -1,10 +1,10 @@
 {
     "peeringdb": {
-        "apikey": "bi5mmGC9.fFQ27XoAu5zjsNYnN8wLXh0zK8ALnYLj"
+        "apikey": ""
     },
 
     "cloudflare":{
-        "apikey": "OxnarR034jWxNN45C8bXhSz1xkcFckgqff-lIrOk"
+        "apikey": ""
     },
 
     "iyp": {
@@ -25,6 +25,7 @@
             "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.bgptools.tags",
             "iyp.crawlers.peeringdb.org",
+            "iyp.crawlers.peeringdb.fac",
             "iyp.crawlers.peeringdb.ix",
             "iyp.crawlers.ripe.delegated_stats"
         ]
