@@ -33,9 +33,9 @@ RETURN gdns, neighbor
 
 ### Country code of AS2497 in delegated files
 Here we search for a country node directly connected to AS2497's node and that
-comes from NRO (the organization providing delegated files to IYP).
+comes from NRO's delegated stats.
 ```
-MATCH (iij:AS {asn:2497})-[{reference_org:'NRO'}]-(cc:COUNTRY) 
+MATCH (iij:AS {asn:2497})-[{reference_name:'nro.delegated_stats'}]-(cc:COUNTRY) 
 RETURN iij, cc
 ```
 
