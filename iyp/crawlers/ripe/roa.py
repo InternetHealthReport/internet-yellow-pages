@@ -13,7 +13,7 @@ NAME = 'ripe.roa'
 TALS = ['afrinic.tal', 'apnic.tal', 'arin.tal', 'lacnic.tal', 'ripencc.tal']
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialize IYP and statements for pushed data"""
 
         now = datetime.utcnow()
@@ -28,7 +28,7 @@ class Crawler(BaseCrawler):
             logging.warning("Today's data not yet available!")
             logging.warning("Using yesterday's data: "+self.date_path)
 
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch data from RIPE and push to IYP. """

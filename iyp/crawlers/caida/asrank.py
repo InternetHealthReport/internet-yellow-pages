@@ -25,18 +25,14 @@ class Crawler(BaseCrawler):
         while has_next:
             url = URL+f'&offset={i*10000}'
             i += 1
-            print(url)
             req = requests.get(url)
             if req.status_code != 200:
                 # FIXME should raise an exception
                 sys.exit('Error while fetching data from API')
             
-            print(req.status_code)
             ranking = json.loads(req.text)['data']['asns']
             has_next = ranking['pageInfo']['hasNextPage']
 
-            print(len(ranking['edges']))
-            print(ranking['edges'][0])
             asns = set()
             names = set()
             countries = set()
