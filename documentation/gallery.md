@@ -1,11 +1,16 @@
 # IYP Gallery
 
-Below are examples queries that you can run in Neo4j browser:
+Querying the IYP database requires to be familiar with:
+- Cypher, Neo4j's query langage https://neo4j.com/docs/getting-started/current/cypher-intro/
+- Basic networking knowledge (IP, prefixes, ASes, etc..)
+- IYP ontology (TODO link to ontology)
+
+Below are examples queries that you can copy/paste in Neo4j browser:
 1. [Names for AS2497](#names-for-as2497)
-2. [All nodes related to 8.8.8.0/24](#all-nodes-related-to-8.8.8.0/24)
+2. [All nodes related to 8.8.8.0/24](#all-nodes-related-to-888024)
 3. [Country code of AS2497 in delegated files](#country-code-of-as2497-in-delegated-files)
-4. [Countries of IXPs where AS2497 is present](#countries-of-ixps-where-AS2497-is-present)
-5. [Countries of IXPs where AS2497 is present](#countries-of-ixps-where-as2497-is-present)
+4. [Countries of IXPs where AS2497 is present](#countries-of-ixps-where-as2497-is-present)
+5. [Top domain names hosted by AS2497](#top-domain-names-hosted-by-as2497)
 6. [ASes hosting top domain names in Japan](#ases-hosting-top-domain-names-in-japan)
 
 
