@@ -377,9 +377,6 @@ class BaseCrawler(object):
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
-        print('__name__ is: ', __name__)
-        print('module is: ', sys.modules[__name__])
-
         # connection to IYP database
         self.iyp = IYP()
     

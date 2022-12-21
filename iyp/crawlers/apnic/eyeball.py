@@ -22,7 +22,7 @@ class Crawler(BaseCrawler):
         """Fetch data from APNIC and push to IYP. """
 
         for cc, country in self.countries.items():
-            logging.warning(f'processing {country}')
+            logging.info(f'processing {country}')
 
             # Get the QID of the country and corresponding ranking
             cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
@@ -39,7 +39,7 @@ class Crawler(BaseCrawler):
             names = set()
              
             ranking = req.json()
-            logging.warning(f'{len(ranking)} eyeball ASes')
+            logging.info(f'{len(ranking)} eyeball ASes')
 
             # Collect all ASNs and names
             # and make sure the ranking is sorted and add rank field
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     logging.basicConfig(
             format=FORMAT, 
             filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
+            level=logging.WARNING, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
     logging.info("Started: %s" % sys.argv)

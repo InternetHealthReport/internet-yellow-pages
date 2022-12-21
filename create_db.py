@@ -83,7 +83,6 @@ for module_name in conf['iyp']['crawlers']:
     module = importlib.import_module(module_name)
 
     try:
-        print(module)
         logging.warning(f'start {module}')
         name = module_name.replace('iyp.crawlers.', '')
         crawler = module.Crawler(module.ORG, module.URL, name)
@@ -107,7 +106,6 @@ for module_name in conf['iyp']['post']:
     module = importlib.import_module(module_name)
 
     try:
-        print(module)
         logging.warning(f'start {module}')
         post = module.PostProcess()
         post.run()
