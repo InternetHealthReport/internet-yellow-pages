@@ -8,6 +8,7 @@ from iyp import BaseCrawler
 # URL to Tranco top 1M
 URL = 'https://tranco-list.eu/top-1m.csv.zip'
 ORG = 'imec-DistriNet'
+NAME = 'tranco.top1m'
 
 class Crawler(BaseCrawler):
 
@@ -54,7 +55,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
     

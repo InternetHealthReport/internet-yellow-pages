@@ -8,6 +8,7 @@ from iyp import BaseCrawler
 # URL to ASRank API
 URL = 'https://api.asrank.caida.org/v2/restful/asns/?first=10000'
 ORG = 'CAIDA'
+NAME = 'caida.asrank'
 
 class Crawler(BaseCrawler):
 
@@ -69,7 +70,7 @@ class Crawler(BaseCrawler):
                 name_links.append( { 'src_id':asn_qid, 'dst_name':asn['asnName'], 'props':[self.reference] } ) # Set AS name
                 
                 ## flatten all attributes into one dictionary
-                flat_asn = dict(flatdict.FlatDict(asn, delimiter='_'))
+                flat_asn = dict(flatdict.FlatDict(asn))
 
                 rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, flat_asn] } ) # Set AS name
 
@@ -98,7 +99,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asrank = Crawler(ORG, URL)
+    asrank = Crawler(ORG, URL, NAME)
     asrank.run()
     asrank.close()
 

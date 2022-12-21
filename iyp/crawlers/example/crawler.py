@@ -6,6 +6,7 @@ from iyp import BaseCrawler
 # Organization name and URL to data
 ORG = 'Example Org'
 URL = 'https://example.com/data.csv'
+NAME = 'example.crawler' # should reflect the directory and name of this file
 
 class Crawler(BaseCrawler):
     # Base Crawler provides access to IYP via self.iyp
@@ -64,6 +65,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()

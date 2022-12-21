@@ -275,11 +275,12 @@ class IYP(object):
         else:
             return None
 
-    def batch_add_links(self, type, links):
+    def batch_add_links(self, type, links, action='create'):
         """Create links of the given type in batches (this is faster than add_links).
         The links parameter is a list of {"src_id":int, "dst_id":int, "props":[dict].
         The dictionary prop_dict should at least contain a 'source', 'point in time', 
         and 'reference URL'. Keys in this dictionary should contain no space.
+        To merge links with existing ones set action='merge'
 
         Notice: this method commit changes to neo4j """
 
@@ -293,10 +294,18 @@ class IYP(object):
                 UNWIND link.props as prop 
                     MATCH (x), (y)
                     WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
-                    MERGE (x)-[l:{type}]-(y) 
+                    CREATE (x)-[l:{type}]->(y) 
                     SET l += prop """
 
-            # FIXME: this overwrites existing properties (e.g. in bgpkit.peerstat)
+            if action == 'merge':
+                create_query = f"""WITH $batch as batch 
+                UNWIND batch as link 
+                    UNWIND link.props as prop 
+                        MATCH (x), (y)
+                        WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
+                        MERGE (x)-[l:{type}]-(y) 
+                        SET l += prop """
+
 
             self.tx.run(create_query, batch=batch)
             self.commit()
@@ -319,6 +328,7 @@ class IYP(object):
 
             assert 'reference_org' in prop
             assert 'reference_url' in prop
+            assert 'reference_name' in prop
             assert 'reference_time' in prop
 
             prop = format_properties(prop)
@@ -343,6 +353,7 @@ class BasePostProcess(object):
         self.reference = {
             'reference_org': 'Internet Yellow Pages',
             'reference_url': 'https://iyp.iijlab.net',
+            'reference_name': 'iyp',
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
@@ -356,10 +367,11 @@ class BasePostProcess(object):
 
 
 class BaseCrawler(object):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """IYP and references initialization"""
 
         self.reference = {
+            'reference_name': name,
             'reference_org': organization,
             'reference_url': url,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)

@@ -11,6 +11,7 @@ from iyp import BaseCrawler
 ORG = 'Cloudflare'
 URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json' 
 URL_DL = 'https://api.cloudflare.com/client/v4/radar/datasets/download'  
+NAME = 'cloudflare.ranking_bucket'
 
 API_KEY = ''
 if os.path.exists('config.json'): 
@@ -100,6 +101,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler(ORG, '')
+    crawler = Crawler(ORG, '', NAME)
     crawler.run()
     crawler.close()

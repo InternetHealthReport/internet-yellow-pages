@@ -19,16 +19,29 @@ Strongest dependencies being equal to 1.
 ```
 
 ### Country's AS dependency
-TODO
-Connect ASes that are depending on each other, meaning that an AS is commonly 
-found on routes towards an origin AS. The strength of the dependence is given
-by the 'hege' link attribute (AS Hegemony value) which range from 0 to 1.
-Strongest dependencies being equal to 1.
+Connect ASes to ranking nodes which are also connected to a country.
+A Country AS dependency is computed in two different ways, emphasizing 
+either the distribution of the country's population (a.k.a. Total eyeball) or 
+the country ASes (a.k.a. Total AS), for example:
+```
+(:AS  {asn:2497})-[:RANK {rank:1, hege:0.19}]-(:RANKING {name:'IHR country ranking: Total AS (JP)'})--(:COUNTRY {country_code:'JP'})
+```
+
+means that Japan ASes depends strongly (AS Hegemony equals 0.19) on AS2497.
+
+### Prefixes' RPKI and IRR status
+Connect prefixes to their origin AS, their AS dependencies, their RPKI/IRR 
+status, and their country (provided by Maxmind).
 
 ```
-(:AS {asn:2907})-[:DEPENDS_ON hege:0.82]-(:AS {asn:2497})
+(:PREFIX {prefix:'8.8.8.0/24'})-[:ORIGINATE]-(:AS {asn:15169})
+(:PREFIX {prefix:'8.8.8.0/24'})-[:DEPENDS_ON]-(:AS {asn:15169})
+(:PREFIX {prefix:'8.8.8.0/24'})-[:CATEGORIZED]-(:TAG {label: 'RPKI Valid'})
+(:PREFIX {prefix:'8.8.8.0/24'})-[:COUNTRY]-(:COUNTRY {country_code:'US'})
 ```
 
 ## Dependence
 
-This crawler is not depending on other crawlers.
+This crawler assumes ASes and prefixes are already registered in the database,
+it become very slow if it is not the case. Running bgpkit.pfx2asn before make
+it much faster. 

@@ -10,7 +10,8 @@ import os
 
 # URL to the API
 URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv4/local/{year}/{month:02d}/{day:02d}/ihr_hegemony_ipv4_local_{year}-{month:02d}-{day:02d}.csv.lz4'
-ORG = 'Internet Health Report'
+ORG = 'IHR'
+NAME = 'ihr.local_hegemony'
 
 class lz4Csv:
     def __init__(self, filename):
@@ -53,6 +54,7 @@ class Crawler(BaseCrawler):
         self.reference = {
             'reference_url': url,
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
@@ -111,7 +113,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
 

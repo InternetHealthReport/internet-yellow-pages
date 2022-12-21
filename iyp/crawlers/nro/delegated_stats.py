@@ -10,6 +10,7 @@ from iyp import BaseCrawler
 
 URL = 'https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats'
 ORG = 'NRO'
+NAME = 'nro.delegated_stats'
 
 class Crawler(BaseCrawler):
 
@@ -133,7 +134,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asnames = Crawler(ORG, URL)
+    asnames = Crawler(ORG, URL, NAME)
     asnames.run()
     asnames.close()
 

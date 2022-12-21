@@ -11,3 +11,17 @@ match (n:AS {asn:2497})-[:ORIGINATE]-(p:PREFIX)--(i:IP)--(d:DOMAIN_NAME)-[r:RANK
 match (n:AS {asn:2497})--(p:PREFIX)--(i:IP)--(d:DOMAIN_NAME)-[r:RANK]-(:RANKING) where r.rank<1000 return n,p,i,d
 ```
 
+### All Japanese domains
+Graph:
+```
+MATCH (:RANKING)-[r:RANK]-(dn:DOMAIN_NAME)--(ip:IP)--(pfx:PREFIX)-[:ORIGINATE]-(net:AS)
+WHERE dn.name ends with '.jp' and r.rank<10000
+RETURN dn, ip, pfx, net
+```
+
+Table:
+```
+MATCH (:RANKING)-[r:RANK]-(dn:DOMAIN_NAME)--(ip:IP)--(pfx:PREFIX)-[:ORIGINATE]-(net:AS)
+WHERE dn.name ends with '.jp' and r.rank<100000
+RETURN net.asn,  count(distinct dn) as nb_domain_name order by nb_domain_name desc
+```
