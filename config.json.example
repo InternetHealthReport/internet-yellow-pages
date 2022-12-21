@@ -18,16 +18,22 @@
             "iyp.crawlers.bgpkit.pfx2asn",
             "iyp.crawlers.bgpkit.as2rel",
             "iyp.crawlers.bgpkit.peerstats",
+            "iyp.crawlers.nro.delegated_stats",
             "iyp.crawlers.ripe.roa",
             "iyp.crawlers.ihr.local_hegemony",
             "iyp.crawlers.ihr.rov",
-            "iyp.crawlers.tranco.top1M",
-            "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.bgptools.tags",
             "iyp.crawlers.peeringdb.org",
             "iyp.crawlers.peeringdb.fac",
             "iyp.crawlers.peeringdb.ix",
-            "iyp.crawlers.ripe.delegated_stats"
+            "iyp.crawlers.openintel.tranco1m",
+            "iyp.crawlers.cloudflare.top100",
+            "iyp.crawlers.tranco.top1M"
         ]
-    }
+    },
+
+    "post": [
+        "iyp.post.ip2prefix",
+        "iyp.post.address_family"
+    ]
 }
