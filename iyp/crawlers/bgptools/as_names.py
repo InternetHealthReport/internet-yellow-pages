@@ -6,15 +6,16 @@ from iyp import BaseCrawler
 #curl -s https://bgp.tools/asns.csv | head -n 5
 URL = 'https://bgp.tools/asns.csv'
 ORG = 'BGP.Tools'
+NAME = 'bgptools.as_names'
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
 
         self.headers = {
             'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
         }
 
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch the AS name file from BGP.Tools website and push it to IYP"""
@@ -68,7 +69,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asnames = Crawler(ORG, URL)
+    asnames = Crawler(ORG, URL, NAME)
     asnames.run()
     asnames.close()
 

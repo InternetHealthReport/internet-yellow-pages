@@ -8,6 +8,7 @@ from iyp import BaseCrawler
 # URL to ASRank API
 URL = 'https://api.asrank.caida.org/v2/restful/asns/?first=10000'
 ORG = 'CAIDA'
+NAME = 'caida.asrank'
 
 class Crawler(BaseCrawler):
 
@@ -102,7 +103,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asrank = Crawler(ORG, URL)
+    asrank = Crawler(ORG, URL, NAME)
     asrank.run()
     asrank.close()
 

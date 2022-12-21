@@ -9,6 +9,7 @@ import json
 MAIN_PAGE = 'https://data.bgpkit.com/peer-stats/'
 URL = 'https://data.bgpkit.com/peer-stats/{collector}/{year}/{month:02d}/peer-stats_{collector}_{year}-{month:02d}-{day:02d}_{epoch}.bz2'
 ORG = 'BGPKIT'
+NAME = 'bgpkit.peerstats'
 
 class Crawler(BaseCrawler):
 
@@ -89,7 +90,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asnames = Crawler(ORG, URL)
+    asnames = Crawler(ORG, URL, NAME)
     asnames.run()
     asnames.close()
 

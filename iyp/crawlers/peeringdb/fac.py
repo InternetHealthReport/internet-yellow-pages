@@ -13,6 +13,7 @@ ORG = 'PeeringDB'
 
 # URL to peeringdb API for facilities
 URL = 'https://peeringdb.com/api/fac'
+NAME = 'peeringdb.fac'
 
 # Label used for the nodes representing the organization and facility IDs
 ORGID_LABEL = 'PEERINGDB_ORG_ID' 
@@ -122,7 +123,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    pdbo = Crawler(ORG, '')
+    pdbo = Crawler(ORG, '', NAME)
     pdbo.run()
     pdbo.close()
 

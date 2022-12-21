@@ -1,15 +1,4 @@
 import importlib
-<<<<<<< HEAD
-import json
-
-with open('config.json', 'r') as fp:
-    conf = json.load(fp)
-
-
-# Start a new neo4j container
-
-# run each crawler
-=======
 import os
 import json
 import logging
@@ -88,38 +77,16 @@ while container.status != 'running' and elapsed_time < timeout:
 ########## Fetch data and feed to neo4j ##########
 
 logging.warning('Fetching data...')
->>>>>>> f701e4d1338d9d9cbe50d0ce95dc57368dfed0d7
 status = {}
 no_error = True
 for module_name in conf['iyp']['crawlers']:
     module = importlib.import_module(module_name)
 
     try:
-<<<<<<< HEAD
-        print(module_name)
-        print(module.ORG, module.URL, '\n')
-        #crawler = module.Crawler(module.ORG, module.URL)
-        #crawler.run()
-        #crawler.close()
-        status[module_name] = "OK"
-
-    except Exception as e:
-        no_error = False
-        status[module_name] = str(e)
-
-
-
-# Stop the database
-
-# dump the database
-
-if not no_error:
-    # TODO send an email
-    pass
-=======
         print(module)
         logging.warning(f'start {module}')
-        crawler = module.Crawler(module.ORG, module.URL)
+        name = module_name.replace('iyp.crawlers.', '')
+        crawler = module.Crawler(module.ORG, module.URL, name)
         crawler.run()
         crawler.close()
         status[module_name] = "OK"
@@ -196,4 +163,3 @@ else:
     pass
 
 logging.warning(f"Finished: {sys.argv} {final_words}")
->>>>>>> f701e4d1338d9d9cbe50d0ce95dc57368dfed0d7

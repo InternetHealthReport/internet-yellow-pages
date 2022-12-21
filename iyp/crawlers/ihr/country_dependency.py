@@ -12,11 +12,12 @@ import iso3166
 # URL to the API
 URL = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4'
 # Name of the organization providing the data
-ORG = 'Internet Health Report'
+ORG = 'IHR'
+NAME = 'ihr.country_dependency' 
 MIN_HEGE = 0.01
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialize IYP """
     
         # list of countries
@@ -30,7 +31,7 @@ class Crawler(BaseCrawler):
         self.http_session = requests.Session()
         self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
 
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch data from API and push to IYP. """
@@ -49,6 +50,7 @@ class Crawler(BaseCrawler):
             self.reference = {
                 'reference_org': ORG,
                 'reference_url': URL,
+                'reference_name': NAME,
                 'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
@@ -121,7 +123,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
 

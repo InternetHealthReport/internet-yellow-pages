@@ -8,6 +8,7 @@ from iyp import BaseCrawler
 # URL to RIPE repository
 URL = 'https://ftp.ripe.net/rpki/'
 ORG = 'RIPE NCC'
+NAME = 'ripe.roa'
 
 TALS = ['afrinic.tal', 'apnic.tal', 'arin.tal', 'lacnic.tal', 'ripencc.tal']
 
@@ -96,7 +97,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
 

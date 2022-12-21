@@ -5,6 +5,7 @@ from iyp import BaseCrawler
 
 URL = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 ORG = 'RIPE NCC'
+NAME = 'ripe.as_names'
 
 class Crawler(BaseCrawler):
 
@@ -73,7 +74,7 @@ if __name__ == '__main__':
 
     logging.info("Start: %s" % sys.argv)
 
-    asnames = Crawler(ORG, URL)
+    asnames = Crawler(ORG, URL, NAME)
     asnames.run()
     asnames.close()
 

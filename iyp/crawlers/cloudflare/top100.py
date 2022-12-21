@@ -8,6 +8,7 @@ from iyp import BaseCrawler
 # Organization name and URL to data
 ORG = 'Cloudflare'
 URL = 'https://api.cloudflare.com/client/v4/radar/ranking/top?name=top&limit=100&format=json'
+NAME = 'cloudflare.top100'
 
 API_KEY = ''
 if os.path.exists('config.json'): 
@@ -64,6 +65,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()

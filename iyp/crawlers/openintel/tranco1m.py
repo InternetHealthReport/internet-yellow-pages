@@ -25,6 +25,7 @@ os.makedirs(TMP_DIR, exist_ok=True)
 
 URL = 'https://data.openintel.nl/data/tranco1m/'
 ORG = 'OpenINTEL'
+NAME = 'openintel.tranco1m'
 
 def valid_date(s):
     try:
@@ -146,7 +147,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
 

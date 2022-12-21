@@ -7,13 +7,14 @@ from iyp import BaseCrawler
 # URL to MANRS csv file
 URL = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
 ORG = 'MANRS'
+NAME = 'manrs.members'
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Fetch nodes for MANRS actions (create them if they are not in IYP).""" 
     
         # connect to IYP database
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
         self.manrs_qid = self.iyp.get_node(
                                         'ORGANIZATION', 
@@ -54,6 +55,7 @@ class Crawler(BaseCrawler):
 
         # Reference information for data pushed to IYP
         self.reference = {
+            'reference_name': NAME,
             'reference_org': ORG,
             'reference_url': URL,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
@@ -118,6 +120,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    manrs = Crawler(ORG, URL)
+    manrs = Crawler(ORG, URL, NAME)
     manrs.run()
     manrs.close()

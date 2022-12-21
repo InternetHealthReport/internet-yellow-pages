@@ -7,6 +7,7 @@ import json
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
 ORG = 'BGPKIT'
+NAME = 'bgpkit.pfx2asn'
 
 class Crawler(BaseCrawler):
 
@@ -58,7 +59,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asnames = Crawler(ORG, URL)
+    asnames = Crawler(ORG, URL, NAME)
     asnames.run()
     asnames.close()
 

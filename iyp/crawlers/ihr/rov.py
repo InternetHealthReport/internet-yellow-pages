@@ -13,8 +13,8 @@ from iyp import BaseCrawler
 
 # URL to the API
 URL = 'https://ihr-archive.iijlab.net/ihr/rov/{year}/{month:02d}/{day:02d}/ihr_rov_{year}-{month:02d}-{day:02d}.csv.lz4'
-ORG = 'Internet Health Report'
-
+ORG = 'IHR'
+NAME = 'ihr.rov'
 
 class lz4Csv:
     def __init__(self, filename):
@@ -58,6 +58,7 @@ class Crawler(BaseCrawler):
         self.reference = {
             'reference_org': ORG,
             'reference_url': url,
+            'reference_name': NAME,
             'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
@@ -172,7 +173,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    crawler = Crawler(ORG, URL)
+    crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
 

@@ -11,6 +11,7 @@ ORG = 'PeeringDB'
 
 # URL to peeringdb API for organizations
 URL = 'https://peeringdb.com/api/org'
+NAME = 'peeringdb.org'
 
 # Label used for the class/item representing the organization IDs
 ORGID_LABEL = 'PEERINGDB_ORG_ID' 
@@ -110,7 +111,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    pdbo = Crawler(ORG, '')
+    pdbo = Crawler(ORG, '', NAME)
     pdbo.run()
     pdbo.close()
 

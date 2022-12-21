@@ -7,6 +7,7 @@ import json
 
 URL = 'https://data.bgpkit.com/as2rel/as2rel-latest.json.bz2'
 ORG = 'BGPKIT'
+NAME = 'bgpkit.as2rel'
 
 class Crawler(BaseCrawler):
 
@@ -52,7 +53,7 @@ if __name__ == '__main__':
             )
     logging.info("Start: %s" % sys.argv)
 
-    asnames = Crawler(ORG, URL)
+    asnames = Crawler(ORG, URL, NAME)
     asnames.run()
     asnames.close()
 

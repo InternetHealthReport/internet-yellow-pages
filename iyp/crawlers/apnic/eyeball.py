@@ -7,15 +7,16 @@ from iyp import BaseCrawler
 # URL to APNIC API
 URL = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
 ORG = 'APNIC'
+NAME = 'apnic.eyeball'
 MIN_POP_PERC = 0.01 # ASes with less population will be ignored
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialize IYP and list of countries"""
 
         self.url = URL  # url will change for each country
         self.countries = iso3166.countries_by_alpha2
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch data from APNIC and push to IYP. """
@@ -86,6 +87,6 @@ if __name__ == '__main__':
             )
     logging.info("Started: %s" % sys.argv)
 
-    apnic = Crawler(ORG, URL)
+    apnic = Crawler(ORG, URL, NAME)
     apnic.run()
     apnic.close()
