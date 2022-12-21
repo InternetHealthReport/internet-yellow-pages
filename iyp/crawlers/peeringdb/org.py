@@ -21,13 +21,13 @@ if os.path.exists('config.json'):
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB organizations to IYP. """
 
         self.headers = {"Authorization": "Api-Key " + API_KEY}
         self.requests = requests_cache.CachedSession(ORG)
 
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
     
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP"""

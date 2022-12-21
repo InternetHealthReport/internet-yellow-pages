@@ -42,8 +42,6 @@ class Crawler(BaseCrawler):
         """Fetch the AS name file from BGP.Tools website and process lines one by one"""
 
         for tag, label in TAGS.items():
-            sys.stderr.write(f'{tag}:\n')
-
             url = URL+tag+'.csv'
             # Reference information for data pushed to the wikibase
             self.reference = {
@@ -59,10 +57,8 @@ class Crawler(BaseCrawler):
                 sys.exit('Error while fetching AS names')
 
             self.tag_qid = self.iyp.get_node('TAG', {'label': label}, create=True)
-            for i, _ in enumerate(map(self.update_asn, req.text.splitlines())):
-                sys.stderr.write(f'\rProcessed {i} ASes')
+            map(self.update_asn, req.text.splitlines())
 
-            sys.stderr.write('\n')
 
     def update_asn(self, one_line):
 

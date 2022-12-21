@@ -35,25 +35,28 @@ if os.path.exists('config.json'):
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB IXPs to IYP"""
     
         self.headers = {"Authorization": "Api-Key " + API_KEY}
     
         self.reference_ix = {
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_url': URL,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         self.reference_lan = {
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_url': URL_PDB_LANS,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         self.reference_netfac = {
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_url': URL_PDB_NETFAC,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
@@ -65,7 +68,7 @@ class Crawler(BaseCrawler):
         self.requests = requests_cache.CachedSession(ORG)
 
         # connection to IYP database
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch ixs information from PeeringDB and push to IYP. 
