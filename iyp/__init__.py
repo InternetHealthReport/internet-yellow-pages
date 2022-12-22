@@ -291,19 +291,21 @@ class IYP(object):
 
             create_query = f"""WITH $batch as batch 
             UNWIND batch as link 
+                MATCH (x), (y)
+                WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
+                CREATE (x)-[l:{type}]->(y) 
+                WITH l, link
                 UNWIND link.props as prop 
-                    MATCH (x), (y)
-                    WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
-                    CREATE (x)-[l:{type}]->(y) 
                     SET l += prop """
 
             if action == 'merge':
                 create_query = f"""WITH $batch as batch 
                 UNWIND batch as link 
+                    MATCH (x), (y)
+                    WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
+                    MERGE (x)-[l:{type}]-(y) 
+                    WITH l,  link
                     UNWIND link.props as prop 
-                        MATCH (x), (y)
-                        WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
-                        MERGE (x)-[l:{type}]-(y) 
                         SET l += prop """
 
 
