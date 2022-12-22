@@ -113,18 +113,19 @@ class Crawler(BaseCrawler):
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
 
         self.netfacs = json.loads(req.text)['data']
-        self.net_id = self.iyp.batch_get_node_extid(NETID_LABEL)
         self.register_net_fac()
 
 
     def register_net_fac(self):
         """Link ASes to facilities."""
 
+        net_id = self.iyp.batch_get_node_extid(NETID_LABEL)
+        
         # compute links
         netfac_links = []
 
         for netfac in self.netfacs:
-            if netfac['net_id'] not in self.net_id:
+            if netfac['net_id'] not in net_id:
                 logging.error(f'Network not found: net ID {netfac["net_id"]} not registered')
                 continue
 
@@ -132,7 +133,7 @@ class Crawler(BaseCrawler):
                 logging.error(f'Facility not found: net ID {netfac["fac_id"]} not registered')
                 continue
 
-            net_qid = self.net_id[netfac['net_id']]
+            net_qid = net_id[netfac['net_id']]
             fac_qid = self.fac_id[netfac['fac_id']]
             flat_netfac = dict(flatdict.FlatDict(netfac))
 
