@@ -67,11 +67,9 @@ This will take a couple of hours to download all datasets and push them to neo4j
 
 
 ## Candidate data sources
-- RIS peers
 - Atlas
 - Regulators: start with ARCEP's open data
 - openIPmap
-- AS Hegemony
 - dns tags
 - CERT/ NOG per countries
 - mobile prefixes (Japan)
