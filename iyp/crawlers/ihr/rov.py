@@ -86,6 +86,9 @@ class Crawler(BaseCrawler):
             #delegated_asn_status,descr,moas,asn_id,country_id,originasn_id
 
             rec = dict( zip(self.csv.fields, line) )
+            rec['hege'] = float(rec['hege'])
+            rec['visibility'] = float(rec['visibility'])
+            rec['af'] = int(rec['af'])
 
             prefix = rec['prefix']
             if prefix not in prefix_id:

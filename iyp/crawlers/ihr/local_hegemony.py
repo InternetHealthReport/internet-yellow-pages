@@ -74,6 +74,7 @@ class Crawler(BaseCrawler):
             # timebin,originasn,asn,hege
 
             rec = dict( zip(self.csv.fields, line) )
+            rec['hege'] = float(rec['hege'])
 
             if self.timebin is None:
                 self.timebin = rec['timebin']
