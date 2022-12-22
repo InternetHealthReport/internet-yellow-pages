@@ -29,7 +29,7 @@ class Crawler(BaseCrawler):
 
         req.close()
 
-        logging.warning('Pushing nodes to neo4j...\n')
+        logging.info('Pushing nodes to neo4j...\n')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
         self.prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
@@ -42,7 +42,7 @@ class Crawler(BaseCrawler):
 
             links.append( { 'src_id':asn_qid, 'dst_id':prefix_qid, 'props':[self.reference, entry] } ) # Set AS name
 
-        logging.warning('Pushing links to neo4j...\n')
+        logging.info('Pushing links to neo4j...\n')
         # Push all links to IYP
         self.iyp.batch_add_links('ORIGINATE', links)
 

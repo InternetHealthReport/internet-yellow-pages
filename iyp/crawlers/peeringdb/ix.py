@@ -35,25 +35,28 @@ if os.path.exists('config.json'):
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB IXPs to IYP"""
     
         self.headers = {"Authorization": "Api-Key " + API_KEY}
     
         self.reference_ix = {
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_url': URL,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         self.reference_lan = {
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_url': URL_PDB_LANS,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
         self.reference_netfac = {
             'reference_org': ORG,
+            'reference_name': NAME,
             'reference_url': URL_PDB_NETFAC,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
@@ -65,7 +68,7 @@ class Crawler(BaseCrawler):
         self.requests = requests_cache.CachedSession(ORG)
 
         # connection to IYP database
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch ixs information from PeeringDB and push to IYP. 
@@ -110,18 +113,19 @@ class Crawler(BaseCrawler):
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
 
         self.netfacs = json.loads(req.text)['data']
-        self.net_id = self.iyp.batch_get_node_extid(NETID_LABEL)
         self.register_net_fac()
 
 
     def register_net_fac(self):
         """Link ASes to facilities."""
 
+        net_id = self.iyp.batch_get_node_extid(NETID_LABEL)
+        
         # compute links
         netfac_links = []
 
         for netfac in self.netfacs:
-            if netfac['net_id'] not in self.net_id:
+            if netfac['net_id'] not in net_id:
                 logging.error(f'Network not found: net ID {netfac["net_id"]} not registered')
                 continue
 
@@ -129,7 +133,7 @@ class Crawler(BaseCrawler):
                 logging.error(f'Facility not found: net ID {netfac["fac_id"]} not registered')
                 continue
 
-            net_qid = self.net_id[netfac['net_id']]
+            net_qid = net_id[netfac['net_id']]
             fac_qid = self.fac_id[netfac['fac_id']]
             flat_netfac = dict(flatdict.FlatDict(netfac))
 

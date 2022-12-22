@@ -24,13 +24,13 @@ if os.path.exists('config.json'):
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
 
 class Crawler(BaseCrawler):
-    def __init__(self, organization, url):
+    def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB facilities to IYP. """
 
         self.headers = {"Authorization": "Api-Key " + API_KEY}
         self.requests = requests_cache.CachedSession(ORG)
 
-        super().__init__(organization, url)
+        super().__init__(organization, url, name)
 
     
     def run(self):
@@ -81,13 +81,6 @@ class Crawler(BaseCrawler):
 
         for fac in facilities:
 
-            fac_qid = self.fac_id[fac['name'].strip()] 
-            name_qid = self.name_id[fac['name'].strip()] 
-            website_qid = self.website_id[fac['website'].strip()] 
-            country_qid = self.country_id[fac['country']] 
-            facid_qid = self.facid_id[fac['id']] 
-            org_qid = self.org_id[fac['org_id']]
-
             flat_fac = {}
             try:
                 flat_fac = dict(flatdict.FlatDict(fac))
@@ -96,10 +89,23 @@ class Crawler(BaseCrawler):
                 logging.error(f'Cannot flatten dictionary {fac}\n{e}')
 
 
+
+            facid_qid = self.facid_id[fac['id']] 
+            fac_qid = self.fac_id[fac['name'].strip()] 
             facid_links.append( { 'src_id':fac_qid, 'dst_id':facid_qid, 'props':[self.reference, flat_fac] } )
+
+            name_qid = self.name_id[fac['name'].strip()] 
             name_links.append( { 'src_id':fac_qid, 'dst_id':name_qid, 'props':[self.reference] } ) 
-            website_links.append( { 'src_id':fac_qid, 'dst_id':website_qid, 'props':[self.reference] } )
-            country_links.append( { 'src_id':fac_qid, 'dst_id':country_qid, 'props':[self.reference] } )
+
+            if 'website' in fac and fac['website'] in self.website_id:
+                website_qid = self.website_id[fac['website'].strip()] 
+                website_links.append( { 'src_id':fac_qid, 'dst_id':website_qid, 'props':[self.reference] } )
+
+            if 'country' in fac and fac['country'] in self.country_id:
+                country_qid = self.country_id[fac['country']] 
+                country_links.append( { 'src_id':fac_qid, 'dst_id':country_qid, 'props':[self.reference] } )
+
+            org_qid = self.org_id[fac['org_id']]
             org_links.append( { 'src_id':fac_qid, 'dst_id':org_qid, 'props':[self.reference] } )
 
         # Push all links to IYP

@@ -70,6 +70,8 @@ class Crawler(BaseCrawler):
             url = URL.format(year=today.year, month=today.month, day=today.day)
             req = requests.head(url)
 
+        logging.warning(f'Fetching data for {today}')
+
         today = today.shift(days=-1)
         pandas_df_list = [] # List of Parquet file-specific Pandas DataFrames
 
@@ -85,7 +87,6 @@ class Crawler(BaseCrawler):
             )
         ):
 
-            print('toto')
             # Open a temporary file to download the Parquet object into
             with tempfile.NamedTemporaryFile(mode="w+b", dir=TMP_DIR, prefix="{}.".format(today.date().isoformat()), suffix=".parquet", delete=True) as tempFile:
 

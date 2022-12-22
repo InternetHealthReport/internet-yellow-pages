@@ -34,15 +34,11 @@ class Crawler(BaseCrawler):
             
 
         # get node IDs for ASNs, names, and countries 
-        logging.warning('getting node ids\n')
         asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        logging.warning('getting node ids\n')
         name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
-        logging.warning('getting node ids\n')
         country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
 
         # Compute links
-        logging.warning('computing links\n')
         name_links = []
         country_links = []
 
@@ -57,7 +53,6 @@ class Crawler(BaseCrawler):
                                    'props':[self.reference] } ) # Set country
 
         # Push all links to IYP
-        logging.warning('pushing links\n')
         self.iyp.batch_add_links('NAME', name_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
 
