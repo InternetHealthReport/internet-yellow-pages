@@ -36,8 +36,9 @@ def valid_date(s):
 
 class Crawler(BaseCrawler):
 
-    def run(self):
+    def get_parquet(self):
         """Fetch the forward DNS data, populate a data frame, and process lines one by one"""
+
         # Get a boto3 resource
         S3A_OPENINTEL_ENDPOINT="https://object.openintel.nl"
         S3R_OPENINTEL = boto3.resource(
@@ -65,6 +66,7 @@ class Crawler(BaseCrawler):
         req = requests.head(url)
         attempt = 3
         while req.status_code != 200 and attempt > 0:
+            print(req.status_code)
             attempt -= 1
             today = today.shift(days=-1)
             url = URL.format(year=today.year, month=today.month, day=today.day)
@@ -73,7 +75,6 @@ class Crawler(BaseCrawler):
         logging.warning(f'Fetching data for {today}')
 
         today = today.shift(days=-1)
-        pandas_df_list = [] # List of Parquet file-specific Pandas DataFrames
 
         # Iterate objects in bucket with given (source, date)-partition prefix
         for i_obj in WAREHOUSE_BUCKET.objects.filter(
@@ -98,14 +99,24 @@ class Crawler(BaseCrawler):
                     tempFile.name
                 ))
                 # Use Pandas to read file into a DF and append to list
-                pandas_df_list.append(
+                self.pandas_df_list.append(
                     pd.read_parquet(tempFile.name, 
                         engine="fastparquet", 
                         columns=["query_name", "response_type", "ip4_address"])
                 )
 
+
+    def run(self):
+        """Fetch the forward DNS data, populate a data frame, and process lines one by one"""
+        attempt = 5
+        self.pandas_df_list = [] # List of Parquet file-specific Pandas DataFrames
+
+        while len(self.pandas_df_list) == 0 and attempt > 0:
+            self.get_parquet()
+            attempt -= 1
+
         # Concatenate Parquet file-specific DFs
-        pandas_df = pd.concat(pandas_df_list)
+        pandas_df = pd.concat(self.pandas_df_list)
 
         # Select registered domain name (SLD) to IPv4 address mappings from the measurement data
         df = pandas_df[
@@ -116,7 +127,7 @@ class Crawler(BaseCrawler):
         ][["query_name", "ip4_address"]].drop_duplicates()
         df.query_name = df.query_name.str[:-1] # Remove root '.'
 
-        print("Read {} unique A records from {} Parquet file(s).".format(len(df), len(pandas_df_list)))
+        print("Read {} unique A records from {} Parquet file(s).".format(len(df), len(self.pandas_df_list)))
 
         # Write to CSV file
         #sld_a_mappings.to_csv(args.out_file, sep=",", header=True, index=False)

@@ -93,9 +93,7 @@ for module_name in conf['iyp']['crawlers']:
 
     except Exception as e:
         no_error = False
-        logging.error('crawler crashed!!\n')
-        logging.error(e)
-        logging.error('\n')
+        logging.exception('crawler crashed!!')
         status[module_name] = e
 
 

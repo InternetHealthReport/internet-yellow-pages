@@ -105,6 +105,7 @@ class Crawler(BaseCrawler):
 
         logging.warning('Pushing IXP LAN and members...')
         self.register_ix_membership()
+        self.iyp.commit()
                 
         # Link network to facilities
         req = self.requests.get( URL_PDB_NETFAC, headers=self.headers)
@@ -126,8 +127,11 @@ class Crawler(BaseCrawler):
 
         for netfac in self.netfacs:
             if netfac['net_id'] not in net_id:
-                logging.error(f'Network not found: net ID {netfac["net_id"]} not registered')
-                continue
+                as_qid = self.iyp.get_node('AS', {'asn': netfac['local_asn']}, create=True)
+                extid_qid = self.iyp.get_node(NETID_LABEL, {'id': netfac['net_id']}, create=True)
+                links = [ ['EXTERNAL_ID', extid_qid, self.reference_netfac] ]
+                self.iyp.add_links(as_qid, links)
+                net_id[netfac['net_id']] = as_qid
 
             if netfac['fac_id'] not in self.fac_id:
                 logging.error(f'Facility not found: net ID {netfac["fac_id"]} not registered')
@@ -217,7 +221,7 @@ class Crawler(BaseCrawler):
                             netorg_links.append( { 'src_id':network_qid, 'dst_id':org_qid, 
                                            'props':[self.reference_lan, flat_net] })
                         else:
-                            logging.error(f'Organization unknown org_id={network["org_id"]}\n')
+                            logging.error(f'Organization unknown org_id={network["org_id"]}')
 
                         name_links.append( { 'src_id':network_qid, 'dst_id':name_qid, 
                                            'props':[self.reference_lan, flat_net] })
