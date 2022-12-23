@@ -143,8 +143,6 @@ class Crawler(BaseCrawler):
         # Push links to IYP
         self.iyp.batch_add_links('LOCATED_IN', netfac_links)
 
-        self.iyp.commit()
-
     def register_ix_membership(self):
         """Add IXPs LAN and members."""
 
@@ -238,8 +236,6 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('EXTERNAL_ID', netid_links)
         self.iyp.batch_add_links('MANAGED_BY', netorg_links)
 
-        self.iyp.commit()
-
     def register_ixs(self):
         """Add IXs to IYP and populate corresponding nodes' ID.
         """
@@ -310,8 +306,6 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('WEBSITE', website_links)
         self.iyp.batch_add_links('EXTERNAL_ID', id_links)
         self.iyp.batch_add_links('NAME', name_links)
-
-        self.iyp.commit()
 
 # Main program
 if __name__ == '__main__':

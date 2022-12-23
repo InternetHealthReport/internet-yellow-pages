@@ -309,7 +309,8 @@ class IYP(object):
                         SET l += prop """
 
 
-            self.tx.run(create_query, batch=batch)
+            res = self.tx.run(create_query, batch=batch)
+            res.consume()
             self.commit()
 
 

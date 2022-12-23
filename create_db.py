@@ -153,11 +153,10 @@ if not no_error:
     # TODO send an email
     final_words += 'There was errors!'
     logging.error('there was errors!\n')
-    logging.error(status)
-    pass
+    logging.error({k:error for k, error in status.items() if error!='OK'})
 else:
     final_words = 'No error :)'
-    shutil.rmtree(tmp_dir)
-    pass
+# Delete tmp file in cron job
+#    shutil.rmtree(tmp_dir)
 
 logging.warning(f"Finished: {sys.argv} {final_words}")
