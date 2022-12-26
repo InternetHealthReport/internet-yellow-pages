@@ -6,12 +6,12 @@
 A preliminary database dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2022/12/23/iyp-2022-12-23.dump
 
 ### Loading a dump
-Download a dump a rename it neo4j.dump. Assuming this file is in $HOME/iyp/dumps/,
+Download a dump and rename it neo4j.dump. Assuming this file is in $HOME/iyp/dumps/,
 load the database with this command:
 ```
 docker run --interactive --tty --rm   --volume=$HOME/iyp/data:/data --volume=$HOME/iyp/dumps/:/backups neo4j/neo4j-admin:5.1.0 neo4j-admin database load neo4j --from-path=/backups --verbose
 ```
-Then run neo4j with the new database:
+Then create a neo4j container with the new database:
 ```
 docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password  -v $HOME/iyp/data:/data --name iyp neo4j:5.1.0 
 ```
@@ -28,7 +28,8 @@ RETURN iij, ix, cc
 ```
 ![Countries of IXPs where AS2497 is present](/documentation/assets/gallery/as2497ixpCountry.svg)
 
-More examples are available in [IYP gallery](/documentation/gallery.md)
+### IYP gallery
+See more query examples in [IYP gallery](/documentation/gallery.md)
 
 ### Save modified database
 If you modify the database and want to make a new dump, use the following command:
