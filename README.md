@@ -54,7 +54,7 @@ pip install -r requirements.txt
 
 Configuration file, rename example file and add API keys:
 ```
-cp config.conf.example config.conf
+cp config.json.example config.json
 # Edit as needed
 ```
 
