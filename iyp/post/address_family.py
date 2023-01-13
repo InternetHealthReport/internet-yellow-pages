@@ -10,12 +10,10 @@ class PostProcess(BasePostProcess):
         # Update prefixes
         self.iyp.tx.run("match (pfx:PREFIX) where pfx.prefix contains '.' SET pfx.af = 4;")
         self.iyp.tx.run("match (pfx:PREFIX) where pfx.prefix contains ':' SET pfx.af = 6;")
-        self.iyp.tx.commit()
 
         # Update IP addresses
-        self.iyp.tx.run("match (ip:IP) where ip.ip contains '.' SET pfx.af = 4;")
-        self.iyp.tx.run("match (ip:IP) where ip.ip contains ':' SET pfx.af = 6;")
-        self.iyp.tx.commit()
+        self.iyp.tx.run("match (ip:IP) where ip.ip contains '.' SET ip.af = 4;")
+        self.iyp.tx.run("match (ip:IP) where ip.ip contains ':' SET ip.af = 6;")
 
 
 if __name__ == '__main__':
