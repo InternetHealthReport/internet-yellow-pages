@@ -57,32 +57,25 @@ class Crawler(BaseCrawler):
                 sys.exit('Error while fetching AS names')
 
             self.tag_qid = self.iyp.get_node('TAG', {'label': label}, create=True)
-            map(self.update_asn, req.text.splitlines())
+            for line in req.text.splitlines():
+                # skip header
+                if line.startswith('asn'):
+                    continue
 
+                # Parse given line to get ASN, name, and country code 
+                asn, _, _ = line.partition(',')
+                asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
+                statements = [ [ 'CATEGORIZED', self.tag_qid, self.reference ] ] # Set AS name
 
-    def update_asn(self, one_line):
+                try:
+                    # Update AS name and country
+                    self.iyp.add_links(asn_qid, statements)
 
-        # skip header
-        if one_line.startswith('asn'):
-            return
+                except Exception as error:
+                    # print errors and continue running
+                    print('Error for: ', line)
+                    print(error)
 
-        # Parse given line to get ASN, name, and country code 
-        asn, _, _ = one_line.partition(',')
-
-        asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
-
-        statements = [ [ 'CATEGORIZED', self.tag_qid, self.reference ] ] # Set AS name
-
-        try:
-            # Update AS name and country
-            self.iyp.add_links(asn_qid, statements)
-
-        except Exception as error:
-            # print errors and continue running
-            print('Error for: ', one_line)
-            print(error)
-
-        return asn_qid
 
 if __name__ == '__main__':
 
