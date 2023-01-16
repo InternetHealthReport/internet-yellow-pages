@@ -64,14 +64,6 @@ python3 create_db.py
 ```
 This will take a couple of hours to download all datasets and push them to neo4j.
 
-### Tips and Tricks
-
-
-## Candidate data sources
-- Atlas
-- Regulators: start with ARCEP's open data
-- openIPmap
-- dns tags
-- CERT/ NOG per countries
-- mobile prefixes (Japan)
+## Changelog
+See: https://github.com/InternetHealthReport/internet-yellow-pages/releases
 
