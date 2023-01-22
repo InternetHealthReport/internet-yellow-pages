@@ -56,7 +56,7 @@ class Crawler(BaseCrawler):
                 print(req.text)
                 sys.exit('Error while fetching AS names')
 
-            self.tag_qid = self.iyp.get_node('TAG', {'label': label}, create=True)
+            self.tag_qid = self.iyp.get_node('Tag', {'label': label}, create=True)
             for line in req.text.splitlines():
                 # skip header
                 if line.startswith('asn'):

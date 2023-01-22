@@ -38,7 +38,7 @@ class Crawler(BaseCrawler):
 
         for dataset in req.json()['result']['datasets']:
             self.ranking_qid = self.iyp.get_node(
-                    'RANKING', 
+                    'Ranking',
                     {
                         'name': f'Cloudflare '+dataset['title'],
                         'description': dataset['description'],
@@ -85,7 +85,7 @@ class Crawler(BaseCrawler):
 
         # Commit to IYP
         # Get the AS's node ID (create if it is not yet registered) and commit changes
-        domain_qid = self.iyp.get_node('DOMAIN_NAME', {'name': domain}, create=True) 
+        domain_qid = self.iyp.get_node('DomainName', {'name': domain}, create=True)
         self.iyp.add_links( domain_qid, statements )
         
 # Main program

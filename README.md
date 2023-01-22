@@ -77,7 +77,7 @@ Then enter your query in the top input field.
 
 For example, this finds the IXPs and corresponding country codes where IIJ (AS2497) is:
 ```cypher
-MATCH (iij:AS {asn:2497})-[:MEMBER_OF]-(ix:IXP)--(cc:COUNTRY)
+MATCH (iij:AS {asn:2497})-[:MEMBER_OF]-(ix:IXP)--(cc:Country)
 RETURN iij, ix, cc
 ```
 ![Countries of IXPs where AS2497 is present](/documentation/assets/gallery/as2497ixpCountry.svg)

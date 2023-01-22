@@ -25,8 +25,8 @@ class Crawler(BaseCrawler):
             logging.info(f'processing {country}')
 
             # Get the QID of the country and corresponding ranking
-            cc_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
-            ranking_qid = self.iyp.get_node('RANKING', {'name': f'APNIC eyeball estimates ({cc})'}, create=True)
+            cc_qid = self.iyp.get_node('Country', {'country_code': cc}, create=True)
+            ranking_qid = self.iyp.get_node('Ranking', {'name': f'APNIC eyeball estimates ({cc})'}, create=True)
             statements = [ ['COUNTRY', cc_qid, self.reference] ]
             self.iyp.add_links(ranking_qid, statements)
 
@@ -51,7 +51,7 @@ class Crawler(BaseCrawler):
 
             # Get node IDs
             self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
-            self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names, all=False)
+            self.name_id = self.iyp.batch_get_nodes('Name', 'name', names, all=False)
 
             # Compute links
             country_links = []
@@ -60,7 +60,7 @@ class Crawler(BaseCrawler):
             name_links = []
             for asn in ranking:
                 asn_qid = self.asn_id[asn['as']] #self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
-                name_qid = self.name_id[asn['autnum']] #self.iyp.get_node('NAME', {'name': name}, create=True)
+                name_qid = self.name_id[asn['autnum']] #self.iyp.get_node('Name', {'name': name}, create=True)
 
                 name_links.append( {'src_id': asn_qid, 'dst_id': name_qid, 'props':[self.reference]} )
                 country_links.append( {'src_id': asn_qid, 'dst_id': cc_qid, 'props':[self.reference]} )

@@ -10,7 +10,7 @@ NODE_CONSTRAINTS = {
                 'asn': set(['UNIQUE', 'NOT NULL'])
                 } ,
 
-        'PREFIX': {
+        'Prefix': {
                 'prefix': set(['UNIQUE', 'NOT NULL']), 
                 #                'af': set(['NOT NULL'])
                 },
@@ -20,22 +20,22 @@ NODE_CONSTRAINTS = {
                 #'af': set(['NOT NULL'])
                 },
 
-        'DOMAIN_NAME': {
+        'DomainName': {
                 'name': set(['UNIQUE', 'NOT NULL'])
                 },
 
-        'COUNTRY': {
+        'Country': {
                 'country_code': set(['UNIQUE', 'NOT NULL'])
                 },
 
-        'ORGANIZATION': {
+        'Organization': {
                 'name': set(['NOT NULL'])
                 },
     }
 
 # Properties that may be frequently queried and that are not constraints
 NODE_INDEXES = {
-        'PEERINGDB_ORG_ID': [ 'id' ]
+        'PeeringDBOrgID': [ 'id' ]
         }
 
 # Set of node labels with constrains (ease search for node merging)

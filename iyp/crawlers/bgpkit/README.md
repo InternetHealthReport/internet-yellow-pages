@@ -24,14 +24,14 @@ Connect AS nodes to BGP route collector nodes, meaning that an AS peers with
 a route collector hence participating in the RIS or RouteViews projects.
 
 ```
-(:AS {asn:2497})-[:PEERS_WITH]-(:BGP_COLLECTOR {project: 'riperis', name:'rrc06'})
+(:AS {asn:2497})-[:PEERS_WITH]-(:BGPCollector {project: 'riperis', name:'rrc06'})
 ```
 
 ### Prefix to ASN
 Connect AS nodes to prefix nodes representing the prefixes originated by an AS.
 For example:
 ```
-(:AS  {asn:2497})-[:ORIGINATE]-(:PREFIX {prefix: '101.128.128.0/17'})
+(:AS  {asn:2497})-[:ORIGINATE]-(:Prefix {prefix: '101.128.128.0/17'})
 ```
 
 ## Dependence

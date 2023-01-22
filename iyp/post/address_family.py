@@ -5,11 +5,11 @@ import radix
 
 class PostProcess(BasePostProcess):
     def run(self):
-        """Add address family (4 or 6 for IPv4 or IPv6) to all IP and PREFIX nodes."""
+        """Add address family (4 or 6 for IPv4 or IPv6) to all IP and Prefix nodes."""
 
         # Update prefixes
-        self.iyp.tx.run("match (pfx:PREFIX) where pfx.prefix contains '.' SET pfx.af = 4;")
-        self.iyp.tx.run("match (pfx:PREFIX) where pfx.prefix contains ':' SET pfx.af = 6;")
+        self.iyp.tx.run("match (pfx:Prefix) where pfx.prefix contains '.' SET pfx.af = 4;")
+        self.iyp.tx.run("match (pfx:Prefix) where pfx.prefix contains ':' SET pfx.af = 6;")
 
         # Update IP addresses
         self.iyp.tx.run("match (ip:IP) where ip.ip contains '.' SET ip.af = 4;")

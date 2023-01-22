@@ -15,9 +15,9 @@ Below are examples queries that you can copy/paste in Neo4j browser:
 
 
 ### Names for AS2497
-Find 'NAME' nodes directly connected to the node corresponding to AS2497.
+Find 'Name' nodes directly connected to the node corresponding to AS2497.
 ```cypher
-MATCH (a:AS {asn:2497})--(n:NAME) RETURN a,n
+MATCH (a:AS {asn:2497})--(n:Name) RETURN a,n
 ```
 ![Names for AS2497](/documentation/assets/gallery/as2497names.svg)
 
@@ -26,7 +26,7 @@ MATCH (a:AS {asn:2497})--(n:NAME) RETURN a,n
 Find nodes of any type that are connected to the node corresponding to prefix 
 8.8.8.0/24.
 ```cypher
-MATCH (gdns:PREFIX {prefix:'8.8.8.0/24'})--(neighbor) 
+MATCH (gdns:Prefix {prefix:'8.8.8.0/24'})--(neighbor)
 RETURN gdns, neighbor
 ```
 ![All nodes related to 8.8.8.0/24](/documentation/assets/gallery/prefixAllRelated.svg)
@@ -36,7 +36,7 @@ RETURN gdns, neighbor
 Here we search for a country node directly connected to AS2497's node and that
 comes from NRO's delegated stats.
 ```cypher
-MATCH (iij:AS {asn:2497})-[{reference_name:'nro.delegated_stats'}]-(cc:COUNTRY) 
+MATCH (iij:AS {asn:2497})-[{reference_name:'nro.delegated_stats'}]-(cc:Country)
 RETURN iij, cc
 ```
 ![Country code of AS2497 in delegated files](/documentation/assets/gallery/as2497country.svg)
@@ -46,7 +46,7 @@ RETURN iij, cc
 Starting from the node corresponding to AS2497, find IXPs where AS2497 is member
 of, and then the country corresponding to each IXP.
 ```cypher
-MATCH (iij:AS {asn:2497})-[:MEMBER_OF]-(ix:IXP)--(cc:COUNTRY) 
+MATCH (iij:AS {asn:2497})-[:MEMBER_OF]-(ix:IXP)--(cc:Country)
 RETURN iij, ix, cc
 ```
 ![Countries of IXPs where AS2497 is present](/documentation/assets/gallery/as2497ixpCountry.svg)
@@ -56,7 +56,7 @@ RETURN iij, ix, cc
 Select domain names in top 50k rankings that resolves to an IP originated by
 AS2497.
 ```cypher
-MATCH (:RANKING)-[r:RANK]-(dn:DOMAIN_NAME)--(ip:IP)--(pfx:PREFIX)-[:ORIGINATE]-(iij:AS {asn:2497})
+MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(iij:AS {asn:2497})
 WHERE r.rank < 50000
 RETURN dn, ip, pfx, iij
 ```
@@ -67,7 +67,7 @@ RETURN dn, ip, pfx, iij
 From the top 10k domain names select domain names that ends with '.jp', the
 corresponding IP, prefix, and ASN.
 ```cypher
-MATCH (:RANKING)-[r:RANK]-(dn:DOMAIN_NAME)--(ip:IP)--(pfx:PREFIX)-[:ORIGINATE]-(net:AS)
+MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(net:AS)
 WHERE dn.name ends with '.jp' and r.rank<10000
 RETURN dn, ip, pfx, net
 ```

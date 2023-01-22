@@ -32,7 +32,7 @@ class Crawler(BaseCrawler):
         logging.info('Pushing nodes to neo4j...\n')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        self.prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
+        self.prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes)
 
         # Compute links
         links = []

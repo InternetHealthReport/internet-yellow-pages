@@ -16,8 +16,8 @@ URL = 'https://peeringdb.com/api/fac'
 NAME = 'peeringdb.fac'
 
 # Label used for the nodes representing the organization and facility IDs
-ORGID_LABEL = 'PEERINGDB_ORG_ID' 
-FACID_LABEL = 'PEERINGDB_FAC_ID' 
+ORGID_LABEL = 'PeeringDBOrgID'
+FACID_LABEL = 'PeeringDBFacID'
 
 API_KEY = ""
 if os.path.exists('config.json'): 
@@ -63,10 +63,10 @@ class Crawler(BaseCrawler):
                 countries.add( fac['country'] )
 
         # push nodes
-        self.fac_id = self.iyp.batch_get_nodes('FACILITY', 'name', facs)
-        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
+        self.fac_id = self.iyp.batch_get_nodes('Facility', 'name', facs)
+        self.name_id = self.iyp.batch_get_nodes('Name', 'name', names)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', websites)
-        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
+        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
         self.facid_id = self.iyp.batch_get_nodes(FACID_LABEL, 'id', facids)
 
         # get organization nodes

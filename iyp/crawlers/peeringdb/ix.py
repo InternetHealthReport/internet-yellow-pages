@@ -22,13 +22,13 @@ URL_PDB_LANS = 'https://peeringdb.com/api/ixlan?depth=2'
 URL_PDB_NETFAC = 'https://peeringdb.com/api/netfac'
 
 # Label used for nodes representing the exchange point IDs
-IXID_LABEL = 'PEERINGDB_IX_ID' 
+IXID_LABEL = 'PeeringDBIXID'
 # Label used for nodes representing the organization IDs
-ORGID_LABEL = 'PEERINGDB_ORG_ID' 
+ORGID_LABEL = 'PeeringDBOrgID'
 # Label used for the nodes representing the network IDs
-NETID_LABEL = 'PEERINGDB_NET_ID' 
+NETID_LABEL = 'PeeringDBNetID'
 # Label used for the nodes representing the facility IDs
-FACID_LABEL = 'PEERINGDB_FAC_ID' 
+FACID_LABEL = 'PeeringDBFacID'
 
 API_KEY = ""
 if os.path.exists('config.json'): 
@@ -77,7 +77,7 @@ class Crawler(BaseCrawler):
         # get organization, country nodes
         self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)
         self.fac_id = self.iyp.batch_get_node_extid(FACID_LABEL)
-        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code')
+        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
 
         req = self.requests.get( URL_PDB_IXS, headers=self.headers)
         if req.status_code != 200:
@@ -177,8 +177,8 @@ class Crawler(BaseCrawler):
 
 
         # TODO add the type PEERING_LAN? may break the unique constraint
-        self.prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
-        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', net_names)
+        self.prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes)
+        self.name_id = self.iyp.batch_get_nodes('Name', 'name', net_names)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', net_website)
         self.netid_id = self.iyp.batch_get_nodes(NETID_LABEL, 'id', net_extid)
         self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', net_asn)
@@ -251,7 +251,7 @@ class Crawler(BaseCrawler):
         self.ixext_id = self.iyp.batch_get_nodes(IXID_LABEL, 'id', all_ixs_id)
         self.ix_id = self.iyp.batch_get_nodes('IXP', 'name', all_ixs_name)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', all_ixs_website)
-        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', all_ixs_name)
+        self.name_id = self.iyp.batch_get_nodes('Name', 'name', all_ixs_name)
 
         # Compute links
         name_links = []

@@ -5,10 +5,10 @@ import radix
 
 class PostProcess(BasePostProcess):
     def run(self):
-        """Fetch all IP and PREFIX nodes, then link IPs to their most specific prefix."""
+        """Fetch all IP and Prefix nodes, then link IPs to their most specific prefix."""
 
         # Get all prefixes in a radix trie
-        prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix')
+        prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix')
 
         rtree = radix.Radix()
         for prefix, prefix_qid in prefix_id.items():

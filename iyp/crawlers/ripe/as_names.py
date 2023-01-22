@@ -35,8 +35,8 @@ class Crawler(BaseCrawler):
 
         # get node IDs for ASNs, names, and countries 
         asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
-        country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
+        name_id = self.iyp.batch_get_nodes('Name', 'name', names)
+        country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
 
         # Compute links
         name_links = []

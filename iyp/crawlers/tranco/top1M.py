@@ -15,7 +15,7 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch Tranco top 1M and push to IYP. """
 
-        self.tranco_qid = self.iyp.get_node('RANKING', {'name': f'Tranco top 1M'}, create=True)
+        self.tranco_qid = self.iyp.get_node('Ranking', {'name': f'Tranco top 1M'}, create=True)
 
         sys.stderr.write('Downloading latest list...\n')
         req = requests.get(URL)
@@ -34,7 +34,7 @@ class Crawler(BaseCrawler):
                     domains.add( domain )
                     links.append( { 'src_name':domain, 'dst_id':self.tranco_qid, 'props':[self.reference, {'rank': int(rank)}] } )
 
-        name_id = self.iyp.batch_get_nodes('DOMAIN_NAME', 'name', domains)
+        name_id = self.iyp.batch_get_nodes('DomainName', 'name', domains)
 
         for link in links:
             link['src_id'] = name_id[link['src_name']]
