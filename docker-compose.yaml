@@ -1,0 +1,22 @@
+version: '3'
+services:
+  neo4j-admin:
+    image: neo4j/neo4j-admin:5.1.0
+    container_name: iyp-admin
+    volumes:
+      - ./data:/data
+      - ./dumps:/dumps
+    command: neo4j-admin database load neo4j --from-path=/dumps --overwrite-destination=true --verbose
+  neo4j:
+    image: neo4j:5.1.0
+    container_name: iyp
+    restart: unless-stopped
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    depends_on:
+      - neo4j-admin
