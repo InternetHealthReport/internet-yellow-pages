@@ -4,6 +4,8 @@ progressbar2
 arrow
 tldextract
 py-radix
+requests
+bs4
 requests-cache
 lz4
 frozendict

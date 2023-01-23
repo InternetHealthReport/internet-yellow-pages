@@ -1,11 +1,13 @@
-import sys
+asdb.pyimport sys
 import logging
 import requests
 import csv
 from iyp import BaseCrawler
+from get_latest_asdb_dataset import get_latest_asdb_dataset_url
 
 # TODO automate the file date
-URL = 'https://asdb.stanford.edu/data/2022-12_categorized_ases.csv'
+INITIAL_URL = 'https://asdb.stanford.edu/#data'
+URL = get_latest_asdb_dataset_url(INITIAL_URL, '%Y-%m_categorized_ases.csv')
 ORG = 'Stanford'
 NAME = 'stanford.asdb'
 
