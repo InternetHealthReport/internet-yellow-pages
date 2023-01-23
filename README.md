@@ -1,7 +1,7 @@
 # Internet Yellow Pages
 
 
-## Loading a dump and playing with it (docker)
+## Loading a dump and playing with it
 
 A preliminary database dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/01/15/iyp-2023-01-15.dump
 
@@ -33,6 +33,7 @@ docker-compose up <service1> <service2>
 You can then replace the placeholders with the actual service names when running the command.
 
 This command will start all services defined in the `docker-compose.yaml` file and run the pipeline. To start the pipeline in detached mode, use the `-d` flag:
+
 ```
 docker-compose up -d
 ```
@@ -44,6 +45,9 @@ docker-compose down
 ```
 This command will stop all running services and remove their containers.
 
+This initial setup needs only be done once. Afterwards, you can simply start/stop the container to
+use it. To later overwrite the existing database with a new dump check [Updating an existing
+database](#updating-an-existing-database).
 #### Viewing Logs
 To view the logs for a specific service, use the logs command and specify the service name:
 ```
@@ -75,10 +79,10 @@ If you modify the database and want to make a new dump, use the following comman
 docker-compose run -it neo4j_admin neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
 ```
 
-#### Updating an existing database
+### Updating an existing database
 
-To update the database with a new dumb without deleting the docker container, simply run the
-first command with the `--overwrite-destination` parameter. Run the following command for updating an existing database
+To update the database with a new dump without deleting the docker container, simply run the
+first command with the `--overwrite-destination` parameter.
 ```
 docker-compose run -it neo4j_admin neo4j-admin database load neo4j --from-path=/dumps --verbose --overwrite-destination
 ```
