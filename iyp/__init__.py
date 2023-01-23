@@ -35,7 +35,7 @@ NODE_CONSTRAINTS = {
 
 # Properties that may be frequently queried and that are not constraints
 NODE_INDEXES = {
-        'PeeringDBOrgID': [ 'id' ]
+        'PeeringdbOrgID': [ 'id' ]
         }
 
 # Set of node labels with constrains (ease search for node merging)

@@ -45,7 +45,7 @@ class Crawler(BaseCrawler):
         # Get the ID for the four items representing MANRS actions
         for action in self.actions:
             action['qid'] = self.iyp.get_node(
-                                            'MANRSAction',
+                                            'ManrsAction',
                                             {
                                                 'name': action['label'],
                                                 'description': action['description']

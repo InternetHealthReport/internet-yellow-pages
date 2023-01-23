@@ -14,7 +14,7 @@ URL = 'https://peeringdb.com/api/org'
 NAME = 'peeringdb.org'
 
 # Label used for the class/item representing the organization IDs
-ORGID_LABEL = 'PeeringDBOrgID'
+ORGID_LABEL = 'PeeringdbOrgID'
 
 API_KEY = ""
 if os.path.exists('config.json'): 

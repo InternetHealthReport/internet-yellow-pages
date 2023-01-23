@@ -22,13 +22,13 @@ URL_PDB_LANS = 'https://peeringdb.com/api/ixlan?depth=2'
 URL_PDB_NETFAC = 'https://peeringdb.com/api/netfac'
 
 # Label used for nodes representing the exchange point IDs
-IXID_LABEL = 'PeeringDBIXID'
+IXID_LABEL = 'PeeringdbIXID'
 # Label used for nodes representing the organization IDs
-ORGID_LABEL = 'PeeringDBOrgID'
+ORGID_LABEL = 'PeeringdbOrgID'
 # Label used for the nodes representing the network IDs
-NETID_LABEL = 'PeeringDBNetID'
+NETID_LABEL = 'PeeringdbNetID'
 # Label used for the nodes representing the facility IDs
-FACID_LABEL = 'PeeringDBFacID'
+FACID_LABEL = 'PeeringdbFacID'
 
 API_KEY = ""
 if os.path.exists('config.json'): 

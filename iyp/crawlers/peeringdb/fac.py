@@ -16,8 +16,8 @@ URL = 'https://peeringdb.com/api/fac'
 NAME = 'peeringdb.fac'
 
 # Label used for the nodes representing the organization and facility IDs
-ORGID_LABEL = 'PeeringDBOrgID'
-FACID_LABEL = 'PeeringDBFacID'
+ORGID_LABEL = 'PeeringdbOrgID'
+FACID_LABEL = 'PeeringdbFacID'
 
 API_KEY = ""
 if os.path.exists('config.json'): 
