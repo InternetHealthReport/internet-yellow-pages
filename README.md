@@ -60,8 +60,8 @@ docker create \
     neo4j:5.1.0
 ```
 This initial setup needs only be done once. Afterwards, you can simply start/stop the container to
-use it. To later overwrite the existing database with a new dump check [Overwriting an existing
-database](#overwriting-an-existing-database).
+use it. To later overwrite the existing database with a new dump check [Updating an existing
+database](#updating-an-existing-database).
 ```
 # Start
 docker start iyp
@@ -94,9 +94,9 @@ command writes the dump to `backups/neo4j.dump` and overwrites this file if it e
 docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/backups/:/backups neo4j/neo4j-admin:5.1.0 neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
 ```
 
-### Overwriting an existing database
+### Updating an existing database
 
-To overwrite the database with a new dump without deleting the docker container, simply run the
+To update the database with a new dump without deleting the docker container, simply run the
 first command with the `--overwrite-destination` parameter.
 ```
 docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/dumps/:/dumps neo4j/neo4j-admin:5.1.0 neo4j-admin database load neo4j --from-path=/dumps --verbose --overwrite-destination
