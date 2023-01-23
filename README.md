@@ -96,7 +96,7 @@ docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/backu
 
 ### Overwriting an existing database
 
-To overwrite the database with a new dumb without deleting the docker container, simply run the
+To overwrite the database with a new dump without deleting the docker container, simply run the
 first command with the `--overwrite-destination` parameter.
 ```
 docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/dumps/:/dumps neo4j/neo4j-admin:5.1.0 neo4j-admin database load neo4j --from-path=/dumps --verbose --overwrite-destination
