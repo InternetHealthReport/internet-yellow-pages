@@ -7,7 +7,8 @@ from get_latest_asdb_dataset import get_latest_asdb_dataset_url
 
 # TODO automate the file date
 INITIAL_URL = 'https://asdb.stanford.edu/#data'
-URL = get_latest_asdb_dataset_url(INITIAL_URL, '%Y-%m_categorized_ases.csv')
+FILE_PATTERN = '%Y-%m_categorized_ases.csv'
+URL = get_latest_asdb_dataset_url(INITIAL_URL, FILE_PATTERN)
 ORG = 'Stanford'
 NAME = 'stanford.asdb'
 
