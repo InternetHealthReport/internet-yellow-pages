@@ -161,14 +161,14 @@ class IYP(object):
        """
 
         if all:
-            existing_nodes = self.tx.run(f"MATCH (n:{type}) RETURN n.{prop_name} as {prop_name}, ID(n) as _id")
+            existing_nodes = self.tx.run(f"MATCH (n:{type}) RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id")
         else:
             list_prop = list(prop_set)
             existing_nodes = self.tx.run(f"""
-            WITH $list_prop as list_prop
+            WITH $list_prop AS list_prop
             MATCH (n:{type}) 
             WHERE n.{prop_name} IN list_prop
-            RETURN n.{prop_name} as {prop_name}, ID(n) as _id""", list_prop=list_prop)
+            RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id""", list_prop=list_prop)
 
         ids = {node[prop_name]: node['_id'] for node in existing_nodes }
         existing_nodes_set = set(ids.keys())
@@ -179,9 +179,9 @@ class IYP(object):
         for i in range(0, len(missing_nodes), BATCH_SIZE):
             batch = missing_nodes[i:i+BATCH_SIZE]
 
-            create_query = f"""WITH $batch as batch 
-            UNWIND batch as item CREATE (n:{type}) 
-            SET n += item RETURN n.{prop_name} as {prop_name}, ID(n) as _id"""
+            create_query = f"""WITH $batch AS batch 
+            UNWIND batch AS item CREATE (n:{type}) 
+            SET n += item RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id"""
 
             new_nodes = self.tx.run(create_query, batch=batch)
 
@@ -254,7 +254,7 @@ class IYP(object):
         """Find all nodes in the graph which have an EXTERNAL_ID relationship with
         the given id_type. Return None if the node does not exist."""
 
-        result = self.tx.run(f"MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id as extid, ID(a) as nodeid")
+        result = self.tx.run(f"MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, ID(a) AS nodeid")
 
         ids = {}
         for node in result:
@@ -289,23 +289,23 @@ class IYP(object):
         for i in range(0, len(links), BATCH_SIZE):
             batch = links[i:i+BATCH_SIZE]
 
-            create_query = f"""WITH $batch as batch 
-            UNWIND batch as link 
+            create_query = f"""WITH $batch AS batch 
+            UNWIND batch AS link 
                 MATCH (x), (y)
                 WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
                 CREATE (x)-[l:{type}]->(y) 
                 WITH l, link
-                UNWIND link.props as prop 
+                UNWIND link.props AS prop 
                     SET l += prop """
 
             if action == 'merge':
-                create_query = f"""WITH $batch as batch 
-                UNWIND batch as link 
+                create_query = f"""WITH $batch AS batch 
+                UNWIND batch AS link 
                     MATCH (x), (y)
                     WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
                     MERGE (x)-[l:{type}]-(y) 
                     WITH l,  link
-                    UNWIND link.props as prop 
+                    UNWIND link.props AS prop 
                         SET l += prop """
 
 

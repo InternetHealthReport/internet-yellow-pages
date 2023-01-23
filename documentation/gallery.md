@@ -68,7 +68,7 @@ From the top 10k domain names select domain names that ends with '.jp', the
 corresponding IP, prefix, and ASN.
 ```cypher
 MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(net:AS)
-WHERE dn.name ends with '.jp' and r.rank<10000
+WHERE dn.name ENDS WITH '.jp' AND r.rank<10000
 RETURN dn, ip, pfx, net
 ```
 ![ASes hosting top domain names in Japan](/documentation/assets/gallery/top10kJapanAS.svg)
