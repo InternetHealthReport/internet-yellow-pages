@@ -51,9 +51,6 @@ docker-compose logs -f <service1>
 ```
 You can then replace the placeholders with the actual service names when running the command.
 
-This initial setup needs only be done once. Afterwards, you can simply start/stop the container to
-use it. To later overwrite the existing database with a new dump check [Updating an existing
-database](#updating-an-existing-database).
 
 #### Querying the database
 
@@ -81,7 +78,7 @@ docker-compose run -it neo4j_admin neo4j-admin database dump neo4j --to-path=/ba
 #### Updating an existing database
 
 To update the database with a new dumb without deleting the docker container, simply run the
-first command with the `--overwrite-destination` parameter.
+first command with the `--overwrite-destination` parameter. Run the following command for updating an existing database
 ```
 docker-compose run -it neo4j_admin neo4j-admin database load neo4j --from-path=/dumps --verbose --overwrite-destination
 ```
