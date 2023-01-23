@@ -1,4 +1,4 @@
-asdb.pyimport sys
+import sys
 import logging
 import requests
 import csv
