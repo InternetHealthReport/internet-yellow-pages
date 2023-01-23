@@ -1,7 +1,7 @@
 # Internet Yellow Pages
 
 
-## Loading a dump and playing with it (docker)
+## Loading a dump and playing with it
 
 A preliminary database dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/01/15/iyp-2023-01-15.dump
 
