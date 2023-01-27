@@ -1,13 +1,13 @@
 version: '3'
 services:
-  neo4j_admin:
+  iyp_load:
     image: neo4j/neo4j-admin:5.1.0
     volumes:
       - ./data:/data
       - ./dumps:/dumps
       - ./backups:/backups
     command: neo4j-admin database load neo4j --from-path=/dumps --verbose
-  neo4j:
+  iyp:
     image: neo4j:5.1.0
     container_name: iyp
     restart: unless-stopped
@@ -19,4 +19,4 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/password
     depends_on:
-      - neo4j_admin
+      - iyp_load
