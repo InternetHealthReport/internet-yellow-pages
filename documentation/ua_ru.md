@@ -67,6 +67,6 @@ MATCH (:Ranking)-[r:RANK]-(domain:DomainName)--(:IP)--(:Prefix)-[:ORIGINATE]-(:A
 
 # Interesting queries:
 ## Orange presence
-```
+```cypher
 MATCH (oid)--(n:AS)--(ix:IXP)--(cc:Country) WHERE (oid:OpaqueID)--(:AS {asn:5511}) RETURN n,ix,cc
 ```

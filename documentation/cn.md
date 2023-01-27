@@ -1,11 +1,11 @@
 # A look into the Chinese Internet
 
 ASNs:
-- China telecom: 4134, 23764 (CTGNet replacing 4809 overseas)
-- China telecom 5G network?: 131285
+- China Telecom: 4134, 23764 (CTGNet replacing 4809 overseas)
+- China Telecom 5G network?: 131285
 
 Notes: 
-- some international ASes have HK country code (e.g. telstra)
+- some international ASes have HK country code (e.g., telstra)
 
 
 Interesting links:
@@ -13,104 +13,89 @@ Interesting links:
 - China Telecom peering policy: https://2021v.peeringasia.com/files/NewCTPeeringPolicy.pdf
 
 
-## General stats:
-Number ASNs registered in China/HK:
-```
+## General stats
+
+Number of ASes registered in China/HK:
+```cypher
 MATCH (a:AS)-[:COUNTRY {reference_org:'NRO'}]-(cc:Country)
 WHERE cc.country_code = 'CN' OR cc.country_code = 'HK'
 RETURN cc.country_code, count(DISTINCT a)
 ```
-╒═════════════════╤═══════════════════╕
-│"cc.country_code"│"count(DISTINCT a)"│
-╞═════════════════╪═══════════════════╡
-│"CN"             │6508               │
-├─────────────────┼───────────────────┤
-│"HK"             │1198               │
-└─────────────────┴───────────────────┘
 
-Number chinese/HK ASNs that are active:
-```
+| "cc.country_code" | "count(DISTINCT a)" |
+|-------------------|---------------------|
+| "CN"              |                6508 |
+| "HK"              |                1198 |
+
+
+Number of active Chinese/HK ASes:
+```cypher
 MATCH (a:AS)-[:COUNTRY {reference_org:'NRO'}]-(cc:Country), (a)-[:ORIGINATE]-(:Prefix)
 WHERE cc.country_code = 'CN' OR cc.country_code = 'HK'
 RETURN cc, count(DISTINCT a)
 ```
-╒═════════════════════╤═══════════════════╕
-│"cc"                 │"count(DISTINCT a)"│
-╞═════════════════════╪═══════════════════╡
-│{"country_code":"CN"}│5071               │
-├─────────────────────┼───────────────────┤
-│{"country_code":"HK"}│683                │
-└─────────────────────┴───────────────────┘
+|         "cc"          | "count(DISTINCT a)" |
+|-----------------------|---------------------|
+| {"country_code":"CN"} |                5071 |
+| {"country_code":"HK"} |                 683 |
 
 Facilities for CT (4134, 23764):
-```
+```cypher
 MATCH (a:AS)--(fac:Facility)
 WHERE a.asn IN [4134, 23764]
 RETURN a, fac
 ```
 
 Country codes for these facilities:
-```
+```cypher
 MATCH (a:AS)--(fac:Facility)--(cc:Country)
 WHERE a.asn IN [4134, 23764]
 RETURN DISTINCT cc.country_code
 ```
 
-Country codes for all AS registered for the opaque ID:
-```
+Country codes for all ASes registered for the opaque ID:
+```cypher
 MATCH (a:AS)-[:ASSIGNED]-(oid:OpaqueID)
 WHERE a.asn IN [4134, 23764]
 WITH oid
 MATCH (oid)--(other:AS)--(fac:Facility)--(cc:Country)
 RETURN DISTINCT cc.country_code, collect(DISTINCT other.asn)
 ```
-╒═════════════════╤═════════════════════════════╕
-│"cc.country_code"│"collect(DISTINCT other.asn)"│
-╞═════════════════╪═════════════════════════════╡
-│"SG"             │[131285,23764]               │
-├─────────────────┼─────────────────────────────┤
-│"ID"             │[131285]                     │
-├─────────────────┼─────────────────────────────┤
-│"KE"             │[4809]                       │
-├─────────────────┼─────────────────────────────┤
-│"BR"             │[4809,4134]                  │
-├─────────────────┼─────────────────────────────┤
-│"AE"             │[4809]                       │
-├─────────────────┼─────────────────────────────┤
-│"HK"             │[4809,23764]                 │
-├─────────────────┼─────────────────────────────┤
-│"ZA"             │[4809,23764]                 │
-├─────────────────┼─────────────────────────────┤
-│"US"             │[4134]                       │
-├─────────────────┼─────────────────────────────┤
-│"DE"             │[4134,23764]                 │
-├─────────────────┼─────────────────────────────┤
-│"NL"             │[4134]                       │
-├─────────────────┼─────────────────────────────┤
-│"GB"             │[4134,23764]                 │
-├─────────────────┼─────────────────────────────┤
-│"JP"             │[23764]                      │
-├─────────────────┼─────────────────────────────┤
-│"FR"             │[23764]                      │
-└─────────────────┴─────────────────────────────┘
+
+| "cc.country_code" | "collect(DISTINCT other.asn)" |
+|-------------------|-------------------------------|
+| "SG"              | [131285,23764]                |
+| "ID"              | [131285]                      |
+| "KE"              | [4809]                        |
+| "BR"              | [4809,4134]                   |
+| "AE"              | [4809]                        |
+| "HK"              | [4809,23764]                  |
+| "ZA"              | [4809,23764]                  |
+| "US"              | [4134]                        |
+| "DE"              | [4134,23764]                  |
+| "NL"              | [4134]                        |
+| "GB"              | [4134,23764]                  |
+| "JP"              | [23764]                       |
+| "FR"              | [23764]                       |
 
 ## Co-location facilities 
-Facilities in china/hong-kong:
-```
+
+Facilities in China/HK:
+```cypher
 MATCH (c:Country)--(f:Facility)--(a:AS)
 WHERE c.country_code = 'CN' OR c.country_code = 'HK'
 RETURN f, count(DISTINCT a) AS nb_as ORDER BY nb_as DESC
 ```
 
 Facilities where Chinese ASes are (28):
-```
+```cypher
 MATCH (net_country:Country)-[:COUNTRY {reference_org:'NRO'}]-(net:AS)-[:LOCATED_IN]-(fac:Facility)--(fac_country:Country)
 WHERE net_country.country_code = 'CN'
 RETURN fac_country.country_code, count(DISTINCT net) AS nb_AS ORDER BY nb_AS DESC
 ```
 
 ASes present at the largest number of facilities:
-```
+```cypher
 MATCH (net_country:Country)-[:COUNTRY {reference_org:'NRO'}]-(net:AS)-[:LOCATED_IN]-(fac:Facility)--(fac_country:Country)
 WHERE net_country.country_code = 'HK' OR net_country.country_code = 'CN'
 RETURN net.asn, net_country.country_code, count(DISTINCT fac_country) AS nb_fac ORDER BY nb_fac DESC
@@ -118,21 +103,21 @@ RETURN net.asn, net_country.country_code, count(DISTINCT fac_country) AS nb_fac 
 
 ## Prefix geolocation
 Geolocation of prefixes announced by Chinese ASes (54):
-```
+```cypher
 MATCH (net_country:Country)-[:COUNTRY {reference_org:'NRO'}]-(net:AS)-[:ORIGINATE]-(pfx:Prefix)-[:COUNTRY {reference_org:'Internet Health Report'}]-(pfx_country:Country)
 WHERE net_country.country_code = 'CN'
 RETURN pfx_country.country_code, count(DISTINCT net) AS nb_AS ORDER BY nb_AS DESC
 ```
 
 Geolocation of prefixes announced by HK ASes (81):
-```
+```cypher
 MATCH (net_country:Country)-[:COUNTRY {reference_org:'NRO'}]-(net:AS)-[:ORIGINATE]-(pfx:Prefix)-[:COUNTRY {reference_org:'Internet Health Report'}]-(pfx_country:Country)
 WHERE net_country.country_code = 'HK'
 RETURN pfx_country.country_code, count(DISTINCT net) AS nb_AS ORDER BY nb_AS DESC
 ```
 
 ASes with the largest footprint:
-```
+```cypher
 MATCH (net_country:Country)-[:COUNTRY {reference_org:'NRO'}]-(net:AS)-[:ORIGINATE]-(pfx:Prefix)--(pfx_country:Country)
 WHERE net_country.country_code = 'HK' OR net_country.country_code = 'CN'
 RETURN net.asn, net_country.country_code, count(DISTINCT pfx_country) AS nb_pfx ORDER BY nb_pfx DESC
@@ -140,17 +125,17 @@ RETURN net.asn, net_country.country_code, count(DISTINCT pfx_country) AS nb_pfx 
 
 ## Tier-1 comparison
 
+### Domain name distribution
 
-## Domain name distribution
 Graph (top10k):
-```
+```cypher
 MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(net:AS)
 WHERE dn.name ENDS WITH '.cn' AND r.rank<10000
 RETURN dn, ip, pfx, net
 ```
 
 Table (top1M):
-```
+```cypher
 MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(net:AS)
 WHERE dn.name ENDS WITH '.cn' AND r.rank<100000
 RETURN net.asn,  count(DISTINCT dn) AS nb_domain_name ORDER BY nb_domain_name DESC
