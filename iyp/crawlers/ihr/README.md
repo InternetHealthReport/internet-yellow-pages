@@ -24,7 +24,7 @@ A Country AS dependency is computed in two different ways, emphasizing
 either the distribution of the country's population (a.k.a. Total eyeball) or 
 the country ASes (a.k.a. Total AS), for example:
 ```
-(:AS  {asn:2497})-[:RANK {rank:1, hege:0.19}]-(:RANKING {name:'IHR country ranking: Total AS (JP)'})--(:COUNTRY {country_code:'JP'})
+(:AS  {asn:2497})-[:RANK {rank:1, hege:0.19}]-(:Ranking {name:'IHR country ranking: Total AS (JP)'})--(:Country {country_code:'JP'})
 ```
 
 means that Japan ASes depends strongly (AS Hegemony equals 0.19) on AS2497.
@@ -34,10 +34,10 @@ Connect prefixes to their origin AS, their AS dependencies, their RPKI/IRR
 status, and their country (provided by Maxmind).
 
 ```
-(:PREFIX {prefix:'8.8.8.0/24'})-[:ORIGINATE]-(:AS {asn:15169})
-(:PREFIX {prefix:'8.8.8.0/24'})-[:DEPENDS_ON]-(:AS {asn:15169})
-(:PREFIX {prefix:'8.8.8.0/24'})-[:CATEGORIZED]-(:TAG {label: 'RPKI Valid'})
-(:PREFIX {prefix:'8.8.8.0/24'})-[:COUNTRY]-(:COUNTRY {country_code:'US'})
+(:Prefix {prefix:'8.8.8.0/24'})-[:ORIGINATE]-(:AS {asn:15169})
+(:Prefix {prefix:'8.8.8.0/24'})-[:DEPENDS_ON]-(:AS {asn:15169})
+(:Prefix {prefix:'8.8.8.0/24'})-[:CATEGORIZED]-(:Tag {label: 'RPKI Valid'})
+(:Prefix {prefix:'8.8.8.0/24'})-[:COUNTRY]-(:Country {country_code:'US'})
 ```
 
 ## Dependence

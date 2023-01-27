@@ -54,7 +54,7 @@ class Crawler(BaseCrawler):
             # keep track of collector and reference url
             stats = json.load(bz2.open(req.raw))
             collector_qid = self.iyp.get_node(
-                    'BGP_COLLECTOR', 
+                    'BGPCollector',
                     {'name': stats['collector'], 'project': stats['project']},
                     create=True
                     )

@@ -42,7 +42,7 @@ class Crawler(BaseCrawler):
 
         # get ASNs and names IDs
         self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
+        self.name_id = self.iyp.batch_get_nodes('Name', 'name', names)
 
         # Compute links
         links = []

@@ -54,7 +54,7 @@ class Crawler(BaseCrawler):
             }
 
             # Setup rankings' node
-            country_qid = self.iyp.get_node('COUNTRY', 
+            country_qid = self.iyp.get_node('Country',
                                             {
                                                 'country_code': cc, 
                                             },
@@ -75,7 +75,7 @@ class Crawler(BaseCrawler):
             links = []
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
 
-                self.countryrank_qid = self.iyp.get_node( 'RANKING',
+                self.countryrank_qid = self.iyp.get_node( 'Ranking',
                         {'name': f'IHR country ranking: {metric} ({cc})'},
                         create=True
                         )

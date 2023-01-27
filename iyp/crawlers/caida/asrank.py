@@ -17,8 +17,8 @@ class Crawler(BaseCrawler):
 
         # get ASNs, names, and countries IDs
         self.asn_id = self.iyp.batch_get_nodes('AS', 'asn')
-        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code')
-        self.asrank_qid = self.iyp.get_node('RANKING', {'name': f'CAIDA ASRank'}, create=True)
+        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        self.asrank_qid = self.iyp.get_node('Ranking', {'name': f'CAIDA ASRank'}, create=True)
 
         has_next = True
         i = 0
@@ -61,7 +61,7 @@ class Crawler(BaseCrawler):
                 if int(asn['asn']) not in self.asn_id:
                     self.asn_id[int(asn['asn'])] = self.iyp.get_node('AS', {'asn':int(asn['asn'])}, create=True)
                 if asn['country']['iso'] not in self.country_id:
-                    self.country_id[asn['country']['iso']] = self.iyp.get_node('COUNTRY', {'country_code':asn['country']['iso']}, create=True)
+                    self.country_id[asn['country']['iso']] = self.iyp.get_node('Country', {'country_code':asn['country']['iso']}, create=True)
 
                 asn_qid = self.asn_id[int(asn['asn'])]
                 country_qid = self.country_id[asn['country']['iso']]
@@ -75,7 +75,7 @@ class Crawler(BaseCrawler):
                 rank_links.append( { 'src_id':asn_qid, 'dst_id':self.asrank_qid, 'props':[self.reference, flat_asn] } ) # Set AS name
 
             # Push nodes
-            self.names_id = self.iyp.batch_get_nodes('NAME', 'name', names, all=False)
+            self.names_id = self.iyp.batch_get_nodes('Name', 'name', names, all=False)
 
             # Add dst_id in name_links
             for link in name_links :

@@ -70,9 +70,9 @@ class Crawler(BaseCrawler):
 
         logging.warning('Getting node IDs from neo4j...\n')
         asn_id = self.iyp.batch_get_nodes('AS', 'asn')
-        prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix')
-        tag_id = self.iyp.batch_get_nodes('TAG', 'label')
-        country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code')
+        prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix')
+        tag_id = self.iyp.batch_get_nodes('Tag', 'label')
+        country_id = self.iyp.batch_get_nodes('Country', 'country_code')
 
         orig_links = []
         tag_links = []
@@ -92,7 +92,7 @@ class Crawler(BaseCrawler):
 
             prefix = rec['prefix']
             if prefix not in prefix_id:
-                prefix_id[prefix] = self.iyp.get_node('PREFIX', {'prefix': prefix}, create=True)
+                prefix_id[prefix] = self.iyp.get_node('Prefix', {'prefix': prefix}, create=True)
 
             # make status/country/origin links only for lines where asn=originasn
             if rec['asn_id'] == rec['originasn_id']:
@@ -103,15 +103,15 @@ class Crawler(BaseCrawler):
 
                 rpki_status = 'RPKI '+rec['rpki_status']
                 if rpki_status not in tag_id:
-                    tag_id[rpki_status] = self.iyp.get_node('TAG', {'label': rpki_status}, create=True)
+                    tag_id[rpki_status] = self.iyp.get_node('Tag', {'label': rpki_status}, create=True)
 
                 irr_status = 'IRR '+rec['irr_status']
                 if irr_status not in tag_id:
-                    tag_id[irr_status] = self.iyp.get_node('TAG', {'label': irr_status}, create=True)
+                    tag_id[irr_status] = self.iyp.get_node('Tag', {'label': irr_status}, create=True)
 
                 cc = rec['country_id']
                 if cc not in country_id:
-                    country_id[cc] = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
+                    country_id[cc] = self.iyp.get_node('Country', {'country_code': cc}, create=True)
 
                 # Compute links
                 orig_links.append( {

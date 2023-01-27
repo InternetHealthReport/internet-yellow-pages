@@ -10,7 +10,7 @@ intelligence databases, website classifiers, and a machine learning algorithm.
 Connect AS to tag nodes meaning that an AS has been categorized according to the
 given tag.
 ```
-(:AS {asn:32})-[:CATEGORIZED]-(:TAG {label: 'Colleges, Universities, and Professional Schools'})
+(:AS {asn:32})-[:CATEGORIZED]-(:Tag {label: 'Colleges, Universities, and Professional Schools'})
 ```
 
 ## Dependence

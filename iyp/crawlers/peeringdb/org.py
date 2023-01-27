@@ -14,7 +14,7 @@ URL = 'https://peeringdb.com/api/org'
 NAME = 'peeringdb.org'
 
 # Label used for the class/item representing the organization IDs
-ORGID_LABEL = 'PEERINGDB_ORG_ID' 
+ORGID_LABEL = 'PeeringdbOrgID'
 
 API_KEY = ""
 if os.path.exists('config.json'): 
@@ -58,10 +58,10 @@ class Crawler(BaseCrawler):
                 countries.add( org['country'] )
 
         # push nodes
-        self.org_id = self.iyp.batch_get_nodes('ORGANIZATION', 'name', orgs)
-        self.name_id = self.iyp.batch_get_nodes('NAME', 'name', names)
+        self.org_id = self.iyp.batch_get_nodes('Organization', 'name', orgs)
+        self.name_id = self.iyp.batch_get_nodes('Name', 'name', names)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', websites)
-        self.country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
+        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
         self.orgid_id = self.iyp.batch_get_nodes(ORGID_LABEL, 'id', orgids)
 
         # compute links

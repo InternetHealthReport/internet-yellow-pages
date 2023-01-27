@@ -10,7 +10,7 @@ Connect domain name nodes to a single ranking node corresponding to Cloudflare
 top 100 ranking. The rank is given as a link attribute.
 For example:
 ```
-(:DOMAIN_NAME  {name:'google.com'})-[:RANK {rank:1}]-(:RANKING {name:'Cloudflare top 100 domains'})
+(:DomainName  {name:'google.com'})-[:RANK {rank:1}]-(:Ranking {name:'Cloudflare top 100 domains'})
 ```
 
 ## Dependence

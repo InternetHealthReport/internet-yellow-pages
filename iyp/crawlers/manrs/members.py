@@ -17,7 +17,7 @@ class Crawler(BaseCrawler):
         super().__init__(organization, url, name)
 
         self.manrs_qid = self.iyp.get_node(
-                                        'ORGANIZATION', 
+                                        'Organization',
                                         { 'name': 'MANRS' },
                                         create=True
                                         )
@@ -45,7 +45,7 @@ class Crawler(BaseCrawler):
         # Get the ID for the four items representing MANRS actions
         for action in self.actions:
             action['qid'] = self.iyp.get_node(
-                                            'MANRS_ACTION', 
+                                            'ManrsAction',
                                             {
                                                 'name': action['label'],
                                                 'description': action['description']
@@ -92,7 +92,7 @@ class Crawler(BaseCrawler):
 
         # set countries
         for cc in areas.split(';'):
-            country_qid = self.iyp.get_node('COUNTRY', {'country_code': cc}, create=True)
+            country_qid = self.iyp.get_node('Country', {'country_code': cc}, create=True)
             statements.append([ 'COUNTRY', country_qid, self.reference])
 
         # set actions

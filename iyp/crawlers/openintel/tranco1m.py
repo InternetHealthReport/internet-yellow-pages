@@ -133,7 +133,7 @@ class Crawler(BaseCrawler):
         #sld_a_mappings.to_csv(args.out_file, sep=",", header=True, index=False)
         #print("Written results to '{}' [{:.2f}MiB].".format(args.out_file, os.path.getsize(args.out_file) / (1024 * 1024)))
 
-        domain_id = self.iyp.batch_get_nodes('DOMAIN_NAME', 'name', set(df['query_name']))
+        domain_id = self.iyp.batch_get_nodes('DomainName', 'name', set(df['query_name']))
         ip_id = self.iyp.batch_get_nodes('IP', 'ip', set(df['ip4_address']))
 
         links = []

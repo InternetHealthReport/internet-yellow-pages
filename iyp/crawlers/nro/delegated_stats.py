@@ -60,9 +60,9 @@ class Crawler(BaseCrawler):
 
         # Create all nodes
         logging.warning('Pushing nodes to neo4j...\n')
-        opaqueid_id = self.iyp.batch_get_nodes('OPAQUE_ID', 'id', opaqueids)
-        prefix_id = self.iyp.batch_get_nodes('PREFIX', 'prefix', prefixes)
-        country_id = self.iyp.batch_get_nodes('COUNTRY', 'country_code', countries)
+        opaqueid_id = self.iyp.batch_get_nodes('OpaqueID', 'id', opaqueids)
+        prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes)
+        country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
 
         # Compute links
         country_links = []

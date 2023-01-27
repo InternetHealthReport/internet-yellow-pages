@@ -10,21 +10,21 @@ Connect ASes nodes to a single ranking node corresponding to ASRank. The rank is
 given as a link attribute.
 For example:
 ```
-(:AS  {asn:2497})-[:RANK {rank:87}]-(:RANKING {name:'CAIDA ASRank'})
+(:AS  {asn:2497})-[:RANK {rank:87}]-(:Ranking {name:'CAIDA ASRank'})
 ```
 
 ### Country
 Connect AS to country nodes, meaning that the AS is registered in that country.
 
 ```
-(:AS)-[:COUNTRY]-(:COUNTRY)
+(:AS)-[:COUNTRY]-(:Country)
 ```
 
 ### AS name
 Connect AS to names nodes, providing the name of an AS.
 For example:
 ```
-(:AS {asn:2497})-[:NAME]-(:NAME {name:'IIJ'})
+(:AS {asn:2497})-[:NAME]-(:Name {name:'IIJ'})
 ```
 
 ## Dependence
