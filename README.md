@@ -5,75 +5,61 @@
 
 A preliminary database dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/01/15/iyp-2023-01-15.dump
 
-### Quickstart
+### Usage
+#### Prerequisites
+- [Curl](https://curl.se/download.html)
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
-If you simply want to copy & paste to get started, execute this script, otherwise continue at [Slow
-start](#slow-start). **Note: This script assumes that `curl` is installed on your system and
-downloads a database dump with a size of ~4GB.**
+#### Downloading the Database dump
+Before starting the database dumping pipeline, you need to download the database dump using the following commands. **Note this downloads a database dump with a size of ~4GB.**
+:
 ```
-mkdir data dumps
-curl https://exp1.iijlab.net/wip/iyp/dumps/2023/01/15/iyp-2023-01-15.dump -o dumps/neo4j.dump
-sudo docker run --interactive --tty --rm --volume=$PWD/data/:/data --volume=$PWD/dumps/:/dumps neo4j/neo4j-admin:5.1.0 neo4j-admin database load neo4j --from-path=/dumps
-sudo docker run -p 127.0.0.1:7474:7474 -p 127.0.0.1:7687:7687 -e NEO4J_AUTH=neo4j/password -v $PWD/data:/data --name iyp neo4j:5.1.0
-```
-The database is now running and can be stopped with `Ctrl+C`. Continue at [Querying the
-database](#querying-the-database) to start playing.
-
-### Slow start
-
-Create the data directory (containing the neo4j data) and the dumps directory (for compressed
-database dumps).
-```
-mkdir data dumps
-```
-Download the database dump and place it (or a link) in the `dumps` directory with the name
-`neo4j.dump`. Example using `curl`:
-```
+mkdir dumps
 curl https://exp1.iijlab.net/wip/iyp/dumps/2023/01/15/iyp-2023-01-15.dump -o dumps/neo4j.dump
 ```
-Load the dump to create a working database. neo4j assumes that dump files end with `.dump` so we
-specify the location of our dump using the `--from-path=/dumps` parameter and the name with `load
-neo4j` (omitting the `.dump` suffix). For more information on the docker parameters see
-[here](https://docs.docker.com/engine/reference/commandline/run/).
 
-**Note: You might need to execute the docker commands with `sudo`.**
+This will create directory named `dumps` and download the dataset to `dumps/neo4j.dump`
+
+#### Starting the database dumping pipeline
+To start the pipeline using docker-compose, navigate to the root directory of the repository and run the following command:
 ```
-docker run --interactive --tty --rm  \
-    --volume=$PWD/data:/data \
-    --volume=$PWD/dumps/:/dumps \
-    neo4j/neo4j-admin:5.1.0 \
-    neo4j-admin database load neo4j \
-        --from-path=/dumps \
-        --verbose
+docker-compose up
 ```
-Then create a neo4j docker container named `iyp` with the new database. This container will bind
-ports `7474` (required for the web interface) and `7687` (required for the neo4j driver) to listen
-on the loopback interface. The `NEO4J_AUTH=neo4j/password` environment variable is used to set the
-initial username (`neo4j`) and password (`password`) of the database.
+You can also start only a subset of services by specifying the service name:
 ```
-docker create \
-    -p 127.0.0.1:7474:7474 \
-    -p 127.0.0.1:7687:7687 \
-    --env NEO4J_AUTH=neo4j/password \
-    --volume $PWD/data:/data \
-    --name iyp \
-    neo4j:5.1.0
+docker-compose up <service1> <service2>
 ```
+You can then replace the placeholders with the actual service names when running the command.
+
+This command will start all services defined in the `docker-compose.yaml` file and run the pipeline. To start the pipeline in detached mode, use the `-d` flag:
+
+```
+docker-compose up -d
+```
+
+#### Stopping the database dumping pipeline
+To stop the pipeline, run the following command:
+```
+docker-compose down
+```
+This command will stop all running services and remove their containers.
+
 This initial setup needs only be done once. Afterwards, you can simply start/stop the container to
 use it. To later overwrite the existing database with a new dump check [Updating an existing
 database](#updating-an-existing-database).
+#### Viewing Logs
+To view the logs for a specific service, use the logs command and specify the service name:
 ```
-# Start
-docker start iyp
-# Stop
-docker stop iyp
+docker-compose logs -f <service1>
 ```
+You can then replace the placeholders with the actual service names when running the command.
 
-### Querying the database
+
+#### Querying the database
 
 Open http://localhost:7474 in your favorite browser. To connect the interface to the database give
-the default login and password: `neo4j` and `password`.
-Then enter your query in the top input field.
+the default login and password: `neo4j` and `password` respectively. Then enter your query in the top input field.
 
 For example, this finds the IXPs and corresponding country codes where IIJ (AS2497) is:
 ```cypher
@@ -82,16 +68,15 @@ RETURN iij, ix, cc
 ```
 ![Countries of IXPs where AS2497 is present](/documentation/assets/gallery/as2497ixpCountry.svg)
 
-### IYP gallery
+#### IYP gallery
 
 See more query examples in [IYP gallery](/documentation/gallery.md)
 
-### Save modified database
+#### Save modified database
 
-If you modify the database and want to make a new dump, use the following command. **Note: This
-command writes the dump to `backups/neo4j.dump` and overwrites this file if it exists.**
+If you modify the database and want to make a new dump, use the following command. Run the following command for updating an existing database. **Note: This command writes the dump to `backups/neo4j.dump` and overwrites this file if it exists.** 
 ```
-docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/backups/:/backups neo4j/neo4j-admin:5.1.0 neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
+docker-compose run -it neo4j_admin neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
 ```
 
 ### Updating an existing database
@@ -99,9 +84,8 @@ docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/backu
 To update the database with a new dump without deleting the docker container, simply run the
 first command with the `--overwrite-destination` parameter.
 ```
-docker run --interactive --tty --rm --volume=$PWD/data:/data --volume=$PWD/dumps/:/dumps neo4j/neo4j-admin:5.1.0 neo4j-admin database load neo4j --from-path=/dumps --verbose --overwrite-destination
+docker-compose run -it neo4j_admin neo4j-admin database load neo4j --from-path=/dumps --verbose --overwrite-destination
 ```
-
 
 ## How to create a new dump from scratch
 
