@@ -28,7 +28,7 @@ This creates a `data` directory containing the database.
 This initial setup needs be done only once. 
 It won't work if this directory already contains a database.
 
-Afterwards, you can simply [start/stop](#start/stop-iyp) IYP to use it. 
+Afterwards, you can simply [start/stop](#startstop-iyp) IYP to use it. 
 To update the database with a new dump see [Updating an existing database](#updating-an-existing-database).
 
 
