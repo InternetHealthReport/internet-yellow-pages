@@ -64,7 +64,7 @@ See more query examples in [IYP gallery](/documentation/gallery.md)
 
 If you modify the database and want to make a new dump, use the following command. Run the following command for updating an existing database. **Note: This command writes the dump to `backups/neo4j.dump` and overwrites this file if it exists.** 
 ```
-docker-compose run -it neo4j_admin neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
+docker-compose run -it iyp_loader neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
 ```
 
 ### Updating an existing database
