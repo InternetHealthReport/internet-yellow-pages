@@ -7,8 +7,6 @@ import bs4
 from bs4 import BeautifulSoup
 from datetime import datetime
 from iyp import BaseCrawler
-import bs4
-from bs4 import BeautifulSoup
 
 def get_latest_asdb_dataset_url(asdb_stanford_data_url: str, file_name_format: str):
     response = requests.get(asdb_stanford_data_url)
