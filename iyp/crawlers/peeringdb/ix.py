@@ -191,6 +191,9 @@ class Crawler(BaseCrawler):
         netorg_links = []
         member_links = []
 
+        processed_net = set()
+        processed_membership = set()
+
         for ix in self.ixs:
             if 'ixlan_set' in ix:
                 for ixlan in ix['ixlan_set']:
@@ -206,37 +209,50 @@ class Crawler(BaseCrawler):
                         prefix_links.append( { 'src_id':prefix_qid, 'dst_id':ix_qid, 
                                               'props':[self.reference_lan] } )
                         
-
+                    # Add networks found for the LAN
                     for network in lan['net_set']:
 
-
-                        network_qid = self.asn_id[int(network['asn'])]
-                        name_qid = self.name_id[network['name']]
-                        website_qid = self.website_id[network['website']]
-                        netid_qid = self.netid_id[network['id']]
+                        net_asn = int(network['asn'])
                         flat_net = dict(flatdict.FlatDict(network))
+                        network_qid = self.asn_id[int(network['asn'])]
 
-                        if network['org_id'] in self.org_id:
-                            org_qid = self.org_id[network['org_id']]
-                            netorg_links.append( { 'src_id':network_qid, 'dst_id':org_qid, 
-                                           'props':[self.reference_lan, flat_net] })
-                        else:
-                            logging.error(f'Organization unknown org_id={network["org_id"]}')
+                        if f'{network_qid}-{ix_qid}' in processed_membership:
+                            continue
 
-                        name_links.append( { 'src_id':network_qid, 'dst_id':name_qid, 
+                        if net_asn not in processed_net:
+                            # Add network name, website and external ID
+                            # (only once)
+
+                            netid_qid = self.netid_id[network['id']]
+                            name_qid = self.name_id[network['name']]
+                            website_qid = self.website_id[network['website']]
+
+                            if network['org_id'] in self.org_id:
+                                org_qid = self.org_id[network['org_id']]
+                                netorg_links.append( { 'src_id':network_qid, 'dst_id':org_qid, 
                                            'props':[self.reference_lan, flat_net] })
-                        website_links.append( { 'src_id':network_qid, 'dst_id':website_qid, 
+                            else:
+                                logging.error(f'Organization unknown org_id={network["org_id"]}')
+
+                            name_links.append( { 'src_id':network_qid, 'dst_id':name_qid, 
                                            'props':[self.reference_lan, flat_net] })
-                        netid_links.append( { 'src_id':network_qid, 'dst_id':netid_qid, 
+                            website_links.append( { 'src_id':network_qid, 'dst_id':website_qid, 
                                            'props':[self.reference_lan, flat_net] })
+                            netid_links.append( { 'src_id':network_qid, 'dst_id':netid_qid, 
+                                           'props':[self.reference_lan, flat_net] })
+
+                            # Remember that this network has been processed
+                            processed_net.add(net_asn)
+
                         member_links.append( { 'src_id':network_qid, 'dst_id':ix_qid, 
                                            'props':[self.reference_lan, flat_net] })
+                        processed_membership.add(f'{network_qid}-{ix_qid}')
 
         # Push all links to IYP
         self.iyp.batch_add_links('MANAGED_BY', prefix_links)
         self.iyp.batch_add_links('NAME', name_links)
-        self.iyp.batch_add_links('MEMBER_OF', member_links)
         self.iyp.batch_add_links('WEBSITE', website_links)
+        self.iyp.batch_add_links('MEMBER_OF', member_links)
         self.iyp.batch_add_links('EXTERNAL_ID', netid_links)
         self.iyp.batch_add_links('MANAGED_BY', netorg_links)
 
