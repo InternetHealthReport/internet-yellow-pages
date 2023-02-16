@@ -5,6 +5,9 @@
 
     "cloudflare":{
         "apikey": ""
+        "userid": "",
+        "authemail": "",
+        "authkey": ""
     },
 
     "iyp": {

@@ -1,4 +1,6 @@
+import glob
 import logging
+import os
 import sys
 from datetime import datetime, time, timezone
 from neo4j import GraphDatabase
@@ -371,7 +373,11 @@ class BasePostProcess(object):
 
 class BaseCrawler(object):
     def __init__(self, organization, url, name):
-        """IYP and references initialization"""
+        """IYP and references initialization. The crawler name should be unique."""
+
+        self.organization = organization
+        self.url = url
+        self.name = name
 
         self.reference = {
             'reference_name': name,
@@ -382,7 +388,39 @@ class BaseCrawler(object):
 
         # connection to IYP database
         self.iyp = IYP()
-    
+
+    def create_tmp_dir(self, root='./tmp/'):
+        """Create a temporary directory for this crawler. If the directory 
+        already exists all and contains files then all files are deleted.
+
+        return: path to the temporary directory
+        """
+
+        path = self.get_tmp_dir(root)
+
+        try: 
+            os.makedirs( path, exist_ok=False )
+        except OSError:
+            files = glob.glob(path+'*')
+            for file in files:
+                os.remove(file)
+
+        return path
+
+    def get_tmp_dir(self, root='./tmp/'):
+        """Return the path to the temporary directory for this crawler. The
+        directory may not exist yet."""
+
+        assert self.name != ''
+
+        return  f'{root}/{self.name}/'
+
+    def fetch(self):
+        """Large datasets may be pre-fetched using this method. Currently the 
+        BaseCrawler does nothing for this method. Note that all crawlers may
+        fetch data at the same time, hence it may cause API rate limiting issues."""
+
+        pass
     
     def close(self):
         # Commit changes to IYP
