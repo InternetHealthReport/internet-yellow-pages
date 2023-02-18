@@ -21,5 +21,4 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/password
     depends_on:
-      iyp_loader:
-        condition: service_completed_successfully
+      - iyp_loader
