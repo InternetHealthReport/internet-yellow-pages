@@ -53,3 +53,5 @@ if __name__ == '__main__':
     crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
+
+    logging.info("Ended")

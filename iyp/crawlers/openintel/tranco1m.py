@@ -63,17 +63,25 @@ class Crawler(BaseCrawler):
         # check on the website if today's data is available
         today = arrow.utcnow()
         url = URL.format(year=today.year, month=today.month, day=today.day)
-        req = requests.head(url)
-        attempt = 3
-        while req.status_code != 200 and attempt > 0:
-            print(req.status_code)
-            attempt -= 1
-            today = today.shift(days=-1)
-            url = URL.format(year=today.year, month=today.month, day=today.day)
+        try:
             req = requests.head(url)
+
+            attempt = 3
+            while req.status_code != 200 and attempt > 0:
+                print(req.status_code)
+                attempt -= 1
+                today = today.shift(days=-1)
+                url = URL.format(year=today.year, month=today.month, day=today.day)
+                req = requests.head(url)
+
+        except requests.exceptions.ConnectionError:
+            logging.warning("Cannot reach OpenINTEL website, try yesterday's data")
+            today = arrow.utcnow().shift(days=-1)
+            url = URL.format(year=today.year, month=today.month, day=today.day)
 
         logging.warning(f'Fetching data for {today}')
 
+        # Start one day before ? # TODO remove this line?
         today = today.shift(days=-1)
 
         # Iterate objects in bucket with given (source, date)-partition prefix

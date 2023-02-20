@@ -325,6 +325,9 @@ class IYP(object):
         By convention link_type is written in UPPERCASE and keys in prop_dict are
         in lowercase."""
 
+        if len(links) == 0:
+            return 
+
         matches = ' MATCH (x)' 
         where = f" WHERE ID(x) = {src_node}"
         merges = ''

@@ -13,7 +13,7 @@ from iyp import BaseCrawler
 ORG = 'Cloudflare'
 URL = 'https://api.cloudflare.com/client/v4/radar/dns/top/locations/'
 NAME = 'cloudflare.dns_top_locations'
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 RANK_THRESHOLD = 10000
 TOP_LIMIT = 100/BATCH_SIZE
 
@@ -28,6 +28,22 @@ if os.path.exists('config.json'):
 class Crawler(BaseCrawler):
     # Base Crawler provides access to IYP via self.iyp
     # and setup a dictionary with the org/url/today's date in self.reference
+
+    def __init__(self, organization, url, name):
+
+        # Initialize IYP connection
+        super().__init__(organization, url, name)
+
+        # Fetch domain names registered in IYP
+        existing_dn = self.iyp.tx.run(
+                f"""MATCH (dn:DomainName)-[r:RANK]-(:Ranking) 
+                WHERE r.rank < {RANK_THRESHOLD}
+                RETURN ID(dn) AS _id, dn.name AS dname;""")
+
+
+        self.domain_names_id = { node['dname']: node['_id'] for node in existing_dn }
+        self.domain_names = list(self.domain_names_id.keys())
+
 
     def fetch(self):
         """Download top locations for top RANK_THRESHOLD domain names registered
@@ -48,21 +64,11 @@ class Crawler(BaseCrawler):
 
         tmp_dir = self.create_tmp_dir()
 
-        # Fetch domain names registered in IYP
-        existing_dn = self.iyp.tx.run(
-                f"""MATCH (dn:DomainName)-[r:RANK]-(:Ranking) 
-                WHERE r.rank < {RANK_THRESHOLD}
-                RETURN ID(dn) AS _id, dn.name AS dname;""")
-
-
-        self.domain_names_id = { node['dname']: node['_id'] for node in existing_dn }
-        domain_names = list(self.domain_names_id.keys())
-
         # Query Cloudflare API in batches
-        for i in range(0, len(domain_names), BATCH_SIZE):
+        for i in range(0, len(self.domain_names), BATCH_SIZE):
 
             get_params = f'?limit={TOP_LIMIT}'
-            for domain in domain_names[i:i+BATCH_SIZE]:
+            for domain in self.domain_names[i:i+BATCH_SIZE]:
                 get_params += f'&dateRange=7d&domain={domain}&name={domain}'
 
             url = self.url+get_params
@@ -71,9 +77,11 @@ class Crawler(BaseCrawler):
             req = req_session.get(url)
             if req.status_code != 200:
                 logging.error(f'Cannot download data {req.status_code}: {req.text}')
-                sys.exit('Error while fetching data file')
+                # Cannot get the data? skip this one
+                continue
+                #sys.exit('Error while fetching data file')
 
-            fname = 'data_'+'_'.join(domain_names[i:i+BATCH_SIZE])
+            fname = 'data_'+'_'.join(self.domain_names[i:i+BATCH_SIZE])
             with open(f'{tmp_dir}/{fname}.json', 'wb') as fp:
                 fp.write(req.content)
          
@@ -132,3 +140,5 @@ if __name__ == '__main__':
     crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
+
+    logging.info("Ended")
