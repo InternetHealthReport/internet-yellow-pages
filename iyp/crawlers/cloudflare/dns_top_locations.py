@@ -62,10 +62,19 @@ class Crawler(BaseCrawler):
         req_session.mount('http://', HTTPAdapter(max_retries=retries))
         req_session.mount('https://', HTTPAdapter(max_retries=retries))
 
-        tmp_dir = self.create_tmp_dir()
+        # Clear the cache
+        #tmp_dir = self.create_tmp_dir()
+        tmp_dir = self.get_tmp_dir()
 
         # Query Cloudflare API in batches
         for i in range(0, len(self.domain_names), BATCH_SIZE):
+
+            # Don't overide existing files
+            fname = 'data_'+'_'.join(self.domain_names[i:i+BATCH_SIZE])
+            fpath = f'{tmp_dir}/{fname}.json'
+
+            if os.path.exists(fpath):
+                continue
 
             get_params = f'?limit={TOP_LIMIT}'
             for domain in self.domain_names[i:i+BATCH_SIZE]:
@@ -81,8 +90,7 @@ class Crawler(BaseCrawler):
                 continue
                 #sys.exit('Error while fetching data file')
 
-            fname = 'data_'+'_'.join(self.domain_names[i:i+BATCH_SIZE])
-            with open(f'{tmp_dir}/{fname}.json', 'wb') as fp:
+            with open(fpath, 'wb') as fp:
                 fp.write(req.content)
          
 
@@ -111,7 +119,7 @@ class Crawler(BaseCrawler):
         domain, countries = param
         statements = []
 
-        if domain == 'meta':
+        if domain == 'meta' or domain not in self.domain_names:
             return
 
         for entry in countries:

@@ -23,7 +23,7 @@ class Crawler(Crawler):
         domain, ases = param
         statements = []
 
-        if domain == 'meta':
+        if domain == 'meta' or domain not in self.domain_names:
             return
 
         for entry in ases:
