@@ -101,23 +101,27 @@ class Crawler(BaseCrawler):
         self.fetch()
 
         self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        self.statements = []
 
         tmp_dir = self.get_tmp_dir()
          
         files = glob.glob(f'{tmp_dir}/data_*.json')
-        for file in files:
+        for i, file in enumerate(files):
             with open(file, 'rb') as fp:
                 # Process line one after the other
-                for i, _ in enumerate(map(self.update, json.load(fp)['result'].items())):
-                    sys.stderr.write(f'\rProcessed {i} lines')
+                map(self.compute_link, json.load(fp)['result'].items())
+
+            if i % 100 == 0:
+                sys.stderr.write(f'Pushing batch {i} of links..')
+                self.iyp.batch_add_links( 'QUERIED_FROM', self.statements )
+                self.statements = []
 
         sys.stderr.write('\n')
 
-    def update(self, param):
-        """Save the domain name' top countries and corresponding properties."""
+    def compute_link(self, param):
+        """Compute link for the given domain name' top countries and corresponding properties."""
 
         domain, countries = param
-        statements = []
 
         if domain == 'meta' or domain not in self.domain_names:
             return
@@ -128,9 +132,8 @@ class Crawler(BaseCrawler):
             # set link
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
-            statements.append([ 'QUERIED_FROM', self.country_id[cc], dict(flat_prop, **self.reference) ])
+            self.statements.append([ self.domain_names_id[domain], self.country_id[cc], dict(flat_prop, **self.reference) ])
 
-        self.iyp.add_links( self.domain_names_id[domain], statements )
         
 # Main program
 if __name__ == '__main__':

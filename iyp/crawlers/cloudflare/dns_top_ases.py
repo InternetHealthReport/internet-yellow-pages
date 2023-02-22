@@ -17,11 +17,10 @@ class Crawler(Crawler):
 
         super().run() 
 
-    def update(self, param):
-        """Save the domain name' top ases and corresponding properties."""
+    def compute_link(self, param):
+        """Compute link for the domain name' top ases and corresponding properties."""
 
         domain, ases = param
-        statements = []
 
         if domain == 'meta' or domain not in self.domain_names:
             return
@@ -32,9 +31,8 @@ class Crawler(Crawler):
             # set link
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
-            statements.append([ 'QUERIED_FROM', self.as_id[asn], dict(flat_prop, **self.reference) ])
+            self.statements.append([ self.domain_names_id[domain], self.as_id[asn], dict(flat_prop, **self.reference) ])
 
-        self.iyp.add_links( self.domain_names_id[domain], statements )
         
         
 # Main program
