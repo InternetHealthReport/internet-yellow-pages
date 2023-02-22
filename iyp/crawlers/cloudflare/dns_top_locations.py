@@ -63,8 +63,7 @@ class Crawler(BaseCrawler):
         req_session.mount('https://', HTTPAdapter(max_retries=retries))
 
         # Clear the cache
-        #tmp_dir = self.create_tmp_dir()
-        tmp_dir = self.get_tmp_dir()
+        tmp_dir = self.create_tmp_dir()
 
         # Query Cloudflare API in batches
         for i in range(0, len(self.domain_names), BATCH_SIZE):
