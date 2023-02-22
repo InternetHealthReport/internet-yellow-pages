@@ -123,7 +123,7 @@ class Crawler(BaseCrawler):
 
         domain, countries = param
 
-        if domain == 'meta' or domain not in self.domain_names:
+        if domain == 'meta' or domain not in self.domain_names_id:
             return
 
         for entry in countries:
