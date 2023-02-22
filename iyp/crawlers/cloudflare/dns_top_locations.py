@@ -108,12 +108,16 @@ class Crawler(BaseCrawler):
         for i, file in enumerate(files):
             with open(file, 'rb') as fp:
                 # Process line one after the other
-                map(self.compute_link, json.load(fp)['result'].items())
+                for domain_top in json.load(fp)['result'].items():
+                    self.compute_link(domain_top)
 
             if i % 100 == 0:
-                sys.stderr.write(f'Pushing batch {i} of links..')
+                sys.stderr.write(f'Pushing link batch #{int(i/100)}...\r')
                 self.iyp.batch_add_links( 'QUERIED_FROM', self.statements )
                 self.statements = []
+
+        if self.statements:
+            self.iyp.batch_add_links( 'QUERIED_FROM', self.statements )
 
         sys.stderr.write('\n')
 
@@ -131,7 +135,11 @@ class Crawler(BaseCrawler):
             # set link
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
-            self.statements.append([ self.domain_names_id[domain], self.country_id[cc], dict(flat_prop, **self.reference) ])
+            self.statements.append( { 
+                     'src_id': self.domain_names_id[domain], 
+                     'dst_id': self.country_id[cc], 
+                     'props': dict(flat_prop, **self.reference) 
+                     })
 
         
 # Main program

@@ -31,8 +31,11 @@ class Crawler(Crawler):
             # set link
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
-            self.statements.append([ self.domain_names_id[domain], self.as_id[asn], dict(flat_prop, **self.reference) ])
-
+            self.statements.append({
+                     'src_id': self.domain_names_id[domain], 
+                     'dst_id': self.as_id[asn], 
+                     'props': dict(flat_prop, **self.reference) 
+                     })
         
         
 # Main program
