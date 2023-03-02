@@ -6,6 +6,7 @@
 ### Prerequisites
 - [Curl](https://curl.se/download.html)
 - [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 - about 30GB of free disk space
 
 ### Downloading the Database dump
