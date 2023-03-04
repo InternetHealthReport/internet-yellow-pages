@@ -62,10 +62,18 @@ class Crawler(BaseCrawler):
         req_session.mount('http://', HTTPAdapter(max_retries=retries))
         req_session.mount('https://', HTTPAdapter(max_retries=retries))
 
+        # Clear the cache
         tmp_dir = self.create_tmp_dir()
 
         # Query Cloudflare API in batches
         for i in range(0, len(self.domain_names), BATCH_SIZE):
+
+            # Don't overide existing files
+            fname = 'data_'+'_'.join(self.domain_names[i:i+BATCH_SIZE])
+            fpath = f'{tmp_dir}/{fname}.json'
+
+            if os.path.exists(fpath):
+                continue
 
             get_params = f'?limit={TOP_LIMIT}'
             for domain in self.domain_names[i:i+BATCH_SIZE]:
@@ -81,8 +89,7 @@ class Crawler(BaseCrawler):
                 continue
                 #sys.exit('Error while fetching data file')
 
-            fname = 'data_'+'_'.join(self.domain_names[i:i+BATCH_SIZE])
-            with open(f'{tmp_dir}/{fname}.json', 'wb') as fp:
+            with open(fpath, 'wb') as fp:
                 fp.write(req.content)
          
 
@@ -93,25 +100,33 @@ class Crawler(BaseCrawler):
         self.fetch()
 
         self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        self.statements = []
 
         tmp_dir = self.get_tmp_dir()
          
         files = glob.glob(f'{tmp_dir}/data_*.json')
-        for file in files:
+        for i, file in enumerate(files):
             with open(file, 'rb') as fp:
                 # Process line one after the other
-                for i, _ in enumerate(map(self.update, json.load(fp)['result'].items())):
-                    sys.stderr.write(f'\rProcessed {i} lines')
+                for domain_top in json.load(fp)['result'].items():
+                    self.compute_link(domain_top)
+
+            if i % 100 == 0:
+                sys.stderr.write(f'Pushing link batch #{int(i/100)}...\r')
+                self.iyp.batch_add_links( 'QUERIED_FROM', self.statements )
+                self.statements = []
+
+        if self.statements:
+            self.iyp.batch_add_links( 'QUERIED_FROM', self.statements )
 
         sys.stderr.write('\n')
 
-    def update(self, param):
-        """Save the domain name' top countries and corresponding properties."""
+    def compute_link(self, param):
+        """Compute link for the given domain name' top countries and corresponding properties."""
 
         domain, countries = param
-        statements = []
 
-        if domain == 'meta':
+        if domain == 'meta' or domain not in self.domain_names_id:
             return
 
         for entry in countries:
@@ -120,9 +135,12 @@ class Crawler(BaseCrawler):
             # set link
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
-            statements.append([ 'QUERIED_FROM', self.country_id[cc], dict(flat_prop, **self.reference) ])
+            self.statements.append( { 
+                     'src_id': self.domain_names_id[domain], 
+                     'dst_id': self.country_id[cc], 
+                     'props': dict(flat_prop, **self.reference) 
+                     })
 
-        self.iyp.add_links( self.domain_names_id[domain], statements )
         
 # Main program
 if __name__ == '__main__':
