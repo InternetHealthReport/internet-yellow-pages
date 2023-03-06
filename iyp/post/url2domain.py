@@ -7,7 +7,7 @@ class PostProcess(BasePostProcess):
     def run(self):
         """Link URLs and their corresponding DomainNames."""
 
-        # Get all URL nodes
+        # Get all URL nodes.
         url_id = self.iyp.batch_get_nodes('URL', 'url')
 
         # Compute links
