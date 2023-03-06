@@ -58,6 +58,8 @@ class Crawler(BaseCrawler):
                 # category_description = row.select_one(":nth-child(4)").text
                 urls.add(url)
                 categories.add(category)
+                # if [url, category] in lines:
+                #     continue
                 lines.append([url, category])
         url_id = self.iyp.batch_get_nodes('URL', 'url', urls)
         category_id = self.iyp.batch_get_nodes('Tag', 'label', categories)
