@@ -54,8 +54,8 @@ class Crawler(BaseCrawler):
             rows = country_soup.find_all("tr", class_="js-file-line")
             for row in rows:
                 url = row.select_one(":nth-child(2)").text
-                category = row.select_one(":nth-child(3)").text
-                # category_description = row.select_one(":nth-child(4)").text
+                # category_code = row.select_one(":nth-child(3)").text
+                category = row.select_one(":nth-child(4)").text
                 urls.add(url)
                 categories.add(category)
                 if [url, category] in lines:
