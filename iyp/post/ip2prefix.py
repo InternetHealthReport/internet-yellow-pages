@@ -34,6 +34,19 @@ class PostProcess(BasePostProcess):
         # push links to IYP
         self.iyp.batch_add_links('PART_OF', links)
 
+    def count_relation(self):
+        count = self.iyp.tx.run("MATCH (ip:IP)-[r]->()  RETURN count(r) AS count").single()
+        return count
+        
+    def unit_test(self):
+        result_before =  self.count_relation()
+        logging.info("relations before: %s" % result_before)
+        self.run()
+        result_after =  self.count_relation()
+        logging.info("relations after: %s" % result_after)
+        self.close()
+        print("assertion error ") if result_after <= result_before else print("assertion success")
+        
 
 if __name__ == '__main__':
 
@@ -48,7 +61,11 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     post = PostProcess()
-    post.run()
-    post.close()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
+        post.unit_test()
+    else :
+        post.run()
+        post.close()
 
     logging.info("End: %s" % sys.argv)

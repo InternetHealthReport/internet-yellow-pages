@@ -14,8 +14,22 @@ class PostProcess(BasePostProcess):
         # Update IP addresses
         self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS '.' SET ip.af = 4;")
         self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS ':' SET ip.af = 6;")
-
-
+    def unit_test(self):
+        
+        self.run()
+        # test the prefix tree for IPv4 and IPv6 and return count
+        result_prefix = self.iyp.tx.run("MATCH (pfx:Prefix) WHERE pfx.af <> 4 and pfx.af <> 6 RETURN count(pfx);").data()
+        
+        # test the IP tree for IPv4 and IPv6 and return count
+        result_ip = self.iyp.tx.run("MATCH (ip:IP) WHERE ip.af <> 4 and ip.af <> 6 RETURN count(ip);").data()
+        
+        result = result_prefix[0]['count(pfx)'] + result_ip[0]['count(ip)']
+        logging.info("Count of the remaining prefex/IP which is not IPv4 or IPv6: %s and the assert result is %s" % (result, result == 0))
+        post.close()
+        print("assertion error ") if result != 0 else print("assertion success")
+        
+        
+        
 if __name__ == '__main__':
 
     scriptname = sys.argv[0].replace('/','_')[0:-3]
@@ -29,7 +43,12 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     post = PostProcess()
-    post.run()
-    post.close()
-
+    
+    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
+        post.unit_test()
+    else :
+        post.run()
+        post.close()
+        
     logging.info("End: %s" % sys.argv)
+
