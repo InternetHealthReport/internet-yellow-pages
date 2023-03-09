@@ -87,7 +87,10 @@ if __name__ == '__main__':
     logging.info("Started: %s" % sys.argv)
 
     urldb = Crawler(ORG, URL, NAME)
-    urldb.run()
-    urldb.close()
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        urldb.unit_test(logging)
+    else:
+        urldb.run()
+        urldb.close()
 
     logging.info("End: %s" % sys.argv)

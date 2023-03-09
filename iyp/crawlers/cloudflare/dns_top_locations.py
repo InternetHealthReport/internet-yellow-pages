@@ -156,7 +156,10 @@ if __name__ == '__main__':
     logging.info("Started: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL, NAME)
-    crawler.run()
-    crawler.close()
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        crawler.unit_test(logging)
+    else:
+        crawler.run()
+        crawler.close()
 
     logging.info("Ended")

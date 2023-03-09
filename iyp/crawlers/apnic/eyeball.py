@@ -94,5 +94,8 @@ if __name__ == '__main__':
     logging.info("Started: %s" % sys.argv)
 
     apnic = Crawler(ORG, URL, NAME)
-    apnic.run()
-    apnic.close()
+    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
+        apnic.unit_test(logging)
+    else :
+        apnic.run()
+        apnic.close()
