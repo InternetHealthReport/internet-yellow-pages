@@ -15,9 +15,9 @@ with open('config.json') as config_str:
     config = json.load(config_str)
     
     # read crawlers info and starrt unit testing of the crawlers
-    # crawlers = config["iyp"]['crawlers']
-    # for crawler in crawlers:
-    #     run_crawler(crawler)
+    crawlers = config["iyp"]['crawlers']
+    for crawler in crawlers:
+        run_crawler(crawler)
     
     # read post scripts info and start unit testing of the post scripts
     post_scripts = config["post"]
