@@ -121,5 +121,8 @@ if __name__ == '__main__':
     logging.info("Started: %s" % sys.argv)
 
     manrs = Crawler(ORG, URL, NAME)
-    manrs.run()
-    manrs.close()
+    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
+        manrs.unit_test(logging)
+    else :   
+        manrs.run()
+        manrs.close()

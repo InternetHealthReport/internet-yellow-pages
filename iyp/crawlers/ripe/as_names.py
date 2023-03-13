@@ -70,7 +70,9 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL, NAME)
-    asnames.run()
-    asnames.close()
-
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        asnames.unit_test(logging)
+    else:
+        asnames.run()
+        asnames.close()
     logging.info("End: %s" % sys.argv)
