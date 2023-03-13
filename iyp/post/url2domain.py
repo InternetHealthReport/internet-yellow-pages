@@ -10,6 +10,9 @@ class PostProcess(BasePostProcess):
         # Get all URL nodes.
         url_id = self.iyp.batch_get_nodes('URL', 'url')
 
+        #Get all DomainName Nodes 
+        domain_id = self.iyp.batch_get_nodes('DomainName','name')
+
         # Compute links
         links = []
         for url, url_qid in url_id.items():
@@ -17,8 +20,8 @@ class PostProcess(BasePostProcess):
             domain = tldextract.extract(url).registered_domain
 
             # Get DomainName node for the domain
-            domain_qid = self.iyp.get_node_id('DomainName', 'name', domain)
-
+            domain_qid = domain_id.get(domain)
+            
             if domain_qid is not None:
                 links.append({
                     'src_id': url_qid,
