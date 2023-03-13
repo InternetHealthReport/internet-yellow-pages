@@ -441,8 +441,8 @@ class BaseCrawler(object):
         relation_count_new = self.count_relations()
         logging.info("Relations after starting: %s" % relation_count_new)
         self.close()
-        #assert relation_count_new > relation_count
         print("assertion failed") if relation_count_new <= relation_count else print("assertion passed")
+        assert relation_count_new > relation_count
         
     
     

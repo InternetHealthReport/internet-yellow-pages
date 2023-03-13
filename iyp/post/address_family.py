@@ -27,6 +27,7 @@ class PostProcess(BasePostProcess):
         logging.info("Count of the remaining prefex/IP which is not IPv4 or IPv6: %s and the assert result is %s" % (result, result == 0))
         post.close()
         print("assertion error ") if result != 0 else print("assertion success")
+        assert result == 0
         
         
         

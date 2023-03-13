@@ -46,6 +46,7 @@ class PostProcess(BasePostProcess):
         logging.info("relations after: %s" % result_after)
         self.close()
         print("assertion error ") if result_after <= result_before else print("assertion success")
+        assert result_after > result_before 
         
 
 if __name__ == '__main__':
