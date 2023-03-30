@@ -348,6 +348,25 @@ class IYP(object):
         self.tx.run( matches+where+merges).consume()
 
 
+    def are_connected(self, src, dst, type):
+        """
+        Check whether a relationship already exists between nodes
+        """
+        query = f"""
+        MATCH (x:AS)
+        WHERE ID(x) = {src}
+        MATCH (y:AS)
+        WHERE ID(y) = {dst}
+        RETURN EXISTS((x)-[:{type}]->(y)) OR EXISTS((x)<-[:{type}]-(y)) AS are_connected
+        """
+        res = self.tx.run(query)
+        try:
+            are_connected = res.single().get('are_connected')
+        except AttributeError:
+            are_connected = False
+        return are_connected
+
+
     def close(self):
         """Commit pending queries and close IYP"""
         self.tx.commit()

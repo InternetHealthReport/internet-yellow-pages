@@ -35,7 +35,8 @@
             "iyp.crawlers.openintel.tranco1m",
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
-            "iyp.crawlers.citizenlab.urldb"
+            "iyp.crawlers.citizenlab.urldb",
+            "iyp.crawlers.inetintel.siblings_asdb"
         ]
     },
 
