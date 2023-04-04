@@ -4,10 +4,18 @@
     },
 
     "cloudflare":{
-        "apikey": ""
+        "apikey": "",
         "userid": "",
         "authemail": "",
         "authkey": ""
+    },
+
+    "email": {
+        "email_address": "",
+        "smtp_server": "",
+        "smtp_port": "",
+        "username": "",
+        "password": ""
     },
 
     "iyp": {
@@ -31,7 +39,7 @@
             "iyp.crawlers.peeringdb.fac",
             "iyp.crawlers.peeringdb.ix",
             "iyp.crawlers.cloudflare.top100",
-            "iyp.crawlers.tranco.top1M"
+            "iyp.crawlers.tranco.top1M",
             "iyp.crawlers.openintel.tranco1m",
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
