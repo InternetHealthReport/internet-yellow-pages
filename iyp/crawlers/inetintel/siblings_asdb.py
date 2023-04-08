@@ -3,15 +3,34 @@ import sys
 import logging
 import requests
 import tempfile
-import json
+import re
+import pandas as pd
+from datetime import datetime
+from bs4 import BeautifulSoup
 from iyp import BaseCrawler
-
 import neo4j.exceptions
+
+
+def get_latest_dataset_url(inetintel_data_url: str, file_name_format: str):
+    pattern = re.compile(r'^\d{4}-\d{2}$')
+    response = requests.get(inetintel_data_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    date_elements = soup.find_all("a", string=pattern)
+    all_date = []
+    for date_element in date_elements:
+        all_date.append(date_element.text)
+    latest_date = datetime.strptime(all_date[-1], '%Y-%m')
+    dateset_file_name: str = latest_date.strftime(file_name_format)
+    inetintel_data_url: str = inetintel_data_url.replace('github.com', 'raw.githubusercontent.com')
+    inetintel_data_url: str = inetintel_data_url.replace('tree/', '')
+    full_url: str = f'{inetintel_data_url}/{all_date[-1]}/{dateset_file_name}'
+    return full_url
+
 
 # Organization name and URL to data
 ORG = 'Internet Intelligence Lab'
-URL = 'https://raw.githubusercontent.com/InetIntel/Improving-Inference-of-Sibling-ASes/master/data/output' \
-      '/output_dataset.json'
+URL = get_latest_dataset_url('https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping/tree/master/data',
+                             'ii.as-org.v01.%Y-%m.json')
 NAME = 'inetintel.siblings_asdb'  # should reflect the directory and name of this file
 
 
@@ -22,42 +41,43 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch data and push to IYP. """
 
-        # # Create a temporary directory
-        # tmpdir = tempfile.mkdtemp()
-        #
-        # # Filename to save the JSON file as
-        # filename = os.path.join(tmpdir, 'output_dataset.json')
-        #
-        # # Fetch data
-        # try:
-        #     req = requests.get(URL)
-        # except requests.exceptions.ConnectionError as e:
-        #     logging.error(e)
-        #     sys.exit('Connection error while fetching data file')
-        # except requests.exceptions.HTTPError as e:
-        #     logging.error(e)
-        #     sys.exit('Error while fetching data file')
+        # Create a temporary directory
+        tmpdir = tempfile.mkdtemp()
 
-        # with open(filename, "w") as file:
-        #     file.write(req.text)
+        # Filename to save the JSON file as
+        filename = os.path.join(tmpdir, 'siblings_asn_dataset.json')
 
-        print("JSON Data Processed!")
-        with open(r'/home/pando-roopesh/ihr-org/internet-yellow-pages/siblings_asn.json', "r") as file:
-            data = json.load(file)
+        # Fetch data
+        try:
+            req = requests.get(URL)
+        except requests.exceptions.ConnectionError as e:
+            logging.error(e)
+            sys.exit('Connection error while fetching data file')
+        except requests.exceptions.HTTPError as e:
+            logging.error(e)
+            sys.exit('Error while fetching data file')
+
+        with open(filename, "w") as file:
+            file.write(req.text)
+
+        # The dataset is very large. Pandas has the ability to read JSON, and, in theory, it could do it in a more
+        # memory-efficient way.
+        df = pd.read_json(filename, orient='index')
+
+        # Use df.head() to read the first 100 entries in the JSON dataset
+        # df_10 = df.head(10)
 
         lines = []
         asns = set()
         sibling_asns = set()
         urls = set()
 
-        for key, value in data.items():
-            asn = key
+        for index, row in df.iterrows():
+            asn = str(index)
             asns.add(asn)
-            sibling_asns_set = value.get('Sibling ASNs')
-            sibling_asns_list = list(sibling_asns_set)
-            for sibling_asn in sibling_asns_list:
+            for sibling_asn in row['Sibling ASNs']:
                 sibling_asns.add(sibling_asn)
-            url = value.get('Website')
+            url = row['Website']
             if len(url) > 1:
                 urls.add(url)
             lines.append([asn, url, sibling_asns])
@@ -68,7 +88,8 @@ class Crawler(BaseCrawler):
 
         asn_to_url_links = []
         asn_to_sibling_asn_links = []
-        count = 0
+
+        connections = {}  # connections are used to remember the relationship between the "AS" and its Sibling.
 
         for (asn, url, siblings) in lines:
             asn_qid = asn_id[asn]
@@ -78,12 +99,26 @@ class Crawler(BaseCrawler):
             for sibling in siblings:
                 sibling_qid = sibling_id[sibling]
                 if asn_qid != sibling_qid:
-                    asn_to_sibling_asn_links.append(
-                        {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-
-                    print("Processed: " + str(count))
-                    print({'src_id': asn_qid, 'dst_id': sibling_qid})
-                    count += 1
+                    # A check whether asn and sibling are connected already.
+                    if asn in connections:
+                        if sibling in connections[asn]:
+                            continue
+                        else:
+                            connections[asn].append(sibling)
+                            asn_to_sibling_asn_links.append(
+                                {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+                    else:
+                        if sibling in connections:
+                            if asn in connections[sibling]:
+                                continue
+                            else:
+                                connections[sibling].append(asn)
+                                asn_to_sibling_asn_links.append(
+                                    {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+                        else:
+                            connections[asn] = [sibling]
+                            asn_to_sibling_asn_links.append(
+                                {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
 
         # Push all links to IYP
         try:
@@ -95,10 +130,6 @@ class Crawler(BaseCrawler):
             self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
         except neo4j.exceptions.Neo4jError as e:
             logging.error(e)
-
-    def check_sibling(self):
-        single = self.iyp.is_connected(4190485, 4238088, 'SIBLING_OF')
-        print(single)
 
 
 # Main program
