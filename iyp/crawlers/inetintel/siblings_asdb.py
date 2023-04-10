@@ -88,6 +88,8 @@ class Crawler(BaseCrawler):
 
         asn_to_url_links = []
         asn_to_sibling_asn_links = []
+        counter = 0
+        MAX_BATCH_SIZE = 10
 
         connections = {}  # connections are used to remember the relationship between the "AS" and its Sibling.
 
@@ -119,17 +121,29 @@ class Crawler(BaseCrawler):
                             connections[asn] = [sibling]
                             asn_to_sibling_asn_links.append(
                                 {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+            counter += 1
+            if counter == MAX_BATCH_SIZE:
+                # Push the links to the graph db and reset the counter and asn_to_sibling_asn_links
+                try:
+                    self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
+                except neo4j.exceptions.Neo4jError as e:
+                    logging.error(e)
+
+                asn_to_sibling_asn_links = []
+                counter = 0
 
         # Push all links to IYP
-        try:
-            self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
-        except neo4j.exceptions.Neo4jError as e:
-            logging.error(e)
+        if len(asn_to_url_links) > 0:
+            try:
+                self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
+            except neo4j.exceptions.Neo4jError as e:
+                logging.error(e)
 
-        try:
-            self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
-        except neo4j.exceptions.Neo4jError as e:
-            logging.error(e)
+        if len(asn_to_sibling_asn_links) > 0:
+            try:
+                self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
+            except neo4j.exceptions.Neo4jError as e:
+                logging.error(e)
 
 
 # Main program
