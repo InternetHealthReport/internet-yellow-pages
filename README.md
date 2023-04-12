@@ -11,10 +11,10 @@
 
 ### Downloading the Database dump
 First you need to download a database dump using the following commands. 
-A preliminary dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/03/15/iyp-2023-03-15.dump :
+A preliminary dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/04/08/iyp-2023-04-08.dump :
 ```
 mkdir dumps
-curl https://exp1.iijlab.net/wip/iyp/dumps/2023/02/01/iyp-2023-02-01.dump -o dumps/neo4j.dump
+curl https://exp1.iijlab.net/wip/iyp/dumps/2023/04/08/iyp-2023-04-08.dump -o dumps/neo4j.dump
 ```
 
 This creates a directory named `dumps` and put the downloaded file to `dumps/neo4j.dump`
