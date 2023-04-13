@@ -17,13 +17,12 @@ class Crawler(Crawler):
 
         super().run() 
 
-    def update(self, param):
-        """Save the domain name' top ases and corresponding properties."""
+    def compute_link(self, param):
+        """Compute link for the domain name' top ases and corresponding properties."""
 
         domain, ases = param
-        statements = []
 
-        if domain == 'meta':
+        if domain == 'meta' or domain not in self.domain_names_id:
             return
 
         for entry in ases:
@@ -32,9 +31,11 @@ class Crawler(Crawler):
             # set link
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
-            statements.append([ 'QUERIED_FROM', self.as_id[asn], dict(flat_prop, **self.reference) ])
-
-        self.iyp.add_links( self.domain_names_id[domain], statements )
+            self.statements.append({
+                     'src_id': self.domain_names_id[domain], 
+                     'dst_id': self.as_id[asn], 
+                     'props': dict(flat_prop, **self.reference) 
+                     })
         
         
 # Main program
@@ -51,7 +52,11 @@ if __name__ == '__main__':
     logging.warning("Started: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL, NAME)
-    crawler.run()
-    crawler.close()
+
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        crawler.unit_test(logging)
+    else:
+        crawler.run()
+        crawler.close()
 
     logging.warning("Ended")

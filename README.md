@@ -11,10 +11,10 @@
 
 ### Downloading the Database dump
 First you need to download a database dump using the following commands. 
-A preliminary dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/02/01/iyp-2023-02-01.dump :
+A preliminary dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/04/08/iyp-2023-04-08.dump :
 ```
 mkdir dumps
-curl https://exp1.iijlab.net/wip/iyp/dumps/2023/02/01/iyp-2023-02-01.dump -o dumps/neo4j.dump
+curl https://exp1.iijlab.net/wip/iyp/dumps/2023/04/08/iyp-2023-04-08.dump -o dumps/neo4j.dump
 ```
 
 This creates a directory named `dumps` and put the downloaded file to `dumps/neo4j.dump`
@@ -22,7 +22,7 @@ This creates a directory named `dumps` and put the downloaded file to `dumps/neo
 ### Setting up IYP
 To uncompress the dump and start the database run the following command:
 ```
-docker-compose up
+docker compose --profile local up
 ```
 This creates a `data` directory containing the database. 
 This initial setup needs be done only once. 
@@ -64,7 +64,7 @@ See more query examples in [IYP gallery](/documentation/gallery.md)
 
 If you modify the database and want to make a new dump, use the following command. Run the following command for updating an existing database. **Note: This command writes the dump to `backups/neo4j.dump` and overwrites this file if it exists.** 
 ```
-docker-compose run -it iyp_loader neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
+docker compose run -it iyp_loader neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
 ```
 
 ### Updating an existing database
@@ -80,7 +80,7 @@ docker start iyp_loader -i
 ### Viewing Neo4j logs
 To view the logs of the Neo4j container, use the following command:
 ```
-docker-compose logs -f iyp
+docker compose logs -f iyp
 ```
 
 

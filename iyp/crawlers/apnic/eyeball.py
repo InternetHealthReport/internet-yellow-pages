@@ -21,6 +21,8 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch data from APNIC and push to IYP. """
 
+        processed_asn = set()
+
         for cc, country in self.countries.items():
             logging.info(f'processing {country}')
 
@@ -60,10 +62,14 @@ class Crawler(BaseCrawler):
             name_links = []
             for asn in ranking:
                 asn_qid = self.asn_id[asn['as']] #self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
-                name_qid = self.name_id[asn['autnum']] #self.iyp.get_node('Name', {'name': name}, create=True)
 
-                name_links.append( {'src_id': asn_qid, 'dst_id': name_qid, 'props':[self.reference]} )
-                country_links.append( {'src_id': asn_qid, 'dst_id': cc_qid, 'props':[self.reference]} )
+                if asn['as'] not in processed_asn:
+                    name_qid = self.name_id[asn['autnum']] #self.iyp.get_node('Name', {'name': name}, create=True)
+                    name_links.append( {'src_id': asn_qid, 'dst_id': name_qid, 'props':[self.reference]} )
+                    country_links.append( {'src_id': asn_qid, 'dst_id': cc_qid, 'props':[self.reference]} )
+
+                    processed_asn.add(asn['as'])
+
                 rank_links.append( {'src_id': asn_qid, 'dst_id': ranking_qid, 'props':[self.reference, asn]} )
                 pop_links.append( {'src_id': asn_qid, 'dst_id': cc_qid, 'props':[self.reference, asn]} )
 
@@ -88,5 +94,8 @@ if __name__ == '__main__':
     logging.info("Started: %s" % sys.argv)
 
     apnic = Crawler(ORG, URL, NAME)
-    apnic.run()
-    apnic.close()
+    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
+        apnic.unit_test(logging)
+    else :
+        apnic.run()
+        apnic.close()

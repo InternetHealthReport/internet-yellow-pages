@@ -341,7 +341,10 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     pdbn = Crawler(ORG, URL, NAME)
-    pdbn.run()
-    pdbn.close()
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        pdbn.unit_test(logging)
+    else:
+        pdbn.run()
+        pdbn.close()
 
     logging.info("End: %s" % sys.argv)

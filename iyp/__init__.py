@@ -325,6 +325,9 @@ class IYP(object):
         By convention link_type is written in UPPERCASE and keys in prop_dict are
         in lowercase."""
 
+        if len(links) == 0:
+            return 
+
         matches = ' MATCH (x)' 
         where = f" WHERE ID(x) = {src_node}"
         merges = ''
@@ -421,6 +424,27 @@ class BaseCrawler(object):
         fetch data at the same time, hence it may cause API rate limiting issues."""
 
         pass
+    
+    def count_relations(self):
+        """
+        count the number of relations in the graph with the reference name of crawler 
+        """
+        
+        result = self.iyp.tx.run(f"MATCH ()-[r]->() WHERE r.reference_name = '{self.name}' RETURN count(r) AS count").single()
+        
+        return result['count']
+    
+    def unit_test(self,logging):
+        relation_count = self.count_relations()
+        logging.info("Relations before starting: %s" % relation_count)
+        self.run()
+        relation_count_new = self.count_relations()
+        logging.info("Relations after starting: %s" % relation_count_new)
+        self.close()
+        print("assertion failed") if relation_count_new <= relation_count else print("assertion passed")
+        assert relation_count_new > relation_count
+        
+    
     
     def close(self):
         # Commit changes to IYP
