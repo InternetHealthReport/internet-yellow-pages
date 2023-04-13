@@ -8,6 +8,7 @@ import arrow
 import docker
 
 from time import sleep
+from send_email import send_email
 
 NEO4J_VERSION = '5.1.0'
 
@@ -95,6 +96,7 @@ for module_name in conf['iyp']['crawlers']:
         no_error = False
         logging.exception('crawler crashed!!')
         status[module_name] = e
+        send_email(e)
 
 
 ########## Post processing scripts ##########

@@ -83,7 +83,11 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     asdb = Crawler(ORG, URL, NAME)
-    asdb.run()
-    asdb.close()
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        asdb.unit_test(logging)
+    else:
+        asdb.run()
+        asdb.close()
+
 
     logging.info("End: %s" % sys.argv)

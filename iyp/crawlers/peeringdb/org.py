@@ -115,7 +115,10 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     pdbo = Crawler(ORG, '', NAME)
-    pdbo.run()
-    pdbo.close()
+    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+        pdbo.unit_test(logging)
+    else:
+        pdbo.run()
+        pdbo.close()
 
     logging.info("End: %s" % sys.argv)
