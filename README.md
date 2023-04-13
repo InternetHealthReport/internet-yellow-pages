@@ -22,7 +22,7 @@ This creates a directory named `dumps` and put the downloaded file to `dumps/neo
 ### Setting up IYP
 To uncompress the dump and start the database run the following command:
 ```
-docker compose up
+docker compose --profile local up
 ```
 This creates a `data` directory containing the database. 
 This initial setup needs be done only once. 
