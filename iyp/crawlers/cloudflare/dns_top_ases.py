@@ -48,8 +48,10 @@ if __name__ == '__main__':
             level=logging.WARNING, 
             datefmt='%Y-%m-%d %H:%M:%S'
             )
-    logging.info("Started: %s" % sys.argv)
+    logging.warning("Started: %s" % sys.argv)
 
     crawler = Crawler(ORG, URL, NAME)
     crawler.run()
     crawler.close()
+
+    logging.warning("Ended")
