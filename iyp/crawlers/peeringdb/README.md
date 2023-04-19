@@ -1,6 +1,6 @@
 # PeeringDB crawlers
 
-PeeringDB is a freely available, user-maintained, database of networks.
+[PeeringDB](https://www.peeringdb.com/) is a freely available, user-maintained, database of networks.
 The database contains information about Internet Exchange Points (IXPs) and data centers, including
 peering LAN and membership information.
 
