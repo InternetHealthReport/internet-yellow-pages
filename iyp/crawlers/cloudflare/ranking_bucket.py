@@ -65,8 +65,8 @@ class Crawler(BaseCrawler):
 
             logging.info(req.json())
 
-            self.reference['reference_url'] = req.json()['result']['dataset']['url']
-            req = requests.get(self.reference['reference_url'])
+            dataset['url'] = req.json()['result']['dataset']['url']
+            req = requests.get(dataset['url'])
             if req.status_code != 200:
                 logging.error(f'Cannot download dataset {dataset["id"]} {req.status_code}: {req.text}')
                 continue
@@ -88,6 +88,7 @@ class Crawler(BaseCrawler):
             dataset_title = f'Cloudflare {dataset["title"]}'
             logging.info(f'Processing dataset: {dataset_title}')
             print(f'Processing dataset: {dataset_title}')
+            self.reference['reference_url'] = dataset['url']
             ranking_id = self.iyp.get_node('Ranking',
                                            {
                                                'name': dataset_title,
