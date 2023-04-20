@@ -1,58 +1,69 @@
+import argparse
 import os
 import sys
 import json
 import logging
+from collections import defaultdict
+
 import requests
-from zipfile import ZipFile
-import io
+from requests.adapters import HTTPAdapter, Retry
+
 from iyp import BaseCrawler
 
 # Organization name and URL to data
 ORG = 'Cloudflare'
-URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json' 
-URL_DL = 'https://api.cloudflare.com/client/v4/radar/datasets/download'  
+URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json'
+URL_DL = 'https://api.cloudflare.com/client/v4/radar/datasets/download'
 NAME = 'cloudflare.ranking_bucket'
 
 API_KEY = ''
-if os.path.exists('config.json'): 
+if os.path.exists('config.json'):
     API_KEY = json.load(open('config.json', 'r'))['cloudflare']['apikey']
 
+
 class Crawler(BaseCrawler):
-    # Base Crawler provides access to IYP via self.iyp
-    # and setup a dictionary with the org/url/today's date in self.reference
+    # Base Crawler provides access to IYP via self.iyp and setup a dictionary with the
+    # org/url/today's date in self.reference
 
     def run(self):
-        """Fetch data and push to IYP. """
+        """Fetch data and push to IYP."""
 
-        s = requests.Session()
-        s.headers.update( {
-                'Authorization': 'Bearer '+API_KEY,
-                'Content-Type': 'application/json'
-                } )
+        # setup HTTPS session with credentials and retry
+        req_session = requests.Session()
+        req_session.headers['Authorization'] = 'Bearer ' + API_KEY
+        req_session.headers['Content-Type'] = 'application/json'
+
+        retries = Retry(total=5,
+                        backoff_factor=0.1,
+                        status_forcelist=[500, 502, 503, 504])
+
+        req_session.mount('http://', HTTPAdapter(max_retries=retries))
+        req_session.mount('https://', HTTPAdapter(max_retries=retries))
 
         # Fetch rankings descriptions
-        req = s.get(URL_DATASETS)
+        logging.info('Fetching datasets and dataset data.')
+        req = req_session.get(URL_DATASETS)
         if req.status_code != 200:
             logging.error(f'Cannot download data {req.status_code}: {req.text}')
             sys.exit('Error while fetching data file')
 
-        for dataset in req.json()['result']['datasets']:
-            self.ranking_qid = self.iyp.get_node(
-                    'Ranking',
-                    {
-                        'name': f'Cloudflare '+dataset['title'],
-                        'description': dataset['description'],
-                        'top': dataset['meta']['top']
-                    }, 
-                    create=True)
+        datasets_json = req.json()
+        if 'success' not in datasets_json or not datasets_json['success']:
+            logging.error(f'HTTP request succeeded but API returned: {req.text}')
+            sys.exit('Error while fetching data file')
 
-            # Get the dataset url
-            req = s.post(URL_DL, json={'datasetId': dataset['id']})
+        # Fetch all datasets first before starting to process them. This way we can get/create all
+        # DomainName nodes in one go and then just add the RANK relationships per dataset.
+        datasets = list()
+        all_domains = set()
+        for dataset in datasets_json['result']['datasets']:
+            # Get the dataset URL
+            req = req_session.post(URL_DL, json={'datasetId': dataset['id']})
             if req.status_code != 200:
                 logging.error(f'Cannot get url for dataset {dataset["id"]} {req.status_code}: {req.text}')
                 continue
 
-            print(req.json())
+            logging.info(req.json())
 
             self.reference['reference_url'] = req.json()['result']['dataset']['url']
             req = requests.get(self.reference['reference_url'])
@@ -60,50 +71,60 @@ class Crawler(BaseCrawler):
                 logging.error(f'Cannot download dataset {dataset["id"]} {req.status_code}: {req.text}')
                 continue
 
-            # open zip file and read top list
-            with  ZipFile(io.BytesIO(req.content)) as z:
-                for fname in z.namelist():
-                    with z.open(fname) as list:
-                        for i, domain in enumerate(io.TextIOWrapper(list)):
+            # Read top list and skip header
+            dataset_domains = set(req.text.splitlines()[1:])
+            all_domains.update(dataset_domains)
+            datasets.append((dataset, dataset_domains))
 
-                            #skip the header
-                            if i == 0:
-                                continue
+        # Get or create nodes for domains and retrieve their IDs.
+        # Note: Since we do not specify all=False in batch_get_nodes we will get the IDs of
+        # _all_ DomainName nodes, so we must not create relationships for all domain_ids, but
+        # iterate over the domains set instead.
+        logging.info(f'Adding/retrieving {len(all_domains)} DomainName nodes.')
+        print(f'Adding/retrieving {len(all_domains)} DomainName nodes')
+        domain_ids = self.iyp.batch_get_nodes('DomainName', 'name', all_domains)
 
-                            domain = domain.rstrip()
-                            sys.stderr.write(f'\rProcessed {i} domains \t {domain}')
-                            self.update(domain)
+        for dataset, domains in datasets:
+            dataset_title = f'Cloudflare {dataset["title"]}'
+            logging.info(f'Processing dataset: {dataset_title}')
+            print(f'Processing dataset: {dataset_title}')
+            ranking_id = self.iyp.get_node('Ranking',
+                                           {
+                                               'name': dataset_title,
+                                               'description': dataset['description'],
+                                               'top': dataset['meta']['top']
+                                           },
+                                           create=True)
 
-            sys.stderr.write('\n')
-    
-    def update(self, domain):
-        """Add the domain to IYP if it's not already there and update its
-        properties."""
+            # Create RANK relationships
+            domain_links = [{'src_id': domain_ids[domain], 'dst_id': ranking_id, 'props': self.reference}
+                            for domain in domains]
+            if domain_links:
+                # Push RANK relationships to IYP
+                print(f'Adding {len(domain_links)} RANK relationships', file=sys.stderr)
+                self.iyp.batch_add_links('RANK', domain_links)
 
-        # set rank
-        statements = [[ 'RANK', self.ranking_qid, self.reference ]]
 
-        # Commit to IYP
-        # Get the AS's node ID (create if it is not yet registered) and commit changes
-        domain_qid = self.iyp.get_node('DomainName', {'name': domain}, create=True)
-        self.iyp.add_links( domain_qid, statements )
-        
 # Main program
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.WARNING, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Started: %s" % sys.argv)
+        format=FORMAT,
+        filename=f'log/{scriptname}.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, '', NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+    if args.unit_test:
         crawler.unit_test(logging)
     else:
         crawler.run()
         crawler.close()
+    logging.info(f'Finished: {sys.argv}')
