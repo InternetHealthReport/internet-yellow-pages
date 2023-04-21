@@ -64,10 +64,9 @@ The `value` property of the QUERIED_FROM relationship describes the percentage o
 ## Dependence
 
 The `dns_top_locations` and `dns_top_ases` crawlers should be run after all crawlers that produce
-`(:DomainName)-[:RANK]->(:Ranking)` relationships:
+`(:DomainName)-[:RANK {rank: n}]->(:Ranking)` relationships:
 
 - `cloudflare.top100`
-- `cloudflare.ranking_bucket`
 - `tranco.top1m`
 
 ## Notes
