@@ -303,7 +303,7 @@ class Crawler(BaseCrawler):
             # set website
             if ix['website']:
                 website_qid = self.website_id[ix['website']]
-                country_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props':[self.reference_ix] })
+                website_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props':[self.reference_ix] })
 
             id_qid = self.ixext_id[ix['id']]
             id_links.append({'src_id': ix_qid, 'dst_id': id_qid, 'props':[self.reference_ix] })

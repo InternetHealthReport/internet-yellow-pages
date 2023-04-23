@@ -1,7 +1,8 @@
-version: '3.2'
+version: '3.9'
 services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.1.0
+    profiles: ["local", "public"]
     container_name: iyp_loader
     tty: true
     stdin_open: true
@@ -9,8 +10,10 @@ services:
       - ./data:/data
       - ./dumps:/dumps
     command: neo4j-admin database load neo4j --from-path=/dumps --verbose
+
   iyp:
     image: neo4j:5.1.0
+    profiles: ["local"]
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -20,6 +23,25 @@ services:
       - ./data:/data
     environment:
       - NEO4J_AUTH=neo4j/password
+    depends_on:
+      iyp_loader:
+        condition: service_completed_successfully
+
+  iyp_readonly:
+    image: neo4j:5.1.0
+    profiles: ["public"]
+    container_name: iyp
+    restart: unless-stopped
+    ports:
+      - 80:7474
+      - 7687:7687
+    volumes:
+      - ./data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_server_databases_default__to__read__only=true
+      - NEO4J_dbms_security_auth__enabled=false
+      - NEO4J_browser_remote__content__hostname__whitelist=https://ihr.iijlab.net,https://exp1.iijlab.net
     depends_on:
       iyp_loader:
         condition: service_completed_successfully
