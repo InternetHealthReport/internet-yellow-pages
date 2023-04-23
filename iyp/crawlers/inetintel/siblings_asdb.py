@@ -60,90 +60,98 @@ class Crawler(BaseCrawler):
         with open(filename, "w") as file:
             file.write(req.text)
 
+        print("Dataset crawled and saved in a temporary file.")
+
         # The dataset is very large. Pandas has the ability to read JSON, and, in theory, it could do it in a more
         # memory-efficient way.
         df = pd.read_json(filename, orient='index')
+        print("Dataset has {} rows.".format(len(df)))
 
         # Use df.head() to read the first 100 entries in the JSON dataset
         # df_10 = df.head(10)
 
-        lines = []
-        asns = set()
-        sibling_asns = set()
-        urls = set()
-
-        for index, row in df.iterrows():
-            asn = str(index)
-            asns.add(asn)
-            for sibling_asn in row['Sibling ASNs']:
-                sibling_asns.add(sibling_asn)
-            url = row['Website']
-            if len(url) > 1:
-                urls.add(url)
-            lines.append([asn, url, sibling_asns])
-
-        asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        sibling_id = self.iyp.batch_get_nodes('AS', 'asn', sibling_asns)
-        url_id = self.iyp.batch_get_nodes('URL', 'url', urls)
-
-        asn_to_url_links = []
-        asn_to_sibling_asn_links = []
-        counter = 0
-        MAX_BATCH_SIZE = 10
-
+        # Optimized code
+        batch_size = 1000
+        if len(df) < batch_size:
+            batch_size = len(df)
+        count_rows_global = 0
+        count_relationships_global = 0
         connections = {}  # connections are used to remember the relationship between the "AS" and its Sibling.
+        for i in range(0, len(df), batch_size):
+            df_batch = df.iloc[i:i + batch_size]
+            batch_lines = []
+            batch_asns = set()
+            batch_sibling_asns = set()
+            batch_urls = set()
+            count_rows = 0
+            count_relationships = 0
 
-        for (asn, url, siblings) in lines:
-            asn_qid = asn_id[asn]
-            url_qid = url_id[url]
-            if len(url) > 1:
-                asn_to_url_links.append({'src_id': asn_qid, 'dst_id': url_qid, 'props': [self.reference]})
-            for sibling in siblings:
-                sibling_qid = sibling_id[sibling]
-                if asn_qid != sibling_qid:
-                    # A check whether asn and sibling are connected already.
-                    if asn in connections:
-                        if sibling in connections[asn]:
-                            continue
-                        else:
-                            connections[asn].append(sibling)
-                            asn_to_sibling_asn_links.append(
-                                {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-                    else:
-                        if sibling in connections:
-                            if asn in connections[sibling]:
+            for index, row in df_batch.iterrows():
+                asn = int(index)
+                batch_asns.add(asn)
+                for sibling_asn in row['Sibling ASNs']:
+                    batch_sibling_asns.add(int(sibling_asn))
+                url = row['Website']
+                if len(url) > 1:
+                    batch_urls.add(url)
+                batch_lines.append([asn, url, batch_sibling_asns])
+                count_rows += 1
+
+            asn_id = self.iyp.batch_get_nodes('AS', 'asn', batch_asns)
+            sibling_id = self.iyp.batch_get_nodes('AS', 'asn', batch_sibling_asns)
+            url_id = self.iyp.batch_get_nodes('URL', 'url', batch_urls)
+
+            asn_to_url_links = []
+            asn_to_sibling_asn_links = []
+
+            for (asn, url, siblings) in batch_lines:
+                asn_qid = asn_id[asn]
+                url_qid = url_id[url]
+                if len(url) > 1:
+                    asn_to_url_links.append({'src_id': asn_qid, 'dst_id': url_qid, 'props': [self.reference]})
+                for sibling in siblings:
+                    sibling_qid = sibling_id[sibling]
+                    if asn_qid != sibling_qid:
+                        # A check whether asn and sibling are connected already.
+                        if asn in connections:
+                            if sibling in connections[asn]:
                                 continue
                             else:
-                                connections[sibling].append(asn)
+                                connections[asn].append(sibling)
                                 asn_to_sibling_asn_links.append(
                                     {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+                                count_relationships += 1
                         else:
-                            connections[asn] = [sibling]
-                            asn_to_sibling_asn_links.append(
-                                {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-            counter += 1
-            if counter == MAX_BATCH_SIZE:
-                # Push the links to the graph db and reset the counter and asn_to_sibling_asn_links
+                            if sibling in connections:
+                                if asn in connections[sibling]:
+                                    continue
+                                else:
+                                    connections[sibling].append(asn)
+                                    asn_to_sibling_asn_links.append(
+                                        {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+                                    count_relationships += 1
+                            else:
+                                connections[asn] = [sibling]
+                                asn_to_sibling_asn_links.append(
+                                    {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+                                count_relationships += 1
+
+            # Push all links to IYP
+            if len(asn_to_url_links) > 0:
+                try:
+                    self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
+                except neo4j.exceptions.Neo4jError as e:
+                    logging.error(e)
+
+            if len(asn_to_sibling_asn_links) > 0:
                 try:
                     self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
                 except neo4j.exceptions.Neo4jError as e:
                     logging.error(e)
 
-                asn_to_sibling_asn_links = []
-                counter = 0
-
-        # Push all links to IYP
-        if len(asn_to_url_links) > 0:
-            try:
-                self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
-            except neo4j.exceptions.Neo4jError as e:
-                logging.error(e)
-
-        if len(asn_to_sibling_asn_links) > 0:
-            try:
-                self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
-            except neo4j.exceptions.Neo4jError as e:
-                logging.error(e)
+            count_rows_global += count_rows
+            count_relationships_global += count_relationships
+            print("processed: {} rows and {} relationships (directional)".format(count_rows_global, count_relationships_global))
 
 
 # Main program
