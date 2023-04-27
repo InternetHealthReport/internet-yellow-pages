@@ -26,8 +26,8 @@ IYP.
 
 (:Prefix {prefix: '2a03:1dc0::/27'})-[:AVAILABLE {registry: 'ripencc'}]->(:OpaqueID {id: 'ripencc'})
 (:Prefix {prefix: '202.0.65.0/24'})-[:ASSIGNED {registry: 'apnic'}]->(:OpaqueID {id: 'A91A7381'})
-(:Prefix {prefix: '196.20.32.0/19}')-[:RESERVED {registry: 'afrinic'}]->(:OpaqueID {id: 'afrinic'})
-(:Prefix {prefix: '196.20.32.0/19}')-[:COUNTRY]->(:Country {country_code: 'ZZ'})
+(:Prefix {prefix: '196.20.32.0/19'})-[:RESERVED {registry: 'afrinic'}]->(:OpaqueID {id: 'afrinic'})
+(:Prefix {prefix: '196.20.32.0/19'})-[:COUNTRY]->(:Country {country_code: 'ZZ'})
 ```
 
 The report also contains `allocated` records that would result in a `ALLOCATED` relationship.
