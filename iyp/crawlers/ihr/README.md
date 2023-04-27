@@ -25,7 +25,9 @@ computed in two different ways, emphasizing either the distribution of the count
 (a.k.a. Total eyeball) or the country ASes (a.k.a. Total AS), for example:
 
 ```Cypher
-(:AS  {asn: 2497})-[:RANK {rank: 1, hege: 0.19}]->(:Ranking {name: 'IHR country ranking: Total AS (JP)'})-[:COUNTRY]->(:Country {country_code: 'JP'})
+(:AS  {asn: 2497})-[:RANK {rank: 1, hege: 0.19}]->
+(:Ranking {name: 'IHR country ranking: Total AS (JP)'})-[:COUNTRY]->
+(:Country {country_code: 'JP'})
 ```
 
 means that Japan ASes depends strongly (AS Hegemony equals 0.19) on AS2497.
