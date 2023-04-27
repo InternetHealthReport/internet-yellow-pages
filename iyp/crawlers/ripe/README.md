@@ -30,3 +30,7 @@ property on the relationship.
 ```Cypher
 (:AS {asn: 2497})-[:ROUTE_ORIGIN_AUTHORIZATION {maxLength: 18}]->(:Prefix {prefix: '49.239.64.0/18'})
 ```
+
+## Dependence
+
+This crawler is not depending on other crawlers.
