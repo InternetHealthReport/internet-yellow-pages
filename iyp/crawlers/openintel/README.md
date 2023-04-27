@@ -4,8 +4,9 @@ The OpenINTEL measurement platform captures daily snapshots of the state of larg
 global Domain Name System (DNS) by running a number of forward and reverse DNS measurements.
 
 While OpenINTEL runs measurements to a variety of domain names, IYP currently only fetches data for
-the [Tranco top 1 million list](https://data.openintel.nl/data/tranco1m/) as the ranks of this
-dataset are already fetched by the `tranco.top1m` crawler.
+the [Tranco top 1 million list](https://data.openintel.nl/data/tranco1m/) since it combines rankings
+from the other lists and the ranks of this dataset are already fetched by the `tranco.top1m`
+crawler.
 
 IYP uses only `A` queries to add IP resolution for DomainName nodes.
 
