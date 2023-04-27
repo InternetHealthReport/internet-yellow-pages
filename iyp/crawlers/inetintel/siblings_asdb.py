@@ -89,12 +89,14 @@ class Crawler(BaseCrawler):
             for index, row in df_batch.iterrows():
                 asn = int(index)
                 batch_asns.add(asn)
+                sibling_asns = set()
                 for sibling_asn in row['Sibling ASNs']:
+                    sibling_asns.add(int(sibling_asn))
                     batch_sibling_asns.add(int(sibling_asn))
                 url = row['Website']
                 if len(url) > 1:
                     batch_urls.add(url)
-                batch_lines.append([asn, url, batch_sibling_asns])
+                batch_lines.append([asn, url, sibling_asns])
                 count_rows += 1
 
             asn_id = self.iyp.batch_get_nodes('AS', 'asn', batch_asns)
