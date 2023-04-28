@@ -1,0 +1,94 @@
+<article class="guide">
+  <carousel class="deck container-fluid">
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h2>Get started</h2>
+        <p class="lead">Introduction to the Internet Yellow Pages.</p>
+        <p>This guide will show you how to retrieve and display data from IYP.
+        Let's start simple. </p>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <hr>
+        <h4>References</h4>
+        <a help-topic="match"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help MATCH</a>
+        <a help-topic="where"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help WHERE</a>
+        <a help-topic="cypher"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help Cypher</a>
+      </div>
+      <div class="col-sm-9">
+        <p>The below query finds which IXPs AS2497 is member of. Click on the icon to run the query:</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (iij:AS)-[:MEMBER_OF]-(ix:IXP) WHERE iij.asn = 2497 RETURN iij, ix</pre>
+        </figure>
+        <p>The <code>MATCH</code> clause describes a pattern in the graph.</p>
+
+        <p> The pattern is given in a ASCII art representation 
+        where nodes are depicted by a pair of parentheses, <code>()</code>, 
+        and relationship are depicted with two dashes <code>--</code> sometimes
+        including more information in square brackets <code>-[]-</code>.</p>
+
+        <p>Thus <code> (iij:AS)-[:MEMBER_OF]-(ix:IXP) </code>
+        describes a path that starts from a node we'll call <i>iij</i> 
+        that connects to another node we'll call <i>ix</i>.
+        <i>iij</i> and <i>ix</i> are arbitrary identifiers that allow us to refer to a 
+        certain node later on. </p>
+
+        <p> In IYP all nodes and relationships have a type (called 
+        labels for nodes) that convey what the nodes and relationships represent.
+        The labels/types are given after the colon, for example (:AS) 
+        is a node representing an AS, and, -[:MEMBER_OF]- is relationship
+        of type <i>member of</i>. 
+        </p>
+
+        <p>The <code>WHERE</code> clause describe conditions for nodes
+        or relationship that match the pattern. Here we specify that the 
+        node called iij should have a property <i>asn</i> that equals to 2497.</p>
+
+        <p>The <code>RETURN</code> clause describes the nodes and links we want to display.</p>
+        </ol>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h2>Title two</h2>
+        <p class="lead">Same query different syntaxes</p>
+      </div>
+      <div class="col-sm-9">
+        <figure>
+          <pre class="pre-scrollable code runnable">MATCH (iij:AS {asn: 2497})-->(ix:IXP) RETURN iij, ix</pre>
+          <figcaption>Find the produce suppliers.</figcaption>
+        </figure>
+        <figure>
+          <pre class="pre-scrollable code runnable">CREATE INDEX ON :Category(categoryID)</pre>
+        </figure>
+        <figure>
+          <pre class="pre-scrollable code runnable">CREATE INDEX ON :Supplier(supplierID)</pre>
+        </figure>
+        <h2>More code</h2>
+        <ul class="undecorated">
+          <li><a play-topic="movie-graph">Movie Graph</a> - actors &amp; movies</li>
+          <li><a play-topic="query-template">Query Templates</a> - common ad-hoc queries</li>
+          <li><a play-topic="cypher">Cypher</a> - query language fundamentals</li>
+        </ul>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h2>...</h2>
+
+      </div>
+      <div class="col-sm-9">
+
+        <p>You can list all existing node labels and relationship
+        types are  by clicking on the top right database icon on this page.
+        So putting all of this together, our pattern means that we are looking
+        for links that connect an AS and an IXP with the relationship MEMBER_OF.</p>
+      </div>
+
+
+    </slide>
+  </carousel>
+</article>
