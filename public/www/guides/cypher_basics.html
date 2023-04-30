@@ -53,6 +53,91 @@
     </slide>
     <slide class="row-fluid">
       <div class="col-sm-3">
+        <h2>What data is in IYP?</h2>
+        <p class="lead">A few words about the ontology (type of nodes and relationship) and where the data come from.</p>
+        <br>
+        <br>
+        <br>
+        <br>
+      </div>
+      <div class="col-sm-9">
+	<h2>Node labels & Relationship types</h2>
+	<p>You can get a list of all node labels and relationship types by clicking the database icon at the top left corner.</p>
+	<p>The following query will also give you a messy overview of how all the different nodes relate to each other:
+	<figure>
+		<pre class="pre-scrollable code runnable"> CALL db.schema.visualization()</pre>
+	</figure>
+	</p>
+	<h2>Imported datasets</h2>
+	<p>A better way to understand which datasets are imported in IYP and how they are represented is to browse the <a play-topic="https://iyp.iijlab.net/guides/gallery.html">IYP Gallery</a> and READMEs for <a href='https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers'>each of our script importing data</a>.
+      </div>
+     </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h2>It is not only relationships</h2>
+        <p class="lead">Nodes and relationships carry additional information called properties.</p>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+      </div>
+      <div class="col-sm-9">
+	<h2>Node and relationship properties</h2>
+        <p> Click on any node or relationship in the graph and you'll see its properties in the right panel.</p>
+	<p> Relationships carry more information as they represent imported datasets, whereas nodes are usually identifying a resource.</p>
+
+	<p>All relationships in IYP have at least these properties:
+	<ul>
+		<li> <b>reference_org</b>: The organisation that provide the data.</li>
+		<li> <b>reference_url</b>: The URL where the data comes from.</li>
+		<li> <b>reference_time</b>: The time when the data was retrieved.</li>
+		<li> <b>reference_name</b>: The name of the script that pushed data to IYP.</li>
+	</ul>
+	</p>
+	<p>All other properties are imported from the original dataset.</p>
+
+	<h3>Filter on properties</h3>
+	<p>The previous example had a condition on the <i>asn</i> property of the AS node, you can also filter on the relationship properties. For example, this query look for IIJ memberships other than those given by PeeringDB.</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (iij:AS)-[mem:MEMBER_OF]-(something) 
+	  WHERE iij.asn = 2497 AND mem.reference_org<>'PeeringDB' RETURN iij, something </pre>
+        </figure>
+
+
+      </div>
+     </slide>
+     <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h2>Same query different syntax</h2>
+        <p class="lead">There is a lot of different way to write the same query.</p>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <hr>
+        <h4>References</h4>
+        <a help-topic="match"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help MATCH</a>
+        <a help-topic="where"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help WHERE</a>
+        <a help-topic="cypher"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help Cypher</a>
+      </div>
+      <div class="col-sm-9">
+        <p>The below queries are all equivalent:</p>
+        <figure>
+	  <pre class="pre-scrollable code runnable"> MATCH (iij:AS)-[:MEMBER_OF]->(ix:IXP) WHERE iij.asn = 2497 RETURN iij, ix</pre>
+	  <figcaption>You can specify the direction of relationships.</figcaption>
+        </figure>
+        <figure>
+	  <pre class="pre-scrollable code runnable"> MATCH (iij:AS {asn: 2497})-[:MEMBER_OF]-(ix:IXP) RETURN iij, ix</pre>
+	  <figcaption>Give the WHERE conditions in the pattern.</figcaption>
+        </figure>
+
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
         <h2>Title two</h2>
         <p class="lead">Same query different syntaxes</p>
       </div>
