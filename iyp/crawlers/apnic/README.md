@@ -22,7 +22,7 @@ percentage of the country's population hosted by the AS.
 Connect AS to country nodes, meaning that the AS serves people in that country.
 
 ```
-(:AS)-[:COUNTRY]-(:COUNTRY)
+(:AS)-[:COUNTRY]-(:Country)
 ```
 
 ### Ranking
