@@ -1,0 +1,606 @@
+<article class="guide">
+  <carousel class="deck container-fluid" id="#myCarousel">
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>IYP datasets</h1>
+        <a id='top'></a>
+        <p class="lead">The illustrated list of IYP datasets.</p>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <hr>
+        <h4>References</h4>
+        <a help-topic="cypher"><i class="fa fa-play-circle-o" style="padding-right:4px"></i>:help Cypher</a>
+        <a href='https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers'>IYP's github repo</a>
+      </div>
+      <div class="col-sm-9">
+        <p>List of datasets available in IYP:</p>
+        <ol>
+            <li>APNIC: AS population estimates</li> 
+            <li>BGPKIT: AS relationship, route collector peers stats, prefix to ASN</li> 
+            <li>Bgp.tools: AS names, AS tags</li> 
+            <li>CAIDA: AS rank</li> 
+            <li>Citizen Lab: Test lists for censorship</li>
+            <li>Cloudflare Radar: top 1M domain names, top ASes and countries querying top 10k domains</li> 
+            <li>IHR: Country ranking, AS Hegemony, ROV</li>
+            <li>MANRS: members</li>
+            <li>NRO: delegated stats</li>
+            <li>OpenIntel: Tranco top 1M</li>
+            <li>PeeringDB: organization, IX, IX members, peering LAN, facilities</li>
+            <li>RIPE NCC: AS names, ROA</li>
+            <li>Stanford: ASdb</li>
+            <li>Tranco: top 1M</li>
+        </ol>
+
+        <p>And a few scripts that adds:</p>
+        <ol>
+            <li>IP addresses and prefixes address family</li>
+            <li>Mapping IP addresses to their most specific prefixes</li>
+            <li>Mapping URLs to their domain name</li>
+        </ol>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>APNIC population estimates </h1>
+        <a href="https://labs.apnic.net/">https://labs.apnic.net/</a>
+        <p> Population per AS estimated using an advertisement on Youtube. This dataset 
+        provides:
+        <ul>
+            <li>The percentage of the population per country/AS</li>
+            <li>AS ranking in terms of population</li>
+            <li>AS names</li>
+        </ul>
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <h2>Summary</h2>
+        <p>This query shows an example of all types of relationship added by this dataset:</p>
+        <figure>
+            <pre class="pre-scrollable code runnable">MATCH (a:AS)-[p:POPULATION {reference_org:"APNIC"}]-(c:Country),
+    (a:AS)-[cr:COUNTRY {reference_org:"APNIC"}]-(c:Country) ,
+    (a:AS)-[rr:RANK {reference_org:"APNIC"}]-(r:Ranking)--(c:Country),
+    (a:AS)-[nr:NAME {reference_org:"APNIC"}]-(n:Name)
+    RETURN a,p,c,cr,rr,nr,r,n LIMIT 1 
+            </pre>
+        </figure>
+
+        <h2>Population</h2>
+        <p> Connect AS to country nodes with a 'population' relationship representing the
+        percentage of the country's population hosted by the AS. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[p:POPULATION {reference_org:"APNIC"}]-(c:Country) RETURN a,p,c LIMIT 3 </pre>
+        </figure>
+
+        <h2>Country</h2>
+        <p> Connect AS to country nodes, meaning that the AS serves people in that country. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[cr:COUNTRY {reference_org:"APNIC"}]-(c:Country) RETURN a,cr,c LIMIT 3 </pre>
+        </figure>
+
+        <h2>Ranking</h2>
+        <p> Connect ASes to ranking nodes which are also connected to a country. Meaning 
+        that an AS is ranked for a certain country in terms of population.
+        For example:
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[rr:RANK {reference_org:"APNIC"}]-(r:Ranking)--(c:Country) RETURN a,rr,r,c LIMIT 3 </pre>
+        </figure>
+
+        <h2>AS name</h2>
+        <p> Connect AS to names nodes, providing the name of ranked ASes. For example:
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[nr:NAME {reference_org:"APNIC"}]-(n:Name) RETURN a,nr,n LIMIT 3 </pre>
+        </figure>
+
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>BGPKIT data</h1>
+        <a href="https://data.bgpkit.com">https://data.bgpkit.com</a>
+        <p>Data inferred from RouteViews and RIPE RIS BGP data, including:
+        <ul> 
+            <li>AS relationship</li> 
+            <li>Prefix to ASN mappings</li> 
+            <li>BGP collectors' peers stats</li> 
+        </ul>
+
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <h2>AS relationship</h2>
+        <p>Connect ASes that are peering with each other. The 'rel' attribute and the link
+direction gives the type of relationship between the two ASes:
+        <ul>
+            <li>rel=0: peer to peer relationship</li> 
+            <li>rel=1: provider/customer relationship. A->B means A is the provider of B.</li> 
+        </ul>
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[p:PEERS_WITH {reference_org:"BGPKIT"}]-(b:AS) RETURN a,p,b LIMIT 3
+          </pre>
+        </figure>
+
+        <h2>Peers stats</h2>
+        <p> Connect AS nodes to BGP route collector nodes, meaning that an AS peers with
+        a route collector hence participating in the RIS or RouteViews projects. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[p:PEERS_WITH {reference_org:"BGPKIT"}]-(b:BGPCollector) RETURN a,p,b LIMIT 3 </pre>
+        </figure>
+
+        <h2>Prefix to ASN</h2>
+        <p>Connect AS nodes to prefix nodes representing the prefixes originated by an AS. For example: </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[o:ORIGINATE {reference_org:"BGPKIT"}]-(p:Prefix) RETURN a,o,p LIMIT 3 </pre>
+        </figure>
+
+      </div>
+    </slide>
+
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>BGP.Tools</h1>
+        <a href="https://bgp.tools">https://bgp.tools</a>
+        <p>Data collected by BGP.Tools, including:
+        <ul>
+            <li>AS names</li>
+            <li>AS tags</li>
+        </ul>
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <h2>AS names</h2>
+        <p>Connect AS to names nodes, providing the name of an AS. For example:</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[n:NAME {reference_org:"BGP.Tools"}]-(m:Name) RETURN a,n,m LIMIT 3 </pre>
+        </figure>
+
+        <h2>AS tags</h2>
+        <p> Connect AS to tag nodes meaning that an AS has been categorized according to the given tag.</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[c:CATEGORIZED {reference_org:"BGP.Tools"}]-(t:Tag) RETURN a,c,t LIMIT 3 </pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>CAIDA</h1>
+        <a href="https://caida.org">https://caida.org</a>
+        <p>AS rank in terms of customer cone size, meaning that large transit providers are
+higher ranked.</p>
+      </div>
+      <div class="col-sm-9">
+        <h2>Ranking</h2>
+        <p> Connect ASes nodes to a single ranking node corresponding to ASRank. The rank is
+given as a link attribute. For example: </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[rr:RANK {reference_org:"CAIDA"}]-(r:Ranking) RETURN a,rr,r LIMIT 3 </pre>
+        </figure>
+
+        <h2>Country</h2>
+        <p>Connect AS to country nodes, meaning that the AS is registered in that country.</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[cr:COUNTRY {reference_org:"CAIDA"}]-(c:Country) RETURN a,cr,c LIMIT 3 </pre>
+        </figure>
+
+        <h2>AS Name</h2>
+        <p> Connect AS to names nodes, providing the name of an AS. For example: </p>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[nr:NAME {reference_org:"CAIDA"}]-(n:Name) RETURN a,nr,n LIMIT 3</pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>Citizen Lab</h1>
+        <a href="https://github.com/citizenlab/test-lists/blob/master/lists/">https://github.com/citizenlab/test-lists/blob/master/lists/</a>
+        <p> Citizen lab's test lists are URL testing lists intended to help in testing URL censorship, divided by country codes. In addition to these local lists, the global list consists of a wide range of internationally relevant and popular websites, including sites with content that is perceived to be provocative or objectionable. The dataset tha maps URL to Category.</p>
+      </div>
+      <div class="col-sm-9">
+        <h2>URL tag</h2>
+        <p>Connect URL to tag nodes meaning that an URL has been categorized according to the given tag. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (u:URL)-[c:CATEGORIZED {reference_org:"Citizen Lab"}]->(t:Tag) RETURN u,c,t LIMIT 3 </pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>Cloudflare Radar</h1>
+        <a href="https://radar.cloudflare.com/ ">https://radar.cloudflare.com/ </a>
+        <p>Cloudflare uses aggregated and anonymized DNS queries to their `1.1.1.1` public resolver service to
+provide various datasets, including:
+<ul>
+    <li><a href="https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/">Ordered top 100 domain names</a>: The 100 domains with the most DNS queries, including assigned ranks. 
+    <li><a href="https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/"> Unordered top 1,000 to 1,000,000 domains</a></li>: Same as above, but there are no ranks assigned. Fetched set sizes are 1,000, 2,000, 5,000, 10,000, 20,000, 50,000, 100,000, 200,000, 500,000, and 1,000,000.
+    <li><a href="https://developers.cloudflare.com/radar/investigate/dns/#top-locations">Top 100 countries querying each of the 10,000 highest ranked domain names</a>: For each domain that is in the top 10,000 of *any* ranking included in IYP, fetch the top 100 countries with the most DNS queries.</li> 
+    <li><a href="https://developers.cloudflare.com/api/operations/radar_get__top_ases">Top 100 ASes querying each of the 10,000 highest ranked domain names</a>: Same as above, but fetch AS numbers instead.</li> 
+  </ul>
+All rankings are based on one week of data.
+
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <h2>Ordered top 100 domain names</h2>
+        <p> Connect DomainName nodes to a single Ranking node corresponding to the ordered Cloudflare top 100
+ranking. The `rank` is given as a relationship property. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[rr:RANK {reference_name:"cloudflare.top100"}]->(r:Ranking) RETURN dn,rr,r LIMIT 3 </pre>
+        </figure>
+
+        <h2>Unordered top *n* domain names</h2>
+        <p> Connect DomainName nodes to a single Ranking node corresponding to the unordered Cloudflare top *n*
+ranking. There is no rank assigned to the domain name, but *n* is specified in the `top` property of
+the Ranking node. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[rr:RANK {reference_name:"cloudflare.ranking_bucket"}]->(r:Ranking) RETURN dn,rr,r LIMIT 3 </pre>
+        </figure>
+
+        <h2>Top countries</h2>
+        <p> Connect each DomainName node to up to 100 Country nodes representing the countries from which the
+domain was queried from the most. The `value` property of the QUERIED_FROM relationship describes
+the percentage of all queries (within one week) originating from the country. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[q:QUERIED_FROM {reference_org:"Cloudflare"}]->(c:Country) RETURN dn,q,c LIMIT 3 </pre>
+        </figure>
+
+        <h2>Top ASes</h2>
+        <p> Connect each DomainName node to up to 100 AS nodes  from which the domain was queried from the most.
+The `value` property of the QUERIED_FROM relationship describes the percentage of all queries
+(within one week) originating from the AS.</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[q:QUERIED_FROM {reference_org:"Cloudflare"}]->(a:AS) RETURN dn,q,a LIMIT 3 </pre>
+        </figure>
+
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>Internet Health Report</h1>
+        <a href="https://ihr.iijlab.net/">https://ihr.iijlab.net/</a>
+        <p>Data inferred by IIJ's Internet Health Report, including:
+        <ul>
+            <li>AS inter-dependency</li>
+            <li>country's AS dependency</li>
+            <li>prefixes' RPKI and IRR status</li>
+        </ul>
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <h2>AS inter-dependency</h2>
+        <p> Connect ASes that are depending on each other, meaning that an AS is commonly found on routes
+towards an origin AS. The strength of the dependence is given by the `hege` link attribute (AS
+Hegemony value) which range from 0 to 1. Strongest dependencies being equal to 1. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[d:DEPENDS_ON {reference_org:"IHR"}]-(b:AS) RETURN a,d,b LIMIT 3 </pre>
+        </figure>
+
+        <h2>Country's AS dependency</h2>
+        <p> Connect ASes to ranking nodes which are also connected to a country.  A Country AS dependency is
+computed in two different ways, emphasizing either the distribution of the country's population
+(a.k.a. Total eyeball) or the country ASes (a.k.a. Total AS), for example: </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[rr:RANK {reference_org:"IHR"}]->(r:Ranking)-[cr:COUNTRY {reference_org:"IHR"}]->(c:Country)  RETURN a,rr,r,cr,c LIMIT 3 </pre>
+        </figure>
+        <p> means that Japan ASes depends strongly (AS Hegemony equals 0.19) on AS2497.</p>
+
+        <h2>Prefixes' RPKI and IRR status</h2>
+        <p> Connect prefixes to their origin AS, their AS dependencies, their RPKI/IRR status, and their country (provided by Maxmind). </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (p:Prefix)<-[o:ORIGINATE {reference_org:"IHR"}]-(a:AS),
+    (p)-[d:DEPENDS_ON]->(b:AS),
+    (p)-[ca:CATEGORIZED {reference_org:"IHR"}]->(t:Tag),
+    (p)-[co:COUNTRY {reference_org:"IHR"}]->(c:Country)
+    RETURN p,o,a,d,b,ca,t,co,c LIMIT 3 </pre>
+        </figure>
+        <p>Tag labels added by this crawler:
+        <ul>
+            <li>RPKI Valid</li>
+            <li>RPKI Invalid</li>
+            <li>RPKI Invalid,more-specific</li>
+            <li>RPKI NotFound</li>
+            <li>IRR Valid</li>
+            <li>IRR Invalid</li>
+            <li>IRR Invalid,more-specific</li>
+            <li>IRR NotFound</li>
+        </ul>
+        </p>
+        <p> The country geo-location is provided by Maxmind. </p>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>MANRS</h1>
+        <a href="https://www.manrs.org/">https://www.manrs.org/</a>
+        <p> Mutually Agreed Norms for Routing Security (MANRS) is an initiative to improve the security and
+resilience of the Internet’s global routing system. It does this by encouraging those running BGP to
+implement well-established industry best practices and technological solutions that can address the
+most common threats.</p>
+
+<p>A network operator can become a MANRS member by implementing *Actions* that are further described
+<a href="https://www.manrs.org/netops/network-operator-actions/">here</a>. Currently there are four actions:
+
+<ol>
+    <li> Filtering: Prevent propagation of incorrect routing information</li>
+    <li> Anti-spoofing: Prevent traffic with spoofed source IP addresses</li>
+    <li> Coordination: Facilitate global operational communication and coordination</li>
+    <li> Global Validation: Facilitate routing information on a global scale</li>
+</ol>
+</p>
+
+<p>IYP contains information about the membership status of networks (in form of AS nodes) and which
+actions are implemented by each member. The country assignment provided by MANRS is also used to
+enhance the existing AS-to-Country mappings. </p>
+      </div>
+      <div class="col-sm-9">
+        <h2>MANRS membership</h2>
+        <p></p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[m:MEMBER_OF {reference_org:"MANRS"}]->(o:Organization),
+    (a)-[i:IMPLEMENT {reference_org:"MANRS"}]->(ma:ManrsAction),
+    (a)-[cr:COUNTRY {reference_org:"MANRS"}]->(c:Country)
+    RETURN a,m,o,i,ma,cr,c LIMIT 3 </pre>
+        </figure>
+
+        <p>Possible labels for ManrsAction nodes:
+        <ul>
+            <li>MANRS Action 1: Filtering</li>
+            <li>MANRS Action 2: Anti-spoofing</li>
+            <li>MANRS Action 3: Coordination</li>
+            <li>MANRS Action 4: Global Validation</li>
+        </ul>
+        </p>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>NRO</h1>
+        <a href="https://www.nro.net/">https://www.nro.net/</a>
+        <p> The Number Resource Organization (NRO) is the coordinating body for the world’s Regional Internet
+Registries (RIRs). The RIRs manage the distribution of Internet number resources (IP address space
+and Autonomous System Numbers) within their respective regions.</p>
+
+        <p> As part of a joint RIR project to provide consistent and accessible Internet number resource
+statistics the NRO publishes [*Extended Allocation and Assignment
+Reports*](https://www.nro.net/about/rirs/statistics/) (also called *delegated stats*) that contain
+information about assigned IP address ranges and AS numbers.</p>
+
+<p> Each line of the report is a record that either represents an IP address range or an AS number. The
+record has a status and maps to an *opaque ID* that uniquely identifies a single organization.
+Finally, the record contains a country code to which the organization belongs.</p>
+
+<p> **Note:** If the record is not assigned, the country code is `ZZ`, which will still be inserted into
+IYP.</p>
+      </div>
+
+      <div class="col-sm-9">
+        <h2>Delegated stats</h2>
+        <p>Examples for ASes:</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a0:AS {asn: 7494})-[r0:AVAILABLE {registry:'apnic'}]->(o0:OpaqueID),
+    (a1:AS {asn: 2497})-[r1:ASSIGNED {registry: 'apnic'}]->(o1:OpaqueID {id: 'A91A7381'}),
+    (a2:AS {asn: 608})-[r2:RESERVED {registry: 'arin'}]->(o2:OpaqueID {id: 'arin'}),
+    (a3:AS {asn: 2497})-[r3:COUNTRY]->(o3:Country {country_code: 'JP'})
+    RETURN a0,r0,o0,a1,r1,o1,a2,r2,o2,a3,r3,o3 LIMIT 1
+           </pre>
+        </figure>
+        <p> The report also contains `allocated` records that would result in a `ALLOCATED` relationship.
+However, this crawler does not add ASes, so if the AS node was not created by another crawler, which
+should not happen for `allocated` ASes, the relationship is not created.</p>
+
+
+        <p>Examples for prefixes:</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (p0:Prefix {prefix: '2a03:1dc0::/27'})-[r0:AVAILABLE {registry: 'ripencc'}]->(o0:OpaqueID {id: 'ripencc'}),
+    (p1:Prefix {prefix: '202.0.65.0/24'})-[r1:ASSIGNED {registry: 'apnic'}]->(o1:OpaqueID),
+    (p2:Prefix {prefix: '196.20.32.0/19'})-[r2:RESERVED {registry: 'afrinic'}]->(o2:OpaqueID {id: 'afrinic'}),
+    (p3:Prefix {prefix: '196.20.32.0/19'})-[r3:COUNTRY]->(o3:Country {country_code: 'ZZ'})
+    RETURN p0,r0,o0,p1,r1,o1,p2,r2,o2,p3,r3,o3 LIMIT 1
+           </pre>
+        </figure>
+        <p> The IPv4 address ranges in the report are not necessarily aligned with CIDR ranges (prefixes are
+represented by the first IP and a *count of hosts*). However, the crawler rounds down to the next
+CIDR range. </p>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>OpenINTEL</h1>
+        <a href="https://www.openintel.nl/">https://www.openintel.nl/</a>
+        <p> The OpenINTEL measurement platform captures daily snapshots of the state of large parts of the
+        global Domain Name System (DNS) by running a number of forward and reverse DNS measurements.</p>
+
+        <p> While OpenINTEL runs measurements to a variety of domain names, IYP currently only fetches data for
+        the <a href="https://data.openintel.nl/data/tranco1m/">Tranco top 1 million list</a> since it combines rankings
+from the other lists and the ranks of this dataset are also fetched by IYP.</p>
+
+        <p>IYP uses only `A` queries to add IP resolution for DomainName nodes.</p>
+
+      </div>
+      <div class="col-sm-9">
+        <h2>DNS resolution for domain names</h2>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[r:RESOLVES_TO {reference_org:'OpenINTEL'}]->(i:IP) RETURN dn,r,i LIMIT 3 </pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>PeeringDB</h1>
+        <a href="https://www.peeringdb.com/">https://www.peeringdb.com/</a>
+        <p>PeeringDB is a freely available, user-maintained, database of networks.
+The database contains information about Internet Exchange Points (IXPs) and data centers, including
+peering LAN and membership information.</p>
+
+        <p>IYP retrieves information about organizations, interconnection facilities, IXPs, their peering LANs,
+and members.</p>
+
+      </div>
+      <div class="col-sm-9">
+
+        <h2>Summary</h2>
+        <p> Run the (long) query below to get an Example that contains all nodes and relationships created for
+this dataset.</p>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (iij:AS {asn:2497})-[r0:EXTERNAL_ID]->(n0:PeeringdbNetID),
+    (iij)-[r1:LOCATED_IN {reference_org:'PeeringDB'}]->(n1:Facility),
+    (iij)-[r2:MANAGED_BY {reference_org:'PeeringDB'}]->(n2:Organization),
+    (iij)-[r3:MEMBER_OF {reference_org:'PeeringDB'}]->(ix:IXP),
+    (iij)-[r4:NAME {reference_org:'PeeringDB'}]->(n3:Name),
+    (iij)-[r5:WEBSITE]->(n4:URL),
+    (pfx:Prefix)-[r6:MANAGED_BY {reference_org:'PeeringDB'}]->(ix),
+    (ix)-[r7:COUNTRY {reference_org:'PeeringDB'}]->(n5:Country),
+    (ix)-[r8:EXTERNAL_ID {reference_org:'PeeringDB'}]->(n6:PeeringdbIXID),
+    (ix)-[r9:LOCATED_IN {reference_org:'PeeringDB'}]->(n7:Facility),
+    (ix)-[r10:MANAGED_BY {reference_org:'PeeringDB'}]->(n8:Organization),
+    (ix)-[r11:NAME {reference_org:'PeeringDB'}]->(n9:Name)
+    //(ix)-[r12:WEBSITE {reference_org:'PeeringDB'}]->(n10)
+    RETURN iij,ix,pfx,n0,n1,n2,n3,n4,n5,n6,n7,n8,n9,r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11 LIMIT 1 </pre>
+        </figure>
+
+        <p></p>
+
+        <h2>Organizations</h2>
+        <p>Information about organizations that own networks, IXPs, and facilities.</p>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (o:Organization)-[cr:COUNTRY {reference_org:"PeeringDB"}]->(c:Country),
+    (o)-[e:EXTERNAL_ID {reference_org:"PeeringDB"}]->(i:PeeringdbOrgID),
+    (o)-[nr:NAME {reference_org:"PeeringDB"}]->(n:Name),
+    (o)-[w:WEBSITE {reference_org:"PeeringDB"}]->(u:URL)
+    RETURN o,cr,c,e,i,nr,n,w,u LIMIT 3 </pre>
+        </figure>
+
+        <p> The EXTERNAL_ID relationship contains the raw organization data from PeeringDB <a href="https://tutorial.peeringdb.com/apidocs/#tag/api/operation/list%20org">as defined in the API</a>. </p>
+
+        <h2>Facilities</h2>
+        <p> Information about co-location facilities. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (f:Facility)-[cr:COUNTRY {reference_org:"PeeringDB"}]->(c:Country),
+    (f)-[e:EXTERNAL_ID {reference_org:"PeeringDB"}]->(p:PeeringdbFacID),
+    (f)-[m:MANAGED_BY {reference_org:"PeeringDB"}]->(o:Organization),
+    (f)-[nr:NAME {reference_org:"PeeringDB"}]->(n:Name),
+    (f)-[w:WEBSITE {reference_org:"PeeringDB"}]->(u:URL)
+    RETURN f,cr,c,e,p,m,o,nr,n,w,u LIMIT 3 </pre>
+        </figure>
+
+        <p> The EXTERNAL_ID relationship contains the raw facility data from PeeringDB 
+        <a href="https://tutorial.peeringdb.com/apidocs/#tag/api/operation/list%20fac">as defined in the API</a>.</p>
+
+        </p>
+
+        <h2>IXPs</h2>
+        <p> Information about IXPs, peering LANs, and IXP member networks. </p>
+        <p>Example for three IXPs:</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (i:IXP)-[cr:COUNTRY {reference_org:"PeeringDB"}]->(c:Country),
+    (i)-[e:EXTERNAL_ID {reference_org:"PeeringDB"}]->(pi:PeeringdbIXID),
+    (i)-[l:LOCATED_IN {reference_org:"PeeringDB"}]->(f:Facility),
+    (i)-[m:MANAGED_BY {reference_org:"PeeringDB"}]->(o:Organization),
+    (i)-[nr:NAME {reference_org:"PeeringDB"}]->(n:Name),
+    //(i)-[w:WEBSITE {reference_org:"PeeringDB"}]->(u:URL),
+    (i)<-[mp:MANAGED_BY]-(p:Prefix)
+    RETURN i,cr,c,e,pi,l,f,m,o,nr,n,mp,p LIMIT 3 </pre>
+        </figure>
+
+        <p>Example for three ASes:</p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[e:EXTERNAL_ID]->(p:PeeringdbNetID),
+    (a)-[l:LOCATED_IN]->(f:Facility),
+    (a)-[ma:MANAGED_BY]->(o:Organization),
+    (a)-[me:MEMBER_OF]->(i:IXP),
+    (a)-[nr:NAME]->(n:Name),
+    (a)-[w:WEBSITE]->(u:URL)
+    RETURN a,e,p,l,f,ma,o,me,i,nr,n,w,u LIMIT 3</pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>RIPE NCC</h1>
+        <a href="https://www.ripe.net/">https://www.ripe.net/</a>
+        <p> The RIPE Network Coordination Centre (RIPE NCC) is the Regional Internet Registry (RIR) for Europe,
+the Middle East and parts of Central Asia. </p>
+        <p>IYP does not use RIPE-specific information, but fetches data from RIPE‘s convenient <a href="https://ftp.ripe.net/">FTP server</a>.</p>
+      </div>
+      <div class="col-sm-9">
+        <h2>AS names</h2>
+        <p> RIPE NCC provides a simple [list of AS names](https://ftp.ripe.net/ripe/asnames/) (also containing a
+country code) which is the base of many AS nodes in IYP. </p>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[nr:NAME {reference_org:"RIPE NCC"}]->(n:Name),
+    (a)-[cr:COUNTRY {reference_org:"RIPE NCC"}]->(c:Country)
+    RETURN a,nr,n,cr,c LIMIT 3 </pre>
+        </figure>
+
+        <h2>Route Origin Authorizations </h2>
+        <p> A Route Origin Authorization (ROA) is a cryptographically signed object that states which AS is
+authorized to originate a particular IP address prefix or set of prefixes. </p>
+        <p> IYP uses RIPE NCC‘s <a href="https://ftp.ripe.net/rpki/">mirror of Trust Anchor Locators</a> of the five RIRs
+to extract ROA information. The max length specification of the ROA is added as the `maxLength`
+property on the relationship. </p>
+        <figure>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[roa:ROUTE_ORIGIN_AUTHORIZATION {reference_org:"RIPE NCC"}]->(p:Prefix)
+    RETURN a,roa,p LIMIT 3 </pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>Stanford's ASdb </h1>
+        <a href="https://asdb.stanford.edu/">https://asdb.stanford.edu/</a>
+        <p> ASdb is a research dataset that maps public autonomous systems (identified by 
+ASN) to organizations and up to three industry types using data from business 
+intelligence databases, website classifiers, and a machine learning algorithm.</p>
+      </div>
+      <div class="col-sm-9">
+        <h2>AS tags</h2>
+        <p> Connect AS to tag nodes meaning that an AS has been categorized according to the given tag. </p>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[c:CATEGORIZED {reference_org:"Stanford"}]-(t:Tag)
+    RETURN a,c,t LIMIT 3 </pre>
+        </figure>
+      </div>
+    </slide>
+
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h1>Tranco</h1>
+        <a href="https://tranco-list.eu/">https://tranco-list.eu/</a>
+        <p> The Tranco list is a research-oriented top sites ranking hardened against manipulation. It [combines
+the rankings of several source lists](https://tranco-list.eu/methodology) to produce a daily list
+that is based on data of the past 30 days. </p>
+        <p>IYP uses this data to create and annotate DomainName nodes.</p>
+      </div>
+      <div class="col-sm-9">
+        <h2>Domain ranking</h2>
+        <p> The rank of the domain is indicated by the `rank` property of the relationship. </p>
+        <figure>
+            <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[rr:RANK {reference_org: "imec-DistriNet"}]->(r:Ranking)
+    WHERE rr.rank < 10
+    RETURN dn,rr,r 
+            </pre>
+        </figure>
+
+      </div>
+    </slide>
+
+  </carousel>
+</article>
