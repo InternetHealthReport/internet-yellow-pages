@@ -7,7 +7,7 @@ Data collected by BGP.Tools, including:
 
 ## Graph representation
 
-### AS name
+### AS names
 Connect AS to names nodes, providing the name of an AS.
 For example:
 ```

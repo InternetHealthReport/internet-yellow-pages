@@ -55,6 +55,8 @@ Tag labels (possibly) added by this crawler:
 - `IRR Invalid,more-specific`
 - `IRR NotFound`
 
+The country geo-location is provided by Maxmind.
+
 ## Dependence
 
 `rov.py` assumes ASes and prefixes are already registered in the database, it becomes very slow if

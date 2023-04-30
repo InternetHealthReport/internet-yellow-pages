@@ -1,4 +1,4 @@
-# PeeringDB crawlers
+# PeeringDB crawlers -- https://www.peeringdb.com/
 
 [PeeringDB](https://www.peeringdb.com/) is a freely available, user-maintained, database of networks.
 The database contains information about Internet Exchange Points (IXPs) and data centers, including
@@ -43,7 +43,7 @@ API.](https://tutorial.peeringdb.com/apidocs/#tag/api/operation/list%20org)
 
 ## `fac.py`
 
-Information about IXP facilities.
+Information about co-location facilities.
 
 ### Graph representation
 

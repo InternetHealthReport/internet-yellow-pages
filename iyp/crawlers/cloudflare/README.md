@@ -48,7 +48,7 @@ domain was queried from the most. The `value` property of the QUERIED_FROM relat
 the percentage of all queries (within one week) originating from the country.
 
 ```Cypher
-(:DomainName {name: 'google.com'}-[:QUERIED_FROM {value: 37.05}]->(:Country {country_code: 'US'}))
+(:DomainName {name: 'google.com'})-[:QUERIED_FROM {value: 37.05}]->(:Country {country_code: 'US'})
 ```
 
 ### Top ASes - `dns_top_ases.py`
