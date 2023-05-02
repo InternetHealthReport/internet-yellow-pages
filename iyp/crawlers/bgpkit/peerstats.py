@@ -21,23 +21,27 @@ class Crawler(BaseCrawler):
             logging.error(f'Cannot fetch peer-stats page {req.status_code}: req.text')
             sys.exit('Error while fetching main page')
 
-
         # Find all collectors
         collectors = []
         for line in req.text.splitlines():
-            if line.startswith('<span class="name">') and line.endswith('/</span>'):
+            if line.strip().startswith('<span class="name">') and line.endswith('/</span>'):
                 collectors.append( line.partition('>')[2].partition('/')[0] )
 
         # Find latest date
-        self.now = datetime.combine( datetime.utcnow(),time.min, timezone.utc)
-        url = URL.format( collector='rrc10', year=self.now.year, 
-                         month=self.now.month, day=self.now.day, 
-                         epoch=int(self.now.timestamp()))
+        prev_day = datetime.combine( datetime.utcnow(),time.min, timezone.utc)
+        self.now = None
+        req = None
+        trials = 0
 
-        # Check if today's data is available
-        req = requests.head( url )
-        if req.status_code != 200:
-            self.now -= timedelta(days=1)
+        while (req is None or req.status_code != 200) and trials<7:
+            self.now = prev_day
+            # Check if today's data is available
+            url = URL.format( collector='rrc10', year=self.now.year, 
+                            month=self.now.month, day=self.now.day, 
+                            epoch=int(self.now.timestamp()))
+            req = requests.head( url )
+
+            prev_day -= timedelta(days=1)
             logging.warning("Today's data not yet available!")
 
         for collector in collectors:
@@ -47,7 +51,6 @@ class Crawler(BaseCrawler):
 
             req = requests.get( url, stream=True )
             if req.status_code != 200:
-                self.now -= timedelta(days=1)
                 logging.warning(f"Data not available for {collector}")
                 continue
 
@@ -91,7 +94,7 @@ if __name__ == '__main__':
     logging.info("Start: %s" % sys.argv)
 
     asnames = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
         asnames.unit_test(logging)
     else:
         asnames.run()
