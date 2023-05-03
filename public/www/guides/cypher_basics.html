@@ -69,7 +69,7 @@
 	</figure>
 	</p>
 	<h2>Imported datasets</h2>
-	<p>A better way to understand which datasets are imported in IYP and how they are represented is to browse the <a play-topic="https://iyp.iijlab.net/guides/gallery.html">IYP Gallery</a> and READMEs for <a href='https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers'>each of our script importing data</a>.
+	<p>A better way to understand which datasets are imported in IYP and how they are represented is to browse the <a play-topic="https://iyp.iijlab.net/guides/datasets.html">IYP Datasets guide</a> and READMEs for <a href='https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers'>each of our script importing data</a>.
       </div>
      </slide>
     <slide class="row-fluid">
@@ -133,47 +133,29 @@
 	  <pre class="pre-scrollable code runnable"> MATCH (iij:AS {asn: 2497})-[:MEMBER_OF]-(ix:IXP) RETURN iij, ix</pre>
 	  <figcaption>Give the WHERE conditions in the pattern.</figcaption>
         </figure>
-
       </div>
     </slide>
+
     <slide class="row-fluid">
       <div class="col-sm-3">
-        <h2>Title two</h2>
-        <p class="lead">Same query different syntaxes</p>
+        <h2>And a lot more</h2>
+
       </div>
       <div class="col-sm-9">
-        <figure>
-          <pre class="pre-scrollable code runnable">MATCH (iij:AS {asn: 2497})-->(ix:IXP) RETURN iij, ix</pre>
-          <figcaption>Find the produce suppliers.</figcaption>
-        </figure>
-        <figure>
-          <pre class="pre-scrollable code runnable">CREATE INDEX ON :Category(categoryID)</pre>
-        </figure>
-        <figure>
-          <pre class="pre-scrollable code runnable">CREATE INDEX ON :Supplier(supplierID)</pre>
-        </figure>
-        <h2>More code</h2>
-        <ul class="undecorated">
-          <li><a play-topic="movie-graph">Movie Graph</a> - actors &amp; movies</li>
-          <li><a play-topic="query-template">Query Templates</a> - common ad-hoc queries</li>
-          <li><a play-topic="cypher">Cypher</a> - query language fundamentals</li>
+          <ul>
+            <li>Arbitrary length patterns: <pre class="pre-scrollable code runnable">  MATCH pattern = (:AS {asn: 2497})-[:PEERS_WITH*5..10]-(:AS) RETURN pattern LIMIT 1 </pre></li>
+            <li>Output as tables/csv/json</li>
+            <li>Data analysis: graph projection, fancy graph analysis algo, ML, ...</li>
+
+          </ul>
+          <br>
+        <p>Resources: </p>
+        <ul>
+            <li><a href="https://neo4j.com/docs/getting-started/cypher-intro/#_getting_started_with_cypher">https://neo4j.com/docs/getting-started/cypher-intro/#_getting_started_with_cypher</a></li>
+            <li><a href="https://neo4j.com/docs/getting-started/graph-visualization/graph-visualization/">https://neo4j.com/docs/getting-started/graph-visualization/graph-visualization/</a></li>
+            <li><a href="https://neo4j.com/product/graph-data-science/">https://neo4j.com/product/graph-data-science/</a></li>
         </ul>
       </div>
-    </slide>
-    <slide class="row-fluid">
-      <div class="col-sm-3">
-        <h2>...</h2>
-
-      </div>
-      <div class="col-sm-9">
-
-        <p>You can list all existing node labels and relationship
-        types are  by clicking on the top right database icon on this page.
-        So putting all of this together, our pattern means that we are looking
-        for links that connect an AS and an IXP with the relationship MEMBER_OF.</p>
-      </div>
-
-
     </slide>
   </carousel>
 </article>

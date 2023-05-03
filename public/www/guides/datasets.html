@@ -34,6 +34,7 @@
             <li>Stanford: ASdb</li>
             <li>Tranco: top 1M</li>
         </ol>
+        <br>
 
         <p>And a few scripts that adds:</p>
         <ol>
@@ -183,7 +184,7 @@ higher ranked.</p>
         <p> Connect ASes nodes to a single ranking node corresponding to ASRank. The rank is
 given as a link attribute. For example: </p>
         <figure>
-          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[rr:RANK {reference_org:"CAIDA"}]-(r:Ranking) RETURN a,rr,r LIMIT 3 </pre>
+          <pre class="pre-scrollable code runnable"> MATCH (a:AS)-[rr:RANK {reference_org:"CAIDA"}]-(r:Ranking) WHERE rr.rank < 5 RETURN a,rr,r </pre>
         </figure>
 
         <h2>Country</h2>
@@ -252,7 +253,7 @@ the Ranking node. </p>
 domain was queried from the most. The `value` property of the QUERIED_FROM relationship describes
 the percentage of all queries (within one week) originating from the country. </p>
         <figure>
-          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[q:QUERIED_FROM {reference_org:"Cloudflare"}]->(c:Country) RETURN dn,q,c LIMIT 3 </pre>
+          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[q:QUERIED_FROM {reference_org:"Cloudflare"}]->(c:Country) WHERE q.value > 25 RETURN dn,q,c LIMIT 3 </pre>
         </figure>
 
         <h2>Top ASes</h2>
@@ -260,7 +261,7 @@ the percentage of all queries (within one week) originating from the country. </
 The `value` property of the QUERIED_FROM relationship describes the percentage of all queries
 (within one week) originating from the AS.</p>
         <figure>
-          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[q:QUERIED_FROM {reference_org:"Cloudflare"}]->(a:AS) RETURN dn,q,a LIMIT 3 </pre>
+          <pre class="pre-scrollable code runnable"> MATCH (dn:DomainName)-[q:QUERIED_FROM {reference_org:"Cloudflare"}]->(a:AS) WHERE q.value > 25 RETURN dn,q,a LIMIT 3 </pre>
         </figure>
 
       </div>
