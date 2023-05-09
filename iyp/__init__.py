@@ -45,6 +45,17 @@ NODE_CONSTRAINTS_LABELS = set(NODE_CONSTRAINTS.keys())
 
 BATCH_SIZE = 50000
 
+prop_formatters = {
+    # asn is stored as an int
+    'asn': int,
+    # ipv6 is stored in lowercase
+    'ip': str.lower,
+    'prefix': str.lower,
+    # country code is kept in capital letter
+    'country_code': str.upper
+}
+
+
 def format_properties(prop):
     """Make sure certain properties are always formatted the same way.
     For example IPv6 addresses are stored in lowercase, or ASN are kept as 
@@ -52,21 +63,29 @@ def format_properties(prop):
 
     prop = dict(prop)
 
-    # asn is stored as an int
-    if 'asn' in prop:
-        prop['asn'] = int(prop['asn'])
-
-    # ipv6 is stored in lowercase
-    if 'ip' in prop:
-        prop['ip'] = prop['ip'].lower()
-    if 'prefix' in prop:
-        prop['prefix'] = prop['prefix'].lower()
-
-    # country code is kept in capital letter
-    if 'country_code' in prop:
-        prop['country_code'] = prop['country_code'].upper()
+    for prop_name, formatter in prop_formatters.items():
+        if prop_name in prop:
+            prop[prop_name] = formatter(prop[prop_name])
 
     return prop
+
+
+def batch_format_link_properties(links: list, inplace=True) -> list:
+    """Helper function that applies format_properties to the
+    relationship properties.
+
+    Warning: Formats properties in-place to save memory by default.
+    Use inplace=False to create a copy.
+
+    links: List of relationships as defined in batch_add_links"""
+    if inplace:
+        for l in links:
+            l['props'] = format_properties(l['props'])
+        return links
+    return [{'src_id': l['src_id'],
+             'dst_id': l['dst_id'],
+             'props': format_properties(l['props'])}
+            for l in links]
 
 
 def dict2str(d, eq=':', pfx=''):
@@ -161,6 +180,9 @@ class IYP(object):
         set all=False.
         This method commit changes to neo4j.
        """
+
+        if prop_set and prop_name in prop_formatters:
+            prop_set = set(map(prop_formatters[prop_name], prop_set))
 
         if all:
             existing_nodes = self.tx.run(f"MATCH (n:{type}) RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id")
@@ -286,6 +308,7 @@ class IYP(object):
 
         Notice: this method commit changes to neo4j """
 
+        batch_format_link_properties(links, inplace=True)
 
         # Create links in batches
         for i in range(0, len(links), BATCH_SIZE):
