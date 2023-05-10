@@ -131,7 +131,9 @@ class Crawler(BaseCrawler):
             # IPv4 record
             (pandas_df.response_type == "A") &
             # Filter out non-apex records
-            (~pandas_df.query_name.str.startswith("www."))
+            (~pandas_df.query_name.str.startswith("www.")) &
+            # Filter missing IPv4 addresses (there is at least one...)
+            (pandas_df.ip4_address.notnull())
         ][["query_name", "ip4_address"]].drop_duplicates()
         df.query_name = df.query_name.str[:-1] # Remove root '.'
 

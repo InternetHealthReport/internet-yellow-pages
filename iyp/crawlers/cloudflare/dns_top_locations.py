@@ -138,7 +138,7 @@ class Crawler(BaseCrawler):
             self.statements.append( { 
                      'src_id': self.domain_names_id[domain], 
                      'dst_id': self.country_id[cc], 
-                     'props': dict(flat_prop, **self.reference) 
+                     'props': [flat_prop, self.reference]
                      })
 
         

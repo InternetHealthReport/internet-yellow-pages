@@ -80,11 +80,12 @@ def batch_format_link_properties(links: list, inplace=True) -> list:
     links: List of relationships as defined in batch_add_links"""
     if inplace:
         for l in links:
-            l['props'] = format_properties(l['props'])
+            for idx, prop_dict in enumerate(l['props']):
+                l['props'][idx] = format_properties(prop_dict)
         return links
     return [{'src_id': l['src_id'],
              'dst_id': l['dst_id'],
-             'props': format_properties(l['props'])}
+             'props': [format_properties(d) for d in l['props']]}
             for l in links]
 
 
