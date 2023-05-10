@@ -7,6 +7,8 @@ import iso3166
 from iyp import BaseCrawler
 import requests_cache
 
+from iyp.crawlers.peeringdb.ix import handle_social_media
+
 ORG = 'PeeringDB'
 
 # URL to peeringdb API for organizations
@@ -56,6 +58,8 @@ class Crawler(BaseCrawler):
 
             if org['country'] in iso3166.countries_by_alpha2:
                 countries.add( org['country'] )
+
+            handle_social_media(org, websites)
 
         # push nodes
         self.org_id = self.iyp.batch_get_nodes('Organization', 'name', orgs)

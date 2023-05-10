@@ -7,6 +7,8 @@ import iso3166
 from iyp import BaseCrawler
 import requests_cache
 
+from iyp.crawlers.peeringdb.ix import handle_social_media
+
 # NOTES This script should be executed after peeringdb.org
 
 ORG = 'PeeringDB'
@@ -61,6 +63,8 @@ class Crawler(BaseCrawler):
 
             if fac['country'] in iso3166.countries_by_alpha2:
                 countries.add( fac['country'] )
+
+            handle_social_media(fac, websites)
 
         # push nodes
         self.fac_id = self.iyp.batch_get_nodes('Facility', 'name', facs)

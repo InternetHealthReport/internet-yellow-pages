@@ -2,10 +2,10 @@ import os
 import sys
 import logging
 import flatdict
-import requests_cache
 import json
 from datetime import datetime, time, timezone
 from iyp import BaseCrawler
+import requests_cache
 
 # NOTES This script should be executed after peeringdb.org
 # TODO add the type PEERING_LAN? may break the unique constraint
@@ -33,6 +33,21 @@ FACID_LABEL = 'PeeringdbFacID'
 API_KEY = ""
 if os.path.exists('config.json'): 
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
+
+
+def handle_social_media(d: dict, website_set: set = None):
+    """Flatten list of social media dictionaries in place and add the website to website_set if
+    present.
+    """
+    if 'social_media' in d:
+        social_media_list = d.pop('social_media')
+        for entry in social_media_list:
+            service = entry['service']
+            identifier = entry['identifier']
+            if website_set is not None and service == 'website':
+                website_set.add(identifier.strip())
+            d[f'social_media_{service}'] = identifier
+
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
@@ -174,6 +189,7 @@ class Crawler(BaseCrawler):
                         net_asn.add(int(network['asn']))
                         net_extid.add(network['id'])
                         net_website.add(network['website'])
+                        handle_social_media(network, net_website)
 
 
         # TODO add the type PEERING_LAN? may break the unique constraint
@@ -206,7 +222,7 @@ class Crawler(BaseCrawler):
 
                     for prefix in lan['ixpfx_set']:
                         prefix_qid = self.prefix_id[prefix['prefix']]
-                        prefix_links.append( { 'src_id':prefix_qid, 'dst_id':ix_qid, 
+                        prefix_links.append( { 'src_id':prefix_qid, 'dst_id':ix_qid,
                                               'props':[self.reference_lan] } )
                         
                     # Add networks found for the LAN
@@ -261,9 +277,15 @@ class Crawler(BaseCrawler):
         """
 
         # Create nodes
-        all_ixs_id = set([ix['id'] for ix in self.ixs])
-        all_ixs_name = set([ix['name'] for ix in self.ixs])
-        all_ixs_website = set([ix['website'] for ix in self.ixs if ix['website']])
+        all_ixs_id = set()
+        all_ixs_name = set()
+        all_ixs_website = set()
+        for ix in self.ixs:
+            all_ixs_id.add(ix['id'])
+            all_ixs_name.add(ix['name'])
+            all_ixs_website.add(ix['website'])
+            handle_social_media(ix, all_ixs_website)
+
         self.ixext_id = self.iyp.batch_get_nodes(IXID_LABEL, 'id', all_ixs_id)
         self.ix_id = self.iyp.batch_get_nodes('IXP', 'name', all_ixs_name)
         self.website_id = self.iyp.batch_get_nodes('URL', 'url', all_ixs_website)
@@ -304,6 +326,11 @@ class Crawler(BaseCrawler):
             if ix['website']:
                 website_qid = self.website_id[ix['website']]
                 website_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props':[self.reference_ix] })
+            # set social media website if different from normal website
+            if 'social_media_website' in ix and ix['social_media_website'] != ix['website']:
+                website_qid = self.website_id[ix['social_media_website']]
+                website_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props':[self.reference_ix] })
+
 
             id_qid = self.ixext_id[ix['id']]
             id_links.append({'src_id': ix_qid, 'dst_id': id_qid, 'props':[self.reference_ix] })
