@@ -10,7 +10,7 @@ with open('config.json', 'r') as fp:
 
 
 def send_email(e):
-    email_config = conf['email']
+    email_config = conf.get('email')
     if email_config is not None and email_config['email_address'] != "" and email_config['smtp_server'] != "" and email_config['smtp_port'] != "" and email_config['username'] != "" and email_config['password'] != "":
         # Send an email
         sender = email_config['email_address']
