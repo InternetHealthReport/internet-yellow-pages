@@ -1,9 +1,12 @@
-import re
-import sys
-import logging
-import requests
-import csv
+import argparse
 import bs4
+import csv
+import logging
+import os
+import re
+import requests
+import sys
+
 from bs4 import BeautifulSoup
 from datetime import datetime
 from iyp import BaseCrawler
@@ -16,8 +19,8 @@ def get_latest_asdb_dataset_url(asdb_stanford_data_url: str, file_name_format: s
     date_string: str = date_regex.search(latest_date_element.text).group()
     date: datetime = datetime.strptime(date_string, '%m/%d/%Y')
     dateset_file_name: str = date.strftime(file_name_format)
-    asdb_stanford_data_url: str = asdb_stanford_data_url.replace('#', '')
-    full_url: str = f'{asdb_stanford_data_url}/{dateset_file_name}'
+    asdb_stanford_data_url_formated: str = asdb_stanford_data_url.replace('#', '')
+    full_url: str = f'{asdb_stanford_data_url_formated}/{dateset_file_name}'
     return full_url
 
 URL = get_latest_asdb_dataset_url('https://asdb.stanford.edu/#data', '%Y-%m_categorized_ases.csv')
@@ -69,25 +72,32 @@ class Crawler(BaseCrawler):
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
 
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
+
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
+    logging.basicConfig(
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    logging.info(f'Started: {sys.argv}')
+
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
+    else:
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
+
 
 if __name__ == '__main__':
+    main()
+    sys.exit(0)
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
-    logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
-
-    asdb = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
-        asdb.unit_test(logging)
-    else:
-        asdb.run()
-        asdb.close()
-
-
-    logging.info("End: %s" % sys.argv)

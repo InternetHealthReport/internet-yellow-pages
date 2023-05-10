@@ -1,6 +1,9 @@
-import sys
+import argparse
 import logging
+import os
 import requests
+import sys
+
 from datetime import datetime, time, timezone
 from iyp import BaseCrawler
 
@@ -106,23 +109,32 @@ class Crawler(BaseCrawler):
                 # Get the AS QID (create if AS is not yet registered) and commit changes
                 as_qid = self.iyp.get_node('AS', {'asn': str(asn)}, create=True) 
                 self.iyp.add_links( as_qid, statements )
-        
-# Main program
-if __name__ == '__main__':
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
+
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Started: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-    manrs = Crawler(ORG, URL, NAME)
-    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
-        manrs.unit_test(logging)
-    else :   
-        manrs.run()
-        manrs.close()
+    logging.info(f'Started: {sys.argv}')
+
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
+    else:
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
+
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)

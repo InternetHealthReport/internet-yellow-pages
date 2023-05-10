@@ -1,6 +1,8 @@
-import sys
+import argparse
 import logging
+import os
 import requests
+import sys
 import iso3166
 from iyp import BaseCrawler
 
@@ -82,20 +84,25 @@ class Crawler(BaseCrawler):
         
 # Main program
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.WARNING, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Started: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    logging.info(f'Started: {sys.argv}')
 
     apnic = Crawler(ORG, URL, NAME)
-    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
+    if args.unit_test:
         apnic.unit_test(logging)
     else :
         apnic.run()
         apnic.close()
+    logging.info(f'Finished: {sys.argv}')

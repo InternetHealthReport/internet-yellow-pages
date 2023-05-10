@@ -1,8 +1,10 @@
-import sys
-import logging
+import argparse
 import flatdict
-import requests
 import json
+import logging
+import os
+import requests
+import sys
 from iyp import BaseCrawler
 
 # URL to ASRank API
@@ -86,24 +88,32 @@ class Crawler(BaseCrawler):
             self.iyp.batch_add_links('COUNTRY', country_links)
             self.iyp.batch_add_links('RANK', rank_links)
         
-# Main program
-if __name__ == '__main__':
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-    asrank = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
-        asrank.unit_test(logging)
+    logging.info(f'Started: {sys.argv}')
+
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
     else:
-        asrank.run()
-        asrank.close()
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
 
-    logging.info("End: %s" % sys.argv)
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
+

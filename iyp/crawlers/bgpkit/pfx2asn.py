@@ -1,9 +1,12 @@
-import sys
-import logging
-import requests
-from iyp import BaseCrawler
+import argparse
 import bz2
 import json
+import logging
+import os
+import requests
+import sys
+
+from iyp import BaseCrawler
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
 ORG = 'BGPKIT'
@@ -47,23 +50,32 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('ORIGINATE', links)
 
 
-if __name__ == '__main__':
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-    asnames = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
-        asnames.unit_test(logging)
-    else :
-        asnames.run()
-        asnames.close()
+    logging.info(f'Started: {sys.argv}')
 
-    logging.info("End: %s" % sys.argv)
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
+    else:
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
+
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
+

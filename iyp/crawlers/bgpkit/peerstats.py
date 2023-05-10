@@ -1,10 +1,13 @@
-import sys
-from datetime import datetime, timedelta, time, timezone
-import logging
-import requests
-from iyp import BaseCrawler
+import argparse
 import bz2
 import json
+import logging
+import requests
+import os
+import sys
+
+from datetime import datetime, timedelta, time, timezone
+from iyp import BaseCrawler
 
 MAIN_PAGE = 'https://data.bgpkit.com/peer-stats/'
 URL = 'https://data.bgpkit.com/peer-stats/{collector}/{year}/{month:02d}/peer-stats_{collector}_{year}-{month:02d}-{day:02d}_{epoch}.bz2'
@@ -81,23 +84,31 @@ class Crawler(BaseCrawler):
             # Push all links to IYP
             self.iyp.batch_add_links('PEERS_WITH', links)
 
-if __name__ == '__main__':
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-    asnames = Crawler(ORG, URL, NAME)
-    if len(sys.argv) > 1 and sys.argv[1] == 'unit_test':
-        asnames.unit_test(logging)
+    logging.info(f'Started: {sys.argv}')
+
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
     else:
-        asnames.run()
-        asnames.close()
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
 
-    logging.info("End: %s" % sys.argv)
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)

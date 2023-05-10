@@ -1,12 +1,12 @@
 # Simple Python script to fetch domain name to IP address mappings from OpenINTEL data
 # Based on code from Mattijs Jonker <m.jonker@utwente.nl>
 
+import argparse
 import arrow
 import os
 import sys
 import logging
 import requests
-import tarfile
 import datetime
 import boto3
 import botocore
@@ -154,24 +154,31 @@ class Crawler(BaseCrawler):
         # Push all links to IYP
         self.iyp.batch_add_links('RESOLVES_TO', links)
 
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-if __name__ == '__main__':
-
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+    if args.unit_test:
         crawler.unit_test(logging)
     else:
         crawler.run()
         crawler.close()
+    logging.info(f'Finished: {sys.argv}')
 
-    logging.info("End: %s" % sys.argv)
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)

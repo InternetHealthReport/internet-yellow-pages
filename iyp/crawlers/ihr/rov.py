@@ -1,7 +1,8 @@
-import sys
-import os
-import logging
+import argparse
 import arrow
+import logging
+import os
+import sys
 import requests
 import lz4.frame
 import csv
@@ -162,26 +163,32 @@ class Crawler(BaseCrawler):
         # Remove downloaded file
         os.remove(local_filename)
 
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
 
-# Main program
-if __name__ == '__main__':
-
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
+    if args.unit_test:
         crawler.unit_test(logging)
     else:
         crawler.run()
         crawler.close()
+    logging.info(f'Finished: {sys.argv}')
 
 
-    logging.info("End: %s" % sys.argv)
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
+

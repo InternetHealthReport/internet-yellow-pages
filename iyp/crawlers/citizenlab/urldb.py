@@ -1,6 +1,9 @@
-import sys
+import argparse
 import logging
+import os
 import requests
+import sys
+
 from bs4 import BeautifulSoup
 from iyp import BaseCrawler
 
@@ -74,23 +77,31 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('CATEGORIZED', links)
 
 
-# Main program
-if __name__ == '__main__':
-    script_name = sys.argv[0].replace('/', '_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
+
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/' + script_name + '.log',
-        level=logging.WARNING,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
-    logging.info("Started: %s" % sys.argv)
 
-    urldb = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 1 and sys.argv[1] == 'unit_test':
-        urldb.unit_test(logging)
+    logging.info(f'Started: {sys.argv}')
+
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
     else:
-        urldb.run()
-        urldb.close()
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
 
-    logging.info("End: %s" % sys.argv)
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
