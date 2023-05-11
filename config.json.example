@@ -44,7 +44,7 @@
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
             "iyp.crawlers.citizenlab.urldb",
-            "iyp.crawlers.inetintel.siblings_asdb"
+            "iyp.crawlers.inetintel.as_org"
         ]
     },
 
