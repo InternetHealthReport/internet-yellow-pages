@@ -13,6 +13,7 @@ from iyp import BaseCrawler
 # Organization name and URL to data
 ORG = 'Cloudflare'
 URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json'
+URL = ''
 URL_DL = 'https://api.cloudflare.com/client/v4/radar/datasets/download'
 NAME = 'cloudflare.ranking_bucket'
 
@@ -98,7 +99,7 @@ class Crawler(BaseCrawler):
                                            create=True)
 
             # Create RANK relationships
-            domain_links = [{'src_id': domain_ids[domain], 'dst_id': ranking_id, 'props': self.reference}
+            domain_links = [{'src_id': domain_ids[domain], 'dst_id': ranking_id, 'props': [self.reference]}
                             for domain in domains]
             if domain_links:
                 # Push RANK relationships to IYP
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     )
     logging.info(f'Started: {sys.argv}')
 
-    crawler = Crawler(ORG, '', NAME)
+    crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
         crawler.unit_test(logging)
     else:

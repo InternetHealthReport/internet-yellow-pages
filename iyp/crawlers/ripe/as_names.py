@@ -27,6 +27,12 @@ class Crawler(BaseCrawler):
         for line in req.text.splitlines():
             asn, _, name_cc = line.partition(' ')
             name, _, cc = name_cc.rpartition(', ')
+
+            # Country codes are two digits
+            if len(cc) > 2:
+                print(cc)
+                continue
+
             asn = int(asn)
             lines.append([ asn, name, cc ])
 
