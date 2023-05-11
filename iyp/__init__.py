@@ -371,7 +371,6 @@ class IYP(object):
 
         self.tx.run( matches+where+merges).consume()
 
-
     def close(self):
         """Commit pending queries and close IYP"""
         self.tx.commit()

@@ -8,6 +8,9 @@ python3 -m iyp.crawlers.manrs.members
 python3 -m iyp.crawlers.ripe.as_names                                                                                                                                                                                                                                                                                                            
 python3 -m iyp.crawlers.bgptools.as_names
 
+# AS Peers
+python3 -m iyp.crawlers.inetintel.siblings_asdb
+
 # Rankings
 python3 -m iyp.crawlers.apnic.eyeball
 python3 -m iyp.crawlers.caida.asrank                                                                                                                                                                                                                                                                                                            
@@ -36,6 +39,9 @@ python3 -m iyp.crawlers.peeringdb.ix
 
 # Delegated files
 python3 -m iyp.crawlers.nro.delegated_stats
+
+# URL data
+python3 -m iyp.crawlers.citizenlab.urldb
 
 echo "All crawlers finished"
 date
