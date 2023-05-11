@@ -127,8 +127,12 @@ class IYP(object):
 
         if self.db is None:
             sys.exit('Could not connect to the Neo4j database!')
-        else:
-            self.session = self.db.session()
+        # Raises an exception if there is a problem.
+        # "Best practice" is to just let the program
+        # crash: https://neo4j.com/docs/python-manual/current/connect/
+        self.db.verify_connectivity()
+
+        self.session = self.db.session()
 
         self._db_init()
         self.tx = self.session.begin_transaction()
@@ -437,8 +441,10 @@ class BaseCrawler(object):
         directory may not exist yet."""
 
         assert self.name != ''
+        if not root.endswith('/'):
+            root += '/'
 
-        return f'{root}/{self.name}/'
+        return f'{root}{self.name}/'
 
     def fetch(self):
         """Large datasets may be pre-fetched using this method. Currently the
