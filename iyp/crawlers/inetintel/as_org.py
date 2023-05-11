@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 import logging
 import os
 import re
@@ -33,7 +34,7 @@ def get_latest_dataset_url(inetintel_data_url: str, file_name_format: str):
 ORG = 'Internet Intelligence Lab'
 URL = get_latest_dataset_url('https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping/tree/master/data',
                              'ii.as-org.v01.%Y-%m.json')
-NAME = 'inetintel.siblings_asdb'  # should reflect the directory and name of this file
+NAME = 'inetintel.as_org'  # should reflect the directory and name of this file
 
 
 class Crawler(BaseCrawler):
@@ -44,10 +45,10 @@ class Crawler(BaseCrawler):
         """Fetch data and push to IYP. """
 
         # Create a temporary directory
-        tmpdir = tempfile.mkdtemp()
+        self.tmpdir = tempfile.mkdtemp()
 
         # Filename to save the JSON file as
-        filename = os.path.join(tmpdir, 'siblings_asn_dataset.json')
+        self.filename = os.path.join(self.tmpdir, 'inetintel_as_org.json')
 
         # Fetch data
         try:
@@ -59,28 +60,32 @@ class Crawler(BaseCrawler):
             logging.error(e)
             sys.exit('Error while fetching data file')
 
-        with open(filename, "w") as file:
+        with open(self.filename, "w") as file:
             file.write(req.text)
 
         print("Dataset crawled and saved in a temporary file.")
 
         # The dataset is very large. Pandas has the ability to read JSON, and, in theory, it could do it in a more
         # memory-efficient way.
-        df = pd.read_json(filename, orient='index')
+        df = pd.read_json(self.filename, orient='index')
         print("Dataset has {} rows.".format(len(df)))
 
         # Optimized code
         batch_size = 10000
         if len(df) < batch_size:
             batch_size = len(df)
+
         count_rows_global = 0
         count_relationships_global = 0
-        connections = {}  # connections are used to remember the relationship between the "AS" and its Sibling.
+        connections = defaultdict(set)  # Remember the relationship between the "AS" and its Sibling.
+        connections_org = defaultdict(set)  # Remember the relationship between the organizations
+        org_id = self.iyp.batch_get_node_extid('PeeringdbOrgID')
+
         for i in range(0, len(df), batch_size):
             df_batch = df.iloc[i:i + batch_size]
             batch_lines = []
             batch_asns = set()
-            batch_sibling_asns = set()
+            pdb_orgs = set()
             batch_urls = set()
             count_rows = 0
             count_relationships = 0
@@ -89,70 +94,80 @@ class Crawler(BaseCrawler):
                 asn = int(index)
                 batch_asns.add(asn)
                 sibling_asns = set()
+
                 for sibling_asn in row['Sibling ASNs']:
                     sibling_asns.add(int(sibling_asn))
-                    batch_sibling_asns.add(int(sibling_asn))
+                    batch_asns.add(int(sibling_asn))
+
+                pdb_orgs = set([int(org['org_id']) for org in row['Reference Orgs'] if org['source'] == 'PDB'])
+
                 url = row['Website']
                 if len(url) > 1:
                     batch_urls.add(url)
-                batch_lines.append([asn, url, sibling_asns])
+
+                batch_lines.append([asn, url, sibling_asns, pdb_orgs])
                 count_rows += 1
 
-            asn_id = self.iyp.batch_get_nodes('AS', 'asn', batch_asns)
-            sibling_id = self.iyp.batch_get_nodes('AS', 'asn', batch_sibling_asns)
-            url_id = self.iyp.batch_get_nodes('URL', 'url', batch_urls)
+            asn_id = self.iyp.batch_get_nodes('AS', 'asn', batch_asns, all=False)
+            url_id = self.iyp.batch_get_nodes('URL', 'url', batch_urls, all=False)
 
             asn_to_url_links = []
             asn_to_sibling_asn_links = []
+            org_to_sibling_org_links = []
 
-            for (asn, url, siblings) in batch_lines:
+            for (asn, url, siblings, pdb_orgs) in batch_lines:
                 asn_qid = asn_id[asn]
-                url_qid = url_id[url]
+
                 if len(url) > 1:
+                    url_qid = url_id[url]
                     asn_to_url_links.append({'src_id': asn_qid, 'dst_id': url_qid, 'props': [self.reference]})
+
+                for org0 in pdb_orgs:
+                    for org1 in pdb_orgs:
+                        if org0 in org_id and org1 in org_id:
+                            if org0 != org1 and org1 not in connections_org[org0]:
+                                org0_qid = org_id[org0]
+                                org1_qid = org_id[org1]
+                                org_to_sibling_org_links.append(
+                                    {'src_id': org0_qid, 'dst_id': org1_qid, 'props': [self.reference]})
+
+                                connections_org[org0].add(org1)
+                                connections_org[org1].add(org0)
+
                 for sibling in siblings:
-                    sibling_qid = sibling_id[sibling]
+                    sibling_qid = asn_id[sibling]
                     if asn_qid != sibling_qid:
                         # A check whether asn and sibling are connected already.
-                        if asn in connections:
-                            if sibling in connections[asn]:
-                                continue
-                            else:
-                                connections[asn].append(sibling)
-                                asn_to_sibling_asn_links.append(
-                                    {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-                                count_relationships += 1
+                        if asn in connections and sibling in connections[asn]:
+                            continue
+                        elif sibling in connections and asn in connections[sibling]:
+                            continue
                         else:
-                            if sibling in connections:
-                                if asn in connections[sibling]:
-                                    continue
-                                else:
-                                    connections[sibling].append(asn)
-                                    asn_to_sibling_asn_links.append(
-                                        {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-                                    count_relationships += 1
-                            else:
-                                connections[asn] = [sibling]
-                                asn_to_sibling_asn_links.append(
-                                    {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-                                count_relationships += 1
+                            connections[asn].add(sibling)
+                            asn_to_sibling_asn_links.append(
+                                {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
+                            count_relationships += 1
 
             # Push all links to IYP
             if len(asn_to_url_links) > 0:
-                try:
-                    self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
-                except neo4j.exceptions.Neo4jError as e:
-                    logging.error(e)
+                self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
 
             if len(asn_to_sibling_asn_links) > 0:
-                try:
-                    self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
-                except neo4j.exceptions.Neo4jError as e:
-                    logging.error(e)
+                self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
+
+            if len(org_to_sibling_org_links) > 0:
+                self.iyp.batch_add_links('SIBLING_OF', org_to_sibling_org_links)
 
             count_rows_global += count_rows
             count_relationships_global += count_relationships
-            print("processed: {} rows and {} relationships (directional)".format(count_rows_global, count_relationships_global))
+            print("processed: {} rows and {} relationships"
+                  .format(count_rows_global, count_relationships_global))
+
+    def close(self):
+        super().close()
+
+        os.remove(self.filename)
+        os.rmdir(self.tmpdir)
 
 
 def main() -> None:
