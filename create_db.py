@@ -15,9 +15,16 @@ NEO4J_VERSION = '5.1.0'
 today =  arrow.utcnow()
 date =  f'{today.year}-{today.month:02d}-{today.day:02d}'
 
-root = '/home/romain/Projects/perso/internet-yellow-pages/'
+# Uncomment the line below to use the current directory as root.
+# Alternatively, specify your own path.
+# root = os.path.dirname(os.path.realpath(__file__))
+root = ''
+if not root:
+    sys.exit('Please configure a root path.')
+if not root.endswith('/'):
+    root += '/'
 tmp_dir = f'{root}neo4j/tmp/{date}/'
-dump_dir = f'{root}/dumps/{today.year}/{today.month:02d}/{today.day:02d}/'
+dump_dir = f'{root}dumps/{today.year}/{today.month:02d}/{today.day:02d}/'
 
 os.makedirs(tmp_dir, exist_ok=True)
 os.makedirs(dump_dir, exist_ok=True)
