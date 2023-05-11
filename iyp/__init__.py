@@ -1,8 +1,11 @@
+import bz2
 import glob
 import logging
 import os
+import pickle
 import sys
 from datetime import datetime, time, timezone
+from shutil import rmtree
 from neo4j import GraphDatabase
 from neo4j.exceptions import ConstraintError
 
@@ -467,3 +470,27 @@ class BaseCrawler(object):
     def close(self):
         # Commit changes to IYP
         self.iyp.close()
+
+
+class CacheHandler:
+    def __init__(self, dir: str, prefix: str) -> None:
+        self.cache_dir = dir
+        self.cache_file_prefix = dir + prefix
+        self.cache_file_suffix = '.pickle.bz2'
+
+    def cached_object_exists(self, object_name: str) -> bool:
+        cache_file = f'{self.cache_file_prefix}{object_name}{self.cache_file_suffix}'
+        return os.path.exists(cache_file)
+
+    def load_cached_object(self, object_name: str):
+        cache_file = f'{self.cache_file_prefix}{object_name}{self.cache_file_suffix}'
+        with bz2.open(cache_file, 'rb') as f:
+            return pickle.load(f)
+
+    def save_cached_object(self, object_name: str, object) -> None:
+        cache_file = f'{self.cache_file_prefix}{object_name}{self.cache_file_suffix}'
+        with bz2.open(cache_file, 'wb') as f:
+            pickle.dump(object, f)
+
+    def clear_cache(self) -> None:
+        rmtree(self.cache_dir)
