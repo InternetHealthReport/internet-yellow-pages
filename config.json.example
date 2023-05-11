@@ -49,7 +49,7 @@
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
             "iyp.crawlers.citizenlab.urldb",
-            "iyp.crawlers.inetintel.as_org"
+            "iyp.crawlers.inetintel.as_org",
             "iyp.crawlers.pch.daily_routing_snapshots_v4",
             "iyp.crawlers.pch.daily_routing_snapshots_v6"
         ]
