@@ -81,9 +81,8 @@ class Crawler(BaseCrawler):
             self.iyp.batch_add_links('RANK', rank_links)
             self.iyp.batch_add_links('POPULATION', pop_links)
 
-        
-# Main program
-if __name__ == '__main__':
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
@@ -99,10 +98,15 @@ if __name__ == '__main__':
 
     logging.info(f'Started: {sys.argv}')
 
-    apnic = Crawler(ORG, URL, NAME)
+    crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        apnic.unit_test(logging)
-    else :
-        apnic.run()
-        apnic.close()
+        crawler.unit_test(logging)
+    else:
+        crawler.run()
+        crawler.close()
     logging.info(f'Finished: {sys.argv}')
+
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)

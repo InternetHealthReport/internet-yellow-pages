@@ -1,9 +1,11 @@
-import os
-import sys
+import argparse
 import logging
-import requests
-import tempfile
+import os
 import re
+import requests
+import sys
+import tempfile
+
 import pandas as pd
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -21,9 +23,9 @@ def get_latest_dataset_url(inetintel_data_url: str, file_name_format: str):
         all_date.append(date_element.text)
     latest_date = datetime.strptime(all_date[-1], '%Y-%m')
     dateset_file_name: str = latest_date.strftime(file_name_format)
-    inetintel_data_url: str = inetintel_data_url.replace('github.com', 'raw.githubusercontent.com')
-    inetintel_data_url: str = inetintel_data_url.replace('tree/', '')
-    full_url: str = f'{inetintel_data_url}/{all_date[-1]}/{dateset_file_name}'
+    inetintel_data_url_formated: str = inetintel_data_url.replace('github.com', 'raw.githubusercontent.com')
+    inetintel_data_url_formated = inetintel_data_url_formated.replace('tree/', '')
+    full_url: str = f'{inetintel_data_url_formated}/{all_date[-1]}/{dateset_file_name}'
     return full_url
 
 
@@ -67,11 +69,8 @@ class Crawler(BaseCrawler):
         df = pd.read_json(filename, orient='index')
         print("Dataset has {} rows.".format(len(df)))
 
-        # Use df.head() to read the first 100 entries in the JSON dataset
-        # df_10 = df.head(10)
-
         # Optimized code
-        batch_size = 1000
+        batch_size = 10000
         if len(df) < batch_size:
             batch_size = len(df)
         count_rows_global = 0
@@ -156,23 +155,31 @@ class Crawler(BaseCrawler):
             print("processed: {} rows and {} relationships (directional)".format(count_rows_global, count_relationships_global))
 
 
-# Main program
-if __name__ == '__main__':
-    scriptname = sys.argv[0].replace('/', '_')[0:-3]
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_true')
+    args = parser.parse_args()
+
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/' + scriptname + '.log',
-        level=logging.WARNING,
+        filename='log/'+scriptname+'.log',
+        level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
-    logging.info("Started: %s" % sys.argv)
 
-    siblings_asdb = Crawler(ORG, URL, NAME)
-    if len(sys.argv) == 2 and sys.argv[1] == 'unit_test':
-        siblings_asdb.unit_test(logging)
+    logging.info(f'Started: {sys.argv}')
+
+    crawler = Crawler(ORG, URL, NAME)
+    if args.unit_test:
+        crawler.unit_test(logging)
     else:
-        siblings_asdb.run()
-        siblings_asdb.close()
+        crawler.run()
+        crawler.close()
+    logging.info(f'Finished: {sys.argv}')
 
-    logging.info("End: %s" % sys.argv)
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
