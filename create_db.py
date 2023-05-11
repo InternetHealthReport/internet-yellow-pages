@@ -64,16 +64,35 @@ container = client.containers.run(
 
 # Wait for the container to be ready
 timeout = 120
-stop_time = 3
+stop_time = 1
 elapsed_time = 0
+container_ready = False
 
-# FIXME: this is not working?
-while container.status != 'running' and elapsed_time < timeout:
+while elapsed_time < timeout:
     sleep(stop_time)
     elapsed_time += stop_time
-    #container.reload()
-    continue
+    # Not the most premium solution, but the alternative is using
+    # stream=True, which creates a blocking generator that we have
+    # to somehow interrupt in case the database does not start
+    # correctly. And writing a signal handler just for this seems
+    # overkill.
+    last_msg = container.logs(stderr=False, tail=1)
+    if last_msg.endswith(b'Started.\n'):
+        logging.warning('Container ready.')
+        container_ready = True
+        break
 
+if not container_ready:
+    logging.error('Timed our while waiting for container to start.')
+    try:
+        container_logs = container.logs().decode('utf-8')
+    except Exception as e:
+        logging.error(f'Can not get logs from container: {e}')
+        sys.exit('Problem while starting the container.')
+    logging.error(f'Container logs:\n{container_logs}')
+    logging.error('Trying to stop container...')
+    container.stop()
+    sys.exit('Problem while starting the container.')
 
 ########## Fetch data and feed to neo4j ##########
 
