@@ -1,18 +1,21 @@
-import sys
 import logging
-from SPARQLWrapper import SPARQLWrapper, JSON
-# TODO fetch PIDs with sparql, and make it a standalone script 
+import sys
+
+import radix
+from SPARQLWrapper import JSON, SPARQLWrapper
+
+# TODO fetch PIDs with sparql, and make it a standalone script
 # (no need for fancy pywikibot setup)
 from iyp.wiki.wikihandy import DEFAULT_WIKI_SPARQL, Wikihandy
-import radix
+
 
 class ip2plan(object):
 
     def __init__(self, wikihandy=None, sparql=DEFAULT_WIKI_SPARQL):
-        """Fetch peering lans and their corresponding IXP from iyp. 
+        """Fetch peering lans and their corresponding IXP from iyp.
 
-            wikihandy: a Wikihandy instance to use. A new will be created if 
-            this is set to None.
+        wikihandy: a Wikihandy instance to use. A new will be created if
+        this is set to None.
         """
 
         logging.info('ip2plan initialization...\n')
@@ -28,19 +31,19 @@ class ip2plan(object):
         # Fetch prefixes
         QUERY = """
         SELECT ?item ?prefix ?ix_qid ?org_qid
-        WHERE 
+        WHERE
         {
                 ?item wdt:%s wd:%s.
-                ?item rdfs:label ?prefix. 
+                ?item rdfs:label ?prefix.
                 ?item wdt:%s ?ix_qid.
                 ?ix_qid wdt:%s ?org_qid.
-        } 
+        }
         """ % (
-                self.wh.get_pid('instance of'), 
-                self.wh.get_qid('peering LAN') , 
-                self.wh.get_pid('managed by') , 
-                self.wh.get_pid('managed by') , 
-                )
+                self.wh.get_pid('instance of'),
+                self.wh.get_qid('peering LAN'),
+                self.wh.get_pid('managed by'),
+                self.wh.get_pid('managed by'),
+        )
         # Query wiki
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)
@@ -62,15 +65,17 @@ class ip2plan(object):
 
         logging.info(QUERY)
         logging.info(f'Found {len(self.rtree.nodes())} peering LANs')
-     
+
     def lookup(self, ip):
         """Lookup for the given ip address.
-        Returns a dictionary with the corresponding prefix and ASN, as well as
-        the corresponding QIDs."""
+
+        Returns a dictionary with the corresponding prefix and ASN, as well as the
+        corresponding QIDs.
+        """
         try:
             node = self.rtree.search_best(ip)
         except ValueError:
-            print("Wrong IP address: %s" % ip)
+            print('Wrong IP address: %s' % ip)
             return None
 
         if node is None:
@@ -79,16 +84,16 @@ class ip2plan(object):
             return node.data
 
 
-if __name__ == "__main__":
-    
-    if len(sys.argv)<2:
-        print(f"usage: {sys.argv[0]} IP")
+if __name__ == '__main__':
+
+    if len(sys.argv) < 2:
+        print(f'usage: {sys.argv[0]} IP')
         sys.exit()
-    
+
     ip = sys.argv[1]
     ia = ip2plan()
     res = ia.lookup(ip)
     if res is None:
-        print("Unknown")
+        print('Unknown')
     else:
         print(res)

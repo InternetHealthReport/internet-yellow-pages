@@ -2,21 +2,23 @@ import logging
 import re
 import sys
 from collections import defaultdict, namedtuple
-from ipaddress import AddressValueError, IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from ipaddress import (AddressValueError, IPv4Address, IPv4Network,
+                       IPv6Address, IPv6Network)
 from typing import Tuple
-
 
 Route = namedtuple('Route', 'status_codes network next_hop metric weight path origin_code')
 
 
 class ShowBGPParser:
-    """A parser that transforms the output of a Cisco-style 'show ip bgp' command to a prefix-AS
-    map.
+    """A parser that transforms the output of a Cisco-style 'show ip bgp' command to a
+    prefix-AS map.
 
-    Supports IPv4 and IPv6 output. Note that this was only tested on PCH route collector data [0],
-    so there might be edge cases that break the parser, which are not showing up in this data.
+    Supports IPv4 and IPv6 output. Note that this was only tested on PCH route collector
+    data [0], so there might be edge cases that break the parser, which are not showing
+    up in this data.
 
-    [0] https://www.pch.net/resources/Routing_Data/
+    [0]
+    https://www.pch.net/resources/Routing_Data/
     """
 
     def __init__(self, af: int) -> None:
@@ -66,11 +68,10 @@ class ShowBGPParser:
     def __parse_line(self, line_split: list, last_pfx: str) -> Route:
         """Parse a single line into a Route object.
 
-        Since the number of fields is not the same for all lines
-        (e.g., some lines do not have a network field, but inherit
-        it from the previous line), instead of juggling indexes, this
-        function mostly looks at the first entry and pops it from the
-        list once it has been processed.
+        Since the number of fields is not the same for all lines (e.g., some lines do
+        not have a network field, but inherit it from the previous line), instead of
+        juggling indexes, this function mostly looks at the first entry and pops it from
+        the list once it has been processed.
         """
         if ':' not in line_split[0] and set(line_split[0]).intersection(self.status_codes.keys()):
             # Not all lines have a status code apparently.
@@ -145,9 +146,8 @@ class ShowBGPParser:
     def __build_prefix_map(self, routes: list) -> dict:
         """Build a prefix map from the list of Route objects.
 
-        Only include routes that have a 'valid' status code and
-        whose origin code is _not_ 'incomplete'. Ignore AS sets for
-        now.
+        Only include routes that have a 'valid' status code and whose origin code is
+        _not_ 'incomplete'. Ignore AS sets for now.
         """
         prefix_map = defaultdict(set)
         not_valid_routes = 0
@@ -182,9 +182,7 @@ class ShowBGPParser:
         return prefix_map
 
     def parse_file(self, input_file: str) -> dict:
-        """Read a file containing the input and return a prefix-AS
-        map.
-        """
+        """Read a file containing the input and return a prefix-AS map."""
         with open(input_file, 'r') as f:
             return self.parse(f.read())
 

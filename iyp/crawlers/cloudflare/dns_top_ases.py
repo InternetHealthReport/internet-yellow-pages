@@ -1,8 +1,9 @@
 import argparse
-import flatdict
 import logging
 import os
 import sys
+
+import flatdict
 
 from iyp.crawlers.cloudflare.dns_top_locations import Crawler
 
@@ -15,7 +16,7 @@ NAME = 'cloudflare.dns_top_ases'
 class Crawler(Crawler):
 
     def run(self):
-        """Push data to IYP. """
+        """Push data to IYP."""
 
         self.as_id = self.iyp.batch_get_nodes('AS', 'asn')
 
@@ -36,10 +37,10 @@ class Crawler(Crawler):
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
             self.statements.append({
-                     'src_id': self.domain_names_id[domain],
-                     'dst_id': self.as_id[asn],
-                     'props': [flat_prop, self.reference]
-                     })
+                'src_id': self.domain_names_id[domain],
+                'dst_id': self.as_id[asn],
+                'props': [flat_prop, self.reference]
+            })
 
 
 def main() -> None:
@@ -51,7 +52,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

@@ -23,7 +23,7 @@ MIN_HEGE = 0.01
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
-        """Initialize IYP """
+        """Initialize IYP."""
 
         # list of countries
         self.countries = iso3166.countries_by_alpha2
@@ -39,14 +39,14 @@ class Crawler(BaseCrawler):
         super().__init__(organization, url, name)
 
     def run(self):
-        """Fetch data from API and push to IYP. """
+        """Fetch data from API and push to IYP."""
 
         for cc, _ in self.countries.items():
             # Query IHR
             self.url = URL.format(country=cc)
-            req = self.http_session.get(self.url+'&format=json')
+            req = self.http_session.get(self.url + '&format=json')
             if req.status_code != 200:
-                sys.exit('Error while fetching data for '+cc)
+                sys.exit('Error while fetching data for ' + cc)
             data = json.loads(req.text)
             ranking = data['results']
 
@@ -125,7 +125,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

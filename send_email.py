@@ -11,7 +11,12 @@ with open('config.json', 'r') as fp:
 
 def send_email(e):
     email_config = conf.get('email')
-    if email_config is not None and email_config['email_address'] != "" and email_config['smtp_server'] != "" and email_config['smtp_port'] != "" and email_config['username'] != "" and email_config['password'] != "":
+    if email_config is not None \
+            and email_config['email_address'] != '' \
+            and email_config['smtp_server'] != '' \
+            and email_config['smtp_port'] != '' \
+            and email_config['username'] != '' \
+            and email_config['password'] != '':
         # Send an email
         sender = email_config['email_address']
         recipient = sender
@@ -38,18 +43,18 @@ def send_email(e):
                   </body>
                 </html>
                 """,
-            subtype="html",
+            subtype='html',
         )
 
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(username, password)
             server.sendmail(sender, recipient, msg.as_string())
-            logging.info("Email sent")
+            logging.info('Email sent')
             server.quit()
     else:
         print('Email credentials not found in config file')
 
 
-if __name__ == "__main__":
-    send_email("Error when running Crawler 6")
+if __name__ == '__main__':
+    send_email('Error when running Crawler 6')

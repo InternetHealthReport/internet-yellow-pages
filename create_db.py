@@ -33,12 +33,12 @@ os.makedirs(dump_dir, exist_ok=True)
 scriptname = sys.argv[0].replace('/', '_')[0:-3]
 FORMAT = '%(asctime)s %(processName)s %(message)s'
 logging.basicConfig(
-        format=FORMAT,
-        filename=f'{dump_dir}iyp-{date}.log',
-        level=logging.WARNING,
-        datefmt='%Y-%m-%d %H:%M:%S'
-        )
-logging.warning("Started: %s" % sys.argv)
+    format=FORMAT,
+    filename=f'{dump_dir}iyp-{date}.log',
+    level=logging.WARNING,
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logging.warning('Started: %s' % sys.argv)
 
 # Load configuration file
 with open('config.json', 'r') as fp:
@@ -51,23 +51,23 @@ client = docker.from_env()
 
 logging.warning('Starting new container...')
 container = client.containers.run(
-        'neo4j:'+NEO4J_VERSION,
-        name=f'iyp-{date}',
-        ports={
-            7474: 7474,
-            7687: 7687
-            },
-        volumes={
-            tmp_dir: {'bind': '/data', 'mode': 'rw'},
-            },
-        environment={
-            'NEO4J_AUTH': 'neo4j/password',
-            'NEO4J_server_memory_heap_initial__size': '16G',
-            'NEO4J_server_memory_heap_max__size': '16G',
-            },
-        remove=True,
-        detach=True
-    )
+    'neo4j:' + NEO4J_VERSION,
+    name=f'iyp-{date}',
+    ports={
+        7474: 7474,
+        7687: 7687
+    },
+    volumes={
+        tmp_dir: {'bind': '/data', 'mode': 'rw'},
+    },
+    environment={
+        'NEO4J_AUTH': 'neo4j/password',
+        'NEO4J_server_memory_heap_initial__size': '16G',
+        'NEO4J_server_memory_heap_max__size': '16G',
+    },
+    remove=True,
+    detach=True
+)
 
 # Wait for the container to be ready
 timeout = 120
@@ -115,7 +115,7 @@ for module_name in conf['iyp']['crawlers']:
         crawler = module.Crawler(module.ORG, module.URL, name)
         crawler.run()
         crawler.close()
-        status[module_name] = "OK"
+        status[module_name] = 'OK'
         logging.warning(f'end {module}')
 
     except Exception as e:
@@ -136,7 +136,7 @@ for module_name in conf['iyp']['post']:
         post = module.PostProcess()
         post.run()
         post.close()
-        status[module_name] = "OK"
+        status[module_name] = 'OK'
         logging.warning(f'end {module}')
 
     except Exception as e:
@@ -160,7 +160,7 @@ if os.path.exists(f'{dump_dir}/neo4j.dump'):
 os.chmod(dump_dir, 0o777)
 
 container = client.containers.run(
-    'neo4j/neo4j-admin:'+NEO4J_VERSION,
+    'neo4j/neo4j-admin:' + NEO4J_VERSION,
     command='neo4j-admin database dump neo4j --to-path=/dumps --verbose',
     tty=True,
     stdin_open=True,
@@ -168,7 +168,7 @@ container = client.containers.run(
     volumes={
         tmp_dir: {'bind': '/data', 'mode': 'rw'},
         dump_dir: {'bind': '/dumps', 'mode': 'rw'},
-        }
+    }
 )
 
 # rename dump
@@ -185,4 +185,4 @@ else:
 # Delete tmp file in cron job
 #    shutil.rmtree(tmp_dir)
 
-logging.warning(f"Finished: {sys.argv} {final_words}")
+logging.warning(f'Finished: {sys.argv} {final_words}')
