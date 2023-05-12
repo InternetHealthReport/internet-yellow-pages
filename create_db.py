@@ -1,19 +1,20 @@
 import importlib
-import os
 import json
 import logging
-import shutil
+import os
+# import shutil
 import sys
+from time import sleep
+
 import arrow
 import docker
 
-from time import sleep
 from send_email import send_email
 
 NEO4J_VERSION = '5.1.0'
 
-today =  arrow.utcnow()
-date =  f'{today.year}-{today.month:02d}-{today.day:02d}'
+today = arrow.utcnow()
+date = f'{today.year}-{today.month:02d}-{today.day:02d}'
 
 # Use the current directory as root.
 root = os.path.dirname(os.path.realpath(__file__))
@@ -29,12 +30,12 @@ os.makedirs(tmp_dir, exist_ok=True)
 os.makedirs(dump_dir, exist_ok=True)
 
 # Initialize logging
-scriptname = sys.argv[0].replace('/','_')[0:-3]
+scriptname = sys.argv[0].replace('/', '_')[0:-3]
 FORMAT = '%(asctime)s %(processName)s %(message)s'
 logging.basicConfig(
-        format=FORMAT, 
+        format=FORMAT,
         filename=f'{dump_dir}iyp-{date}.log',
-        level=logging.WARNING, 
+        level=logging.WARNING,
         datefmt='%Y-%m-%d %H:%M:%S'
         )
 logging.warning("Started: %s" % sys.argv)
@@ -46,25 +47,25 @@ with open('config.json', 'r') as fp:
 # Start a new neo4j container
 client = docker.from_env()
 
-########## Start a new docker image ##########
+# ######### Start a new docker image ##########
 
 logging.warning('Starting new container...')
 container = client.containers.run(
-        'neo4j:'+NEO4J_VERSION, 
-        name = f'iyp-{date}',
-        ports = {
+        'neo4j:'+NEO4J_VERSION,
+        name=f'iyp-{date}',
+        ports={
             7474: 7474,
             7687: 7687
             },
-        volumes = {
-            tmp_dir: {'bind': '/data', 'mode': 'rw'}, 
+        volumes={
+            tmp_dir: {'bind': '/data', 'mode': 'rw'},
             },
-        environment = {
+        environment={
             'NEO4J_AUTH': 'neo4j/password',
             'NEO4J_server_memory_heap_initial__size': '16G',
             'NEO4J_server_memory_heap_max__size': '16G',
             },
-        remove = True,
+        remove=True,
         detach=True
     )
 
@@ -100,7 +101,7 @@ if not container_ready:
     container.stop()
     sys.exit('Problem while starting the container.')
 
-########## Fetch data and feed to neo4j ##########
+# ######### Fetch data and feed to neo4j ##########
 
 logging.warning('Fetching data...')
 status = {}
@@ -124,7 +125,7 @@ for module_name in conf['iyp']['crawlers']:
         send_email(e)
 
 
-########## Post processing scripts ##########
+# ######### Post processing scripts ##########
 
 logging.warning('Post-processing...')
 for module_name in conf['iyp']['post']:
@@ -146,7 +147,7 @@ for module_name in conf['iyp']['post']:
         status[module_name] = e
 
 
-########## Stop container and dump DB ##########
+# ######### Stop container and dump DB ##########
 
 logging.warning('Stopping container...')
 container.stop(timeout=180)
@@ -160,13 +161,13 @@ os.chmod(dump_dir, 0o777)
 
 container = client.containers.run(
     'neo4j/neo4j-admin:'+NEO4J_VERSION,
-    command = 'neo4j-admin database dump neo4j --to-path=/dumps --verbose',
-    tty = True,
-    stdin_open = True,
-    remove = True,
-    volumes = {
-        tmp_dir: {'bind': '/data', 'mode': 'rw'}, 
-        dump_dir: {'bind': '/dumps', 'mode': 'rw'}, 
+    command='neo4j-admin database dump neo4j --to-path=/dumps --verbose',
+    tty=True,
+    stdin_open=True,
+    remove=True,
+    volumes={
+        tmp_dir: {'bind': '/data', 'mode': 'rw'},
+        dump_dir: {'bind': '/dumps', 'mode': 'rw'},
         }
 )
 
@@ -178,7 +179,7 @@ if not no_error:
     # TODO send an email
     final_words += 'There was errors!'
     logging.error('there was errors!\n')
-    logging.error({k:error for k, error in status.items() if error!='OK'})
+    logging.error({k: error for k, error in status.items() if error != 'OK'})
 else:
     final_words = 'No error :)'
 # Delete tmp file in cron job
