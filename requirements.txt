@@ -16,3 +16,5 @@ pandas
 fastparquet
 flatdict
 requests_futures
+autopep8
+flake8
