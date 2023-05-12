@@ -15,16 +15,15 @@ NEO4J_VERSION = '5.1.0'
 today =  arrow.utcnow()
 date =  f'{today.year}-{today.month:02d}-{today.day:02d}'
 
-# Uncomment the line below to use the current directory as root.
+# Use the current directory as root.
+root = os.path.dirname(os.path.realpath(__file__))
 # Alternatively, specify your own path.
-# root = os.path.dirname(os.path.realpath(__file__))
-root = ''
+# root = ''
 if not root:
     sys.exit('Please configure a root path.')
-if not root.endswith('/'):
-    root += '/'
-tmp_dir = f'{root}neo4j/tmp/{date}/'
-dump_dir = f'{root}dumps/{today.year}/{today.month:02d}/{today.day:02d}/'
+
+tmp_dir = os.path.join(root, 'neo4j/tmp', date, '')
+dump_dir = os.path.join(root, 'dumps', f'{today.year}/{today.month:02d}/{today.day:02d}', '')
 
 os.makedirs(tmp_dir, exist_ok=True)
 os.makedirs(dump_dir, exist_ok=True)
