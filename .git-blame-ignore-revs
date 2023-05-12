@@ -1,0 +1,8 @@
+# Run this command to always ignore formatting commits in `git blame`
+# git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Codebase reformat
+eec710884f15bf87b1ebe8872802d8ec573a55a8
+# Romain's miscellaneous cleanups before codebase reformat
+a9638823aaeeeae99150c93074ac3d90fc2a4673
+5247aee3a5d40deaa9e12c06bc92d1ee22a02174
