@@ -1,18 +1,21 @@
-import sys
 import logging
-from SPARQLWrapper import SPARQLWrapper, JSON
-# TODO fetch PIDs with sparql, and make it a standalone script 
+import sys
+
+import radix
+from SPARQLWrapper import JSON, SPARQLWrapper
+
+# TODO fetch PIDs with sparql, and make it a standalone script
 # (no need for fancy pywikibot setup)
 from iyp.wiki.wikihandy import DEFAULT_WIKI_SPARQL, Wikihandy
-import radix
+
 
 class ip2asn(object):
 
     def __init__(self, wikihandy=None, sparql=DEFAULT_WIKI_SPARQL):
-        """Fetch routing prefixes and their origin AS from iyp. 
+        """Fetch routing prefixes and their origin AS from iyp.
 
-            wikihandy: a Wikihandy instance to use. A new will be created if 
-            this is set to None.
+        wikihandy: a Wikihandy instance to use. A new will be created if
+        this is set to None.
         """
 
         logging.info('ip2asn initialization...\n')
@@ -29,19 +32,19 @@ class ip2asn(object):
         QUERY = """
         #Items that have a pKa value set
         SELECT ?item ?prefix ?as_qid ?asn
-        WHERE 
+        WHERE
         {
                 ?item wdt:%s wd:%s.
-                ?item rdfs:label ?prefix. 
+                ?item rdfs:label ?prefix.
                 ?item wdt:%s ?as_qid.
                 ?as_qid wdt:%s ?asn.
-        } 
+        }
         """ % (
-                self.wh.get_pid('instance of'), 
-                self.wh.get_qid('IP routing prefix') , 
-                self.wh.get_pid('originated by') , 
-                self.wh.get_pid('autonomous system number') , 
-                )
+                self.wh.get_pid('instance of'),
+                self.wh.get_qid('IP routing prefix'),
+                self.wh.get_pid('originated by'),
+                self.wh.get_pid('autonomous system number'),
+        )
         # Query wiki
         self.sparql.setQuery(QUERY)
         self.sparql.setReturnFormat(JSON)
@@ -60,15 +63,17 @@ class ip2asn(object):
             rnode.data['asn'] = asn
             rnode.data['prefix_qid'] = prefix_qid
             rnode.data['as_qid'] = as_qid
-     
+
     def lookup(self, ip):
         """Lookup for the given ip address.
-        Returns a dictionary with the corresponding prefix and ASN, as well as
-        the corresponding QIDs."""
+
+        Returns a dictionary with the corresponding prefix and ASN, as well as the
+        corresponding QIDs.
+        """
         try:
             node = self.rtree.search_best(ip)
         except ValueError:
-            print("Wrong IP address: %s" % ip)
+            print('Wrong IP address: %s' % ip)
             return None
 
         if node is None:
@@ -77,16 +82,16 @@ class ip2asn(object):
             return node.data
 
 
-if __name__ == "__main__":
-    
-    if len(sys.argv)<2:
-        print(f"usage: {sys.argv[0]} IP")
+if __name__ == '__main__':
+
+    if len(sys.argv) < 2:
+        print(f'usage: {sys.argv[0]} IP')
         sys.exit()
-    
+
     ip = sys.argv[1]
     ia = ip2asn()
     res = ia.lookup(ip)
     if res is None:
-        print("Unknown")
+        print('Unknown')
     else:
         print(res)

@@ -2,7 +2,6 @@ import gzip
 import json
 import logging
 import os
-import re
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -11,14 +10,13 @@ from typing import Iterable, Tuple
 
 from bs4 import BeautifulSoup
 from bs4.element import ResultSet
-from requests_futures.sessions import FuturesSession
 from requests.adapters import HTTPAdapter, Response
 from requests.exceptions import ChunkedEncodingError
+from requests_futures.sessions import FuturesSession
 from urllib3.util.retry import Retry
 
 from iyp import BaseCrawler, CacheHandler
 from iyp.crawlers.pch.show_bgp_parser import ShowBGPParser
-
 
 PARALLEL_DOWNLOADS = 8
 PARALLEL_PARSERS = 8
@@ -31,20 +29,20 @@ if os.path.exists('config.json'):
 class RoutingSnapshotCrawler(BaseCrawler):
     """Crawler for PCH route collector data[0].
 
-    Fetches the latest IPv4/IPv6 snapshots in parallel from the PCH
-    website and converts them to prefix-AS maps in parallel. This
-    data is used to populate (:AS)-[:ORIGINATE]->(:Prefix) entries
-    in the graph.
+    Fetches the latest IPv4/IPv6 snapshots in parallel from the PCH website and converts
+    them to prefix-AS maps in parallel. This data is used to populate
+    (:AS)-[:ORIGINATE]->(:Prefix) entries in the graph.
 
-    If there are no results for the current day for some collectors,
-    the crawler tries to fetch older results, up to a maximum of
-    7 days (configured by self.MAX_LOOKBACK).
+    If there are no results for the current day for some collectors, the crawler tries
+    to fetch older results, up to a maximum of 7 days (configured by self.MAX_LOOKBACK).
 
-    Caches individual route collector entries to prevent restarting
-    from the beginning when interrupted.
+    Caches individual route collector entries to prevent restarting from the beginning
+    when interrupted.
 
-    [0] https://www.pch.net/resources/Routing_Data/
+    [0]
+    https://www.pch.net/resources/Routing_Data/
     """
+
     def __init__(self, organization: str, url: str, name: str, af: int):
         """af: Address family of the crawler. Must be 4 or 6."""
         if af not in (4, 6):
@@ -105,14 +103,13 @@ class RoutingSnapshotCrawler(BaseCrawler):
         return False, str(), str()
 
     def fetch_collector_site(self) -> str:
-        """Fetch the HTML code of the collector site for the current
-        month.
+        """Fetch the HTML code of the collector site for the current month.
 
-        If the site does not yet exist, check the previous month,
-        as long as it is within the lookback interval.
+        If the site does not yet exist, check the previous month, as long as it is
+        within the lookback interval.
         """
-        logging.info(f'Fetching list of collectors.')
-        print(f'Fetching list of collectors.')
+        logging.info('Fetching list of collectors.')
+        print('Fetching list of collectors.')
         today = datetime.now(tz=timezone.utc)
         self.collector_site_url = self.url + today.strftime('%Y/%m/')
         resp = self.session.get(self.collector_site_url).result()
@@ -145,9 +142,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         return collector_names
 
     def make_url(self, collector_name: str, date: datetime) -> str:
-        """Create file URLs based on the template and gathered route
-        collector names.
-        """
+        """Create file URLs based on the template and gathered route collector names."""
         file_name = self.file_format.format(collector=collector_name,
                                             year=date.year,
                                             month=date.month,
@@ -156,16 +151,15 @@ class RoutingSnapshotCrawler(BaseCrawler):
         return file_url
 
     def probe_latest_set(self, collector_name: str) -> datetime:
-        """Find the date of the latest available dataset for the
-        specified collector.
+        """Find the date of the latest available dataset for the specified collector.
 
-        Start with the current date and look up to MAX_LOOKBACK days
-        into the past if no current data is found.
+        Start with the current date and look up to MAX_LOOKBACK days into the past if no
+        current data is found.
 
         Return None if no data is found within the valid interval.
         """
-        logging.info(f'Probing latest available dataset.')
-        print(f'Probing latest available dataset.')
+        logging.info('Probing latest available dataset.')
+        print('Probing latest available dataset.')
         curr_date = datetime.now(tz=timezone.utc)
         max_lookback = curr_date - self.MAX_LOOKBACK
         while curr_date >= max_lookback:
@@ -180,24 +174,21 @@ class RoutingSnapshotCrawler(BaseCrawler):
                 print(f'Latest available dataset: {curr_date.strftime("%Y-%m-%d")}')
                 return curr_date
             curr_date -= timedelta(days=1)
-        logging.error(f'Failed to find current data.')
+        logging.error('Failed to find current data.')
         print('Failed to find current data.', file=sys.stderr)
         return None
 
     def fetch(self) -> bool:
         """Fetch and cache all data.
 
-        First get a list of collector names and their associated
-        files. Then fetch the files in parallel. If some files are
-        not available for the current date, try fetching older data
-        as long as it is within the lookback interval.
+        First get a list of collector names and their associated files. Then fetch the
+        files in parallel. If some files are not available for the current date, try
+        fetching older data as long as it is within the lookback interval.
 
-        All downloaded files are cached, so if this process is
-        restarted, only files that are not in the cache are fetched,
-        the rest is loaded from cache.
+        All downloaded files are cached, so if this process is restarted, only files
+        that are not in the cache are fetched, the rest is loaded from cache.
 
-        Return True if there was an error during the fetching
-        process, else False.
+        Return True if there was an error during the fetching process, else False.
         """
         collector_names_name = 'collectors'
 
@@ -247,7 +238,8 @@ class RoutingSnapshotCrawler(BaseCrawler):
         if to_fetch:
             logging.info(f'{len(self.collector_files)}/{len(collector_names)} collector files in cache, fetching '
                          f'{len(to_fetch)}')
-            print(f'{len(self.collector_files)}/{len(collector_names)} collector files in cache, fetching {len(to_fetch)}')
+            print(f'{len(self.collector_files)}/{len(collector_names)} collector files in cache, fetching '
+                  f'{len(to_fetch)}')
 
             # If some collectors do not have current data available,
             # try again until the max lookback window is reached.
@@ -282,9 +274,8 @@ class RoutingSnapshotCrawler(BaseCrawler):
         return False
 
     def run(self) -> None:
-        """Fetch data from PCH, parse the files, and push nodes and
-        relationships to the database.
-        """
+        """Fetch data from PCH, parse the files, and push nodes and relationships to the
+        database."""
         # Pre-fetch all data.
         if self.fetch():
             return

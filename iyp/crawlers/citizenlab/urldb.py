@@ -1,10 +1,11 @@
 import argparse
 import logging
 import os
-import requests
 import sys
 
+import requests
 from bs4 import BeautifulSoup
+
 from iyp import BaseCrawler
 
 # Organization name and URL to data
@@ -15,7 +16,7 @@ NAME = 'citizenlab.urldb'  # should reflect the directory and name of this file
 
 def generate_url(suffix):
     base_url = URL
-    joined_url = "".join([base_url, suffix, ".csv"])
+    joined_url = ''.join([base_url, suffix, '.csv'])
     return joined_url
 
 
@@ -24,7 +25,7 @@ class Crawler(BaseCrawler):
     # and set up a dictionary with the org/url/today's date in self.reference
 
     def run(self):
-        """Fetch data and push to IYP. """
+        """Fetch data and push to IYP."""
 
         # Fetch country code
         url_for_country_codes = generate_url('00-LEGEND-country_codes')
@@ -34,12 +35,12 @@ class Crawler(BaseCrawler):
             logging.error('Cannot download data {req.status_code}: {req.text}')
             sys.exit('Error while fetching data file')
 
-        soup = BeautifulSoup(req_for_country_codes.content, "html.parser")
-        rows = soup.find_all("tr", class_="js-file-line")
+        soup = BeautifulSoup(req_for_country_codes.content, 'html.parser')
+        rows = soup.find_all('tr', class_='js-file-line')
 
         country_codes = []
         for row in rows:
-            country_code = row.select_one(":nth-child(2)")
+            country_code = row.select_one(':nth-child(2)')
             if len(country_code.text) != 2:
                 continue
             country_codes.append(country_code.text.lower())
@@ -54,11 +55,11 @@ class Crawler(BaseCrawler):
             if req_with_respect_to_country_code.status_code != 200:
                 continue
             country_soup = BeautifulSoup(req_with_respect_to_country_code.content, 'html.parser')
-            rows = country_soup.find_all("tr", class_="js-file-line")
+            rows = country_soup.find_all('tr', class_='js-file-line')
             for row in rows:
-                url = row.select_one(":nth-child(2)").text
+                url = row.select_one(':nth-child(2)').text
                 # category_code = row.select_one(":nth-child(3)").text
-                category = row.select_one(":nth-child(4)").text
+                category = row.select_one(':nth-child(4)').text
                 urls.add(url)
                 categories.add(category)
                 if [url, category] in lines:
@@ -86,7 +87,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

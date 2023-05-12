@@ -1,13 +1,14 @@
 import argparse
-import flatdict
+import glob
 import json
 import logging
-import glob
 import os
-import requests
 import sys
 
+import flatdict
+import requests
 from requests.adapters import HTTPAdapter, MaxRetryError, Retry
+
 from iyp import BaseCrawler
 
 # Organization name and URL to data
@@ -16,7 +17,7 @@ URL = 'https://api.cloudflare.com/client/v4/radar/dns/top/locations/'
 NAME = 'cloudflare.dns_top_locations'
 BATCH_SIZE = 1
 RANK_THRESHOLD = 10000
-TOP_LIMIT = 100/BATCH_SIZE
+TOP_LIMIT = 100 / BATCH_SIZE
 
 # API credentials
 USER_ID = ''
@@ -38,7 +39,7 @@ class Crawler(BaseCrawler):
 
         # Fetch domain names registered in IYP
         existing_dn = self.iyp.tx.run(
-                f"""MATCH (dn:DomainName)-[r:RANK]-(:Ranking)
+            f"""MATCH (dn:DomainName)-[r:RANK]-(:Ranking)
                 WHERE r.rank < {RANK_THRESHOLD}
                 RETURN ID(dn) AS _id, dn.name AS dname;""")
 
@@ -46,12 +47,12 @@ class Crawler(BaseCrawler):
         self.domain_names = list(self.domain_names_id.keys())
 
     def fetch(self):
-        """Download top locations for top RANK_THRESHOLD domain names registered
-        in IYP and save it on disk"""
+        """Download top locations for top RANK_THRESHOLD domain names registered in IYP
+        and save it on disk."""
 
         # setup HTTPS session with credentials and retry
         req_session = requests.Session()
-        req_session.headers['Authorization'] = 'Bearer '+API_KEY
+        req_session.headers['Authorization'] = 'Bearer ' + API_KEY
         req_session.headers['Content-Type'] = 'application/json'
 
         retries = Retry(total=10,
@@ -68,17 +69,17 @@ class Crawler(BaseCrawler):
         for i in range(0, len(self.domain_names), BATCH_SIZE):
 
             # Don't overide existing files
-            fname = 'data_'+'_'.join(self.domain_names[i:i+BATCH_SIZE])
+            fname = 'data_' + '_'.join(self.domain_names[i:i + BATCH_SIZE])
             fpath = f'{tmp_dir}/{fname}.json'
 
             if os.path.exists(fpath):
                 continue
 
             get_params = f'?limit={TOP_LIMIT}'
-            for domain in self.domain_names[i:i+BATCH_SIZE]:
+            for domain in self.domain_names[i:i + BATCH_SIZE]:
                 get_params += f'&dateRange=7d&domain={domain}&name={domain}'
 
-            url = self.url+get_params
+            url = self.url + get_params
 
             # Fetch data
             try:
@@ -97,7 +98,7 @@ class Crawler(BaseCrawler):
                 continue
 
     def run(self):
-        """Push data to IYP. """
+        """Push data to IYP."""
 
         # FIXME this should be called before/separately
         self.fetch()
@@ -125,7 +126,8 @@ class Crawler(BaseCrawler):
         sys.stderr.write('\n')
 
     def compute_link(self, param):
-        """Compute link for the given domain name' top countries and corresponding properties."""
+        """Compute link for the given domain name' top countries and corresponding
+        properties."""
 
         domain, countries = param
 
@@ -139,10 +141,10 @@ class Crawler(BaseCrawler):
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
             self.statements.append({
-                     'src_id': self.domain_names_id[domain],
-                     'dst_id': self.country_id[cc],
-                     'props': [flat_prop, self.reference]
-                     })
+                'src_id': self.domain_names_id[domain],
+                'dst_id': self.country_id[cc],
+                'props': [flat_prop, self.reference]
+            })
 
 
 def main() -> None:
@@ -154,7 +156,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

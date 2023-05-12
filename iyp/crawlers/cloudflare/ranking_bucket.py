@@ -1,9 +1,8 @@
 import argparse
-import os
-import sys
 import json
 import logging
-from collections import defaultdict
+import os
+import sys
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -12,7 +11,7 @@ from iyp import BaseCrawler
 
 # Organization name and URL to data
 ORG = 'Cloudflare'
-URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json'
+URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json'  # noqa: E501
 URL = ''
 URL_DL = 'https://api.cloudflare.com/client/v4/radar/datasets/download'
 NAME = 'cloudflare.ranking_bucket'
@@ -53,8 +52,9 @@ class Crawler(BaseCrawler):
             logging.error(f'HTTP request succeeded but API returned: {req.text}')
             sys.exit('Error while fetching data file')
 
-        # Fetch all datasets first before starting to process them. This way we can get/create all
-        # DomainName nodes in one go and then just add the RANK relationships per dataset.
+        # Fetch all datasets first before starting to process them. This way we can
+        # get/create all DomainName nodes in one go and then just add the RANK
+        # relationships per dataset.
         datasets = list()
         all_domains = set()
         for dataset in datasets_json['result']['datasets']:
@@ -78,9 +78,9 @@ class Crawler(BaseCrawler):
             datasets.append((dataset, dataset_domains))
 
         # Get or create nodes for domains and retrieve their IDs.
-        # Note: Since we do not specify all=False in batch_get_nodes we will get the IDs of
-        # _all_ DomainName nodes, so we must not create relationships for all domain_ids, but
-        # iterate over the domains set instead.
+        # Note: Since we do not specify all=False in batch_get_nodes we will get the IDs
+        # of _all_ DomainName nodes, so we must not create relationships for all
+        # domain_ids, but iterate over the domains set instead.
         logging.info(f'Adding/retrieving {len(all_domains)} DomainName nodes.')
         print(f'Adding/retrieving {len(all_domains)} DomainName nodes')
         domain_ids = self.iyp.batch_get_nodes('DomainName', 'name', all_domains)

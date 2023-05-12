@@ -1,25 +1,27 @@
 import csv
-import sys
-import time
 from collections import defaultdict
+
 from iyp.wiki.wikihandy import Wikihandy
 
 BASIC_PROPERTY_FNAME = 'basic/properties.csv'
 BASIC_ITEMS_FNAME = 'basic/items.csv'
 
-wh = Wikihandy(preload=False) 
+wh = Wikihandy(preload=False)
+
 
 def decomment(csvfile):
-    """Ignore lines with comments"""
+    """Ignore lines with comments."""
     for row in csvfile:
-        if not '#' in row: yield row
+        if '#' not in row:
+            yield row
+
 
 print('Adding properties')
 with open(BASIC_PROPERTY_FNAME, 'r') as fp:
     csvdata = csv.reader(decomment(fp), skipinitialspace=True)
 
     for row in csvdata:
-        if not row:    
+        if not row:
             continue
 
         label, description, aliases, data_type = [col.strip() for col in row]
@@ -30,14 +32,14 @@ with open(BASIC_PROPERTY_FNAME, 'r') as fp:
         print(pid, label)
 
 print('Adding items')
-statements=defaultdict(list)
+statements = defaultdict(list)
 # wikidata = wikihandy.Wikihandy(wikidata_project='wikidata', lang='wikidata')
 
 with open(BASIC_ITEMS_FNAME, 'r') as fp:
-    csvdata = csv.reader(decomment(fp),  skipinitialspace=True)
+    csvdata = csv.reader(decomment(fp), skipinitialspace=True)
 
     for row in csvdata:
-        if not row:    
+        if not row:
             continue
 
         label, description, aliases, statements = [col.strip() for col in row]
@@ -53,16 +55,16 @@ with open(BASIC_ITEMS_FNAME, 'r') as fp:
                 # skip lines with no statement
                 continue
 
-            claims.append( [ wh.get_pid(property.strip()), wh.get_qid(target), [] ] ) 
+            claims.append([wh.get_pid(property.strip()), wh.get_qid(target), []])
 
         qid = wh.get_qid(label)
         if qid is None:
             wh.add_item(
-                "bootstrap",
+                'bootstrap',
                 label,
                 description,
                 aliases,
                 claims
-                )
+            )
         else:
             wh.upsert_statements('bootstrap', qid, claims)

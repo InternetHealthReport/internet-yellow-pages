@@ -9,6 +9,7 @@ ORG = 'Packet Clearing House'
 URL = 'https://www.pch.net/resources/Routing_Data/IPv6_daily_snapshots/'
 NAME = 'pch.daily_routing_snapshots_v6'
 
+
 class Crawler(RoutingSnapshotCrawler):
     def __init__(self, organization, url, name):
         self.name = name
@@ -24,7 +25,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

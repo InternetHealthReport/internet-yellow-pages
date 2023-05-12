@@ -1,12 +1,14 @@
 import argparse
-import arrow
+import csv
 import logging
 import os
 import sys
-import requests
-import lz4.frame
-import csv
 from datetime import datetime, time, timezone
+
+import arrow
+import lz4.frame
+import requests
+
 from iyp import BaseCrawler
 
 # NOTE: Assumes ASNs and Prefixes are already registered in the database. Run
@@ -17,21 +19,22 @@ URL = 'https://ihr-archive.iijlab.net/ihr/rov/{year}/{month:02d}/{day:02d}/ihr_r
 ORG = 'IHR'
 NAME = 'ihr.rov'
 
+
 class lz4Csv:
     def __init__(self, filename):
-        """Start reading a lz4 compress csv file """
-    
+        """Start reading a lz4 compress csv file."""
+
         self.fp = lz4.frame.open(filename)
 
     def __iter__(self):
-        """Read file header line and set self.fields"""
+        """Read file header line and set self.fields."""
         line = self.fp.readline()
         self.fields = line.decode('utf-8').rstrip().split(',')
         return self
 
     def __next__(self):
         line = self.fp.readline().decode('utf-8').rstrip()
-    
+
         if len(line) > 0:
             return line
         else:
@@ -40,10 +43,11 @@ class lz4Csv:
     def close(self):
         self.fp.close()
 
+
 class Crawler(BaseCrawler):
 
     def run(self):
-        """Fetch data from file and push to IYP. """
+        """Fetch data from file and push to IYP."""
 
         today = arrow.utcnow()
         url = URL.format(year=today.year, month=today.month, day=today.day)
@@ -65,8 +69,8 @@ class Crawler(BaseCrawler):
 
         os.makedirs('tmp/', exist_ok=True)
         os.system(f'wget {url} -P tmp/')
-        
-        local_filename = 'tmp/'+url.rpartition('/')[2]
+
+        local_filename = 'tmp/' + url.rpartition('/')[2]
         self.csv = lz4Csv(local_filename)
 
         logging.warning('Getting node IDs from neo4j...\n')
@@ -81,12 +85,13 @@ class Crawler(BaseCrawler):
         country_links = []
 
         logging.warning('Computing links...\n')
-        for line in  csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
+        for line in csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
             # header
-            # id,timebin,prefix,hege,af,visibility,rpki_status,irr_status, delegated_prefix_status,
-            #delegated_asn_status,descr,moas,asn_id,country_id,originasn_id
+            # id, timebin, prefix, hege, af, visibility, rpki_status, irr_status,
+            # delegated_prefix_status, delegated_asn_status, descr, moas, asn_id,
+            # country_id, originasn_id
 
-            rec = dict( zip(self.csv.fields, line) )
+            rec = dict(zip(self.csv.fields, line))
             rec['hege'] = float(rec['hege'])
             rec['visibility'] = float(rec['visibility'])
             rec['af'] = int(rec['af'])
@@ -102,11 +107,11 @@ class Crawler(BaseCrawler):
                 if originasn not in asn_id:
                     asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn}, create=True)
 
-                rpki_status = 'RPKI '+rec['rpki_status']
+                rpki_status = 'RPKI ' + rec['rpki_status']
                 if rpki_status not in tag_id:
                     tag_id[rpki_status] = self.iyp.get_node('Tag', {'label': rpki_status}, create=True)
 
-                irr_status = 'IRR '+rec['irr_status']
+                irr_status = 'IRR ' + rec['irr_status']
                 if irr_status not in tag_id:
                     tag_id[irr_status] = self.iyp.get_node('Tag', {'label': irr_status}, create=True)
 
@@ -115,41 +120,40 @@ class Crawler(BaseCrawler):
                     country_id[cc] = self.iyp.get_node('Country', {'country_code': cc}, create=True)
 
                 # Compute links
-                orig_links.append( {
+                orig_links.append({
                     'src_id': asn_id[originasn],
                     'dst_id': prefix_id[prefix],
                     'props': [self.reference, rec]
-                    } )
+                })
 
-                tag_links.append( {
+                tag_links.append({
                     'src_id': prefix_id[prefix],
                     'dst_id': tag_id[rpki_status],
                     'props': [self.reference, rec]
-                    } )
+                })
 
-                tag_links.append( {
+                tag_links.append({
                     'src_id': prefix_id[prefix],
                     'dst_id': tag_id[irr_status],
                     'props': [self.reference, rec]
-                    } )
+                })
 
-                country_links.append( {
+                country_links.append({
                     'src_id': prefix_id[prefix],
                     'dst_id': country_id[cc],
                     'props': [self.reference]
-                    } )
+                })
 
             # Dependency links
             asn = int(rec['asn_id'])
             if asn not in asn_id:
                 asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
 
-            dep_links.append( {
+            dep_links.append({
                 'src_id': prefix_id[prefix],
                 'dst_id': asn_id[asn],
                 'props': [self.reference, rec]
-                } )
-
+            })
 
         self.csv.close()
 
@@ -163,6 +167,7 @@ class Crawler(BaseCrawler):
         # Remove downloaded file
         os.remove(local_filename)
 
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
@@ -172,7 +177,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
@@ -191,4 +196,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
     sys.exit(0)
-

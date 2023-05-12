@@ -1,7 +1,10 @@
-import sys
 import logging
-from iyp import BasePostProcess
+import sys
+
 import tldextract
+
+from iyp import BasePostProcess
+
 
 class PostProcess(BasePostProcess):
     def run(self):
@@ -10,8 +13,8 @@ class PostProcess(BasePostProcess):
         # Get all URL nodes.
         url_id = self.iyp.batch_get_nodes('URL', 'url')
 
-        #Get all DomainName Nodes 
-        domain_id = self.iyp.batch_get_nodes('DomainName','name')
+        # Get all DomainName Nodes
+        domain_id = self.iyp.batch_get_nodes('DomainName', 'name')
 
         # Compute links
         links = []
@@ -21,7 +24,7 @@ class PostProcess(BasePostProcess):
 
             # Get DomainName node for the domain
             domain_qid = domain_id.get(domain)
-            
+
             if domain_qid is not None:
                 links.append({
                     'src_id': url_qid,
@@ -35,18 +38,18 @@ class PostProcess(BasePostProcess):
 
 if __name__ == '__main__':
 
-    scriptname = sys.argv[0].replace('/','_')[0:-3]
+    scriptname = sys.argv[0].replace('/', '_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
-            format=FORMAT, 
-            filename='log/'+scriptname+'.log',
-            level=logging.INFO, 
-            datefmt='%Y-%m-%d %H:%M:%S'
-            )
-    logging.info("Start: %s" % sys.argv)
+        format=FORMAT,
+        filename='log/' + scriptname + '.log',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    logging.info('Start: %s' % sys.argv)
 
     post = PostProcess()
     post.run()
     post.close()
 
-    logging.info("End: %s" % sys.argv)
+    logging.info('End: %s' % sys.argv)
