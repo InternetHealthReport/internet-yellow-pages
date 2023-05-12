@@ -11,14 +11,15 @@ ORG = 'Cloudflare'
 URL = 'https://api.cloudflare.com/client/v4/radar/dns/top/ases/'
 NAME = 'cloudflare.dns_top_ases'
 
+
 class Crawler(Crawler):
-    
+
     def run(self):
         """Push data to IYP. """
 
         self.as_id = self.iyp.batch_get_nodes('AS', 'asn')
 
-        super().run() 
+        super().run()
 
     def compute_link(self, param):
         """Compute link for the domain name' top ases and corresponding properties."""
@@ -35,12 +36,12 @@ class Crawler(Crawler):
             entry['value'] = float(entry['value'])
             flat_prop = dict(flatdict.FlatDict(entry))
             self.statements.append({
-                     'src_id': self.domain_names_id[domain], 
-                     'dst_id': self.as_id[asn], 
+                     'src_id': self.domain_names_id[domain],
+                     'dst_id': self.as_id[asn],
                      'props': [flat_prop, self.reference]
                      })
-        
-        
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
@@ -69,4 +70,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
     sys.exit(0)
-
