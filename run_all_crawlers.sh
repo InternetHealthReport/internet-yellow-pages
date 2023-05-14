@@ -30,8 +30,9 @@ python3 -m iyp.crawlers.ihr.rov
 python3 -m iyp.crawlers.tranco.top1M
 python3 -m iyp.crawlers.cloudflare.top100
 
-#BGP.Tools tags
+#BGP.Tools tags, and prefixes
 python3 -m iyp.crawlers.bgptools.tags
+python3 -m iyp.crawlers.bgptools.anycast_prefixes
 
 #PeeringDB
 python3 -m iyp.crawlers.peeringdb.org
