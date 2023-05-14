@@ -3,7 +3,7 @@
 Data collected by BGP.Tools, including:
 - AS names
 - AS tags
-- IPV4, and IPV6 prefixes
+- Anycast IPv4, and IPv6 prefixes
 
 
 ## Graph representation
@@ -22,10 +22,10 @@ given tag.
 (:AS {asn:2497})-[:CATEGORIZED]-(:Tag {label: 'Internet Critical Infra'})
 ```
 
-### IPV4 and IPV6 prefixes
-Connect Prefix to tag node meaning that an AS has been categorized according to the tag with a label `Anycast`.
+### Anycast IPv4 and IPv6 prefixes
+Connect Prefix to tag node meaning that an prefix has been categorized according to the TAG with a label `Anycast`.
 ```
-MATCH (p:Prefix {prefix: '43.249.213.0/24'})-[r:CATEGORIZED]-(t:Tag {label: 'Anycast'}) RETURN p, t
+(:Prefix {prefix: '43.249.213.0/24'})-[:CATEGORIZED]-(:Tag {label: 'Anycast'})
 ```
 
 ## Dependence

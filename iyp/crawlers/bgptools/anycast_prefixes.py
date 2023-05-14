@@ -16,9 +16,9 @@ NAME = 'bgptools.anycast_prefixes'  # should reflect the directory and name of t
 def get_latest_dataset_url(as_prefixes_data_url: str, ip_version: int):
     anycast_prefixes_data_url_formatted: str = as_prefixes_data_url.replace('github.com', 'raw.githubusercontent.com')
     if ip_version == 4:
-        anycast_prefixes_data_url_formatted += "/master/anycatch-v4-prefixes.txt"
+        anycast_prefixes_data_url_formatted += '/master/anycatch-v4-prefixes.txt'
     else:
-        anycast_prefixes_data_url_formatted += "/master/anycatch-v6-prefixes.txt"
+        anycast_prefixes_data_url_formatted += '/master/anycatch-v6-prefixes.txt'
     return anycast_prefixes_data_url_formatted
 
 
@@ -49,24 +49,24 @@ class Crawler(BaseCrawler):
         ipv4_prefixes_filename = os.path.join(tmpdir, 'anycast_ipv4_prefixes.txt')
         ipv6_prefixes_filename = os.path.join(tmpdir, 'anycast_ipv6_prefixes.txt')
 
-        # """Fetch data and push to IYP. """
+        # Fetch data and push to IYP.
         ipv4_prefixes_response = fetch_dataset(ipv4_prefixes_url)
-        logging.info("IPV4 prefixes fetched successfully.")
+        logging.info('IPV4 prefixes fetched successfully.')
         self.update(ipv4_prefixes_response, ipv4_prefixes_filename)
-        logging.info("IPV4 prefixes pushed to IYP.")
+        logging.info('IPV4 prefixes pushed to IYP.')
         ipv6_prefixes_response = fetch_dataset(ipv6_prefixes_url)
-        logging.info("IPV6 prefixes fetched successfully.")
+        logging.info('IPV6 prefixes fetched successfully.')
         self.update(ipv6_prefixes_response, ipv6_prefixes_filename)
-        logging.info("IPV6 prefixes pushed to IYP.")
+        logging.info('IPV6 prefixes pushed to IYP.')
 
     def update(self, res, filename: str):
-        with open(filename, "w") as file:
+        with open(filename, 'w') as file:
             file.write(res.text)
 
         lines = []
         prefixes = set()
 
-        with open(filename, "r") as file:
+        with open(filename, 'r') as file:
             for line in file:
                 line = line.strip()
                 prefixes.add(line)
