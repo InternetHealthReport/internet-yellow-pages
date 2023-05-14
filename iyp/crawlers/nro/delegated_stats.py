@@ -2,10 +2,11 @@ import argparse
 import logging
 import math
 import os
-import requests
 import sys
-
 from collections import defaultdict
+
+import requests
+
 from iyp import BaseCrawler
 
 # NOTE: this script is not adding new ASNs. It only adds links for existing ASNs
@@ -15,10 +16,12 @@ URL = 'https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-sta
 ORG = 'NRO'
 NAME = 'nro.delegated_stats'
 
+
 class Crawler(BaseCrawler):
 
     def run(self):
-        """Fetch the delegated stat file from RIPE website and process lines one by one"""
+        """Fetch the delegated stat file from RIPE website and process lines one by
+        one."""
 
         req = requests.get(URL)
         if req.status_code != 200:
@@ -46,20 +49,20 @@ class Crawler(BaseCrawler):
                 continue
 
             # parse records
-            rec = dict( zip(self.fields_name, fields_value))
+            rec = dict(zip(self.fields_name, fields_value))
             rec['value'] = int(rec['value'])
 
-            countries.add( rec['cc'] )
-            opaqueids.add( rec['opaque-id'] )
+            countries.add(rec['cc'])
+            opaqueids.add(rec['opaque-id'])
 
             if rec['type'] == 'ipv4' or rec['type'] == 'ipv6':
                 # compute prefix length
                 prefix_len = rec['value']
                 if rec['type'] == 'ipv4':
-                    prefix_len = int(32-math.log2(rec['value']))
+                    prefix_len = int(32 - math.log2(rec['value']))
 
                 prefix = f"{rec['start']}/{prefix_len}"
-                prefixes.add( prefix )
+                prefixes.add(prefix)
 
         # Create all nodes
         logging.warning('Pushing nodes to neo4j...\n')
@@ -70,7 +73,7 @@ class Crawler(BaseCrawler):
         # Compute links
         country_links = []
         status_links = defaultdict(list)
-        
+
         for line in req.text.splitlines():
             # skip comments
             if line.strip().startswith('#'):
@@ -82,7 +85,7 @@ class Crawler(BaseCrawler):
                 continue
 
             # parse records
-            rec = dict( zip(self.fields_name, fields_value))
+            rec = dict(zip(self.fields_name, fields_value))
             rec['value'] = int(rec['value'])
 
             reference = dict(self.reference)
@@ -92,15 +95,15 @@ class Crawler(BaseCrawler):
 
             # ASN record
             if rec['type'] == 'asn':
-                for i in range(int(rec['start']), int(rec['start'])+int(rec['value']), 1):
+                for i in range(int(rec['start']), int(rec['start']) + int(rec['value']), 1):
                     if i not in asn_id:
                         continue
 
                     asn_qid = asn_id[i]
 
-                    country_links.append( { 'src_id':asn_qid, 'dst_id':country_qid, 'props':[reference] } )
+                    country_links.append({'src_id': asn_qid, 'dst_id': country_qid, 'props': [reference]})
                     status_links[rec['status'].upper()].append(
-                        { 'src_id':asn_qid, 'dst_id':opaqueid_qid, 'props':[reference] } )
+                        {'src_id': asn_qid, 'dst_id': opaqueid_qid, 'props': [reference]})
 
             # prefix record
             elif rec['type'] == 'ipv4' or rec['type'] == 'ipv6':
@@ -108,21 +111,21 @@ class Crawler(BaseCrawler):
                 # compute prefix length
                 prefix_len = rec['value']
                 if rec['type'] == 'ipv4':
-                    prefix_len = int(32-math.log2(rec['value']))
+                    prefix_len = int(32 - math.log2(rec['value']))
 
                 prefix = f"{rec['start']}/{prefix_len}"
                 prefix_qid = prefix_id[prefix]
 
-                country_links.append( { 'src_id':prefix_qid, 'dst_id':country_qid, 'props':[reference] } )
+                country_links.append({'src_id': prefix_qid, 'dst_id': country_qid, 'props': [reference]})
                 status_links[rec['status'].upper()].append(
-                    { 'src_id':prefix_qid, 'dst_id':opaqueid_qid, 'props':[reference] } )
-
+                    {'src_id': prefix_qid, 'dst_id': opaqueid_qid, 'props': [reference]})
 
         logging.warning('Pusing links to neo4j...\n')
         # Push all links to IYP
         self.iyp.batch_add_links('COUNTRY', country_links)
         for label, links in status_links.items():
             self.iyp.batch_add_links(label, links)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -133,7 +136,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
@@ -152,4 +155,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
     sys.exit(0)
-

@@ -1,36 +1,38 @@
 import argparse
 import logging
 import os
-import requests
 import sys
-
 from datetime import datetime, time, timezone
+
+import requests
+
 from iyp import BaseCrawler
 
-#curl -s https://bgp.tools/asns.csv | head -n 5
+# curl -s https://bgp.tools/asns.csv | head -n 5
 URL = 'https://bgp.tools/tags/'
 ORG = 'BGP.Tools'
 NAME = 'bgptools.tags'
 
 TAGS = {
-        'cdn': 'Content Delivery Network', 
-        'dsl': 'Home ISP', 
-        'a10k': 'Alexa 10k Host', 
-        'icrit': 'Internet Critical Infra', 
-        'tor': 'ToR Services', 
-        'anycast': 'Anycast', 
-        'perso': 'Personal ASN', 
-        'ddosm': 'DDoS Mitigation',
-        'vpn': 'VPN Host',
-        'vpsh': 'Server Hosting',
-        'uni': 'Academic',
-        'gov': 'Government',
-        'event': 'Event',
-        'mobile': 'Mobile Data/Carrier',
-        'satnet': 'Satellite Internet',
-        'biznet': 'Business Broadband',
-        'corp': 'Corporate/Enterprise'
-       }
+    'cdn': 'Content Delivery Network',
+    'dsl': 'Home ISP',
+    'a10k': 'Alexa 10k Host',
+    'icrit': 'Internet Critical Infra',
+    'tor': 'ToR Services',
+    'anycast': 'Anycast',
+    'perso': 'Personal ASN',
+    'ddosm': 'DDoS Mitigation',
+    'vpn': 'VPN Host',
+    'vpsh': 'Server Hosting',
+    'uni': 'Academic',
+    'gov': 'Government',
+    'event': 'Event',
+    'mobile': 'Mobile Data/Carrier',
+    'satnet': 'Satellite Internet',
+    'biznet': 'Business Broadband',
+    'corp': 'Corporate/Enterprise'
+}
+
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
@@ -42,17 +44,18 @@ class Crawler(BaseCrawler):
         super().__init__(organization, url, name)
 
     def run(self):
-        """Fetch the AS name file from BGP.Tools website and process lines one by one"""
+        """Fetch the AS name file from BGP.Tools website and process lines one by
+        one."""
 
         for tag, label in TAGS.items():
-            url = URL+tag+'.csv'
+            url = URL + tag + '.csv'
             # Reference information for data pushed to the wikibase
             self.reference = {
                 'reference_org': ORG,
                 'reference_url': url,
                 'reference_name': NAME,
                 'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
-                }
+            }
 
             req = requests.get(url, headers=self.headers)
             if req.status_code != 200:
@@ -65,10 +68,10 @@ class Crawler(BaseCrawler):
                 if line.startswith('asn'):
                     continue
 
-                # Parse given line to get ASN, name, and country code 
+                # Parse given line to get ASN, name, and country code
                 asn, _, _ = line.partition(',')
                 asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
-                statements = [ [ 'CATEGORIZED', self.tag_qid, self.reference ] ] # Set AS name
+                statements = [['CATEGORIZED', self.tag_qid, self.reference]]  # Set AS name
 
                 try:
                     # Update AS name and country
@@ -79,6 +82,7 @@ class Crawler(BaseCrawler):
                     print('Error for: ', line)
                     print(error)
 
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
@@ -88,7 +92,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
@@ -107,4 +111,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
     sys.exit(0)
-

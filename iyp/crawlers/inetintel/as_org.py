@@ -1,24 +1,24 @@
 import argparse
-from collections import defaultdict
 import logging
 import os
 import re
-import requests
 import sys
 import tempfile
+from collections import defaultdict
+from datetime import datetime
 
 import pandas as pd
-from datetime import datetime
+import requests
 from bs4 import BeautifulSoup
+
 from iyp import BaseCrawler
-import neo4j.exceptions
 
 
 def get_latest_dataset_url(inetintel_data_url: str, file_name_format: str):
     pattern = re.compile(r'^\d{4}-\d{2}$')
     response = requests.get(inetintel_data_url)
     soup = BeautifulSoup(response.text, 'html.parser')
-    date_elements = soup.find_all("a", string=pattern)
+    date_elements = soup.find_all('a', string=pattern)
     all_date = []
     for date_element in date_elements:
         all_date.append(date_element.text)
@@ -42,7 +42,7 @@ class Crawler(BaseCrawler):
     # and set up a dictionary with the org/url/today's date in self.reference
 
     def run(self):
-        """Fetch data and push to IYP. """
+        """Fetch data and push to IYP."""
 
         # Create a temporary directory
         self.tmpdir = tempfile.mkdtemp()
@@ -60,15 +60,15 @@ class Crawler(BaseCrawler):
             logging.error(e)
             sys.exit('Error while fetching data file')
 
-        with open(self.filename, "w") as file:
+        with open(self.filename, 'w') as file:
             file.write(req.text)
 
-        print("Dataset crawled and saved in a temporary file.")
+        print('Dataset crawled and saved in a temporary file.')
 
-        # The dataset is very large. Pandas has the ability to read JSON, and, in theory, it could do it in a more
-        # memory-efficient way.
+        # The dataset is very large. Pandas has the ability to read JSON, and, in
+        # theory, it could do it in a more memory-efficient way.
         df = pd.read_json(self.filename, orient='index')
-        print("Dataset has {} rows.".format(len(df)))
+        print('Dataset has {} rows.'.format(len(df)))
 
         # Optimized code
         batch_size = 10000
@@ -160,7 +160,7 @@ class Crawler(BaseCrawler):
 
             count_rows_global += count_rows
             count_relationships_global += count_relationships
-            print("processed: {} rows and {} relationships"
+            print('processed: {} rows and {} relationships'
                   .format(count_rows_global, count_relationships_global))
 
     def close(self):
@@ -179,7 +179,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

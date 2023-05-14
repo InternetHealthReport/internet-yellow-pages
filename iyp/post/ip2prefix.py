@@ -2,12 +2,16 @@ import argparse
 import logging
 import os
 import sys
-from iyp import BasePostProcess
+
 import radix
+
+from iyp import BasePostProcess
+
 
 class PostProcess(BasePostProcess):
     def run(self):
-        """Fetch all IP and Prefix nodes, then link IPs to their most specific prefix."""
+        """Fetch all IP and Prefix nodes, then link IPs to their most specific
+        prefix."""
 
         # Get all prefixes in a radix trie
         prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix')
@@ -22,34 +26,34 @@ class PostProcess(BasePostProcess):
 
         # Compute links
         links = []
-        for ip, ip_qid in  ip_id.items():
+        for ip, ip_qid in ip_id.items():
             if ip:
                 rnode = rtree.search_best(ip)
 
                 if rnode:
-                    links.append( {
+                    links.append({
                         'src_id': ip_qid,
                         'dst_id': rnode.data['id'],
                         'props': [self.reference]
-                        })
+                    })
 
         # push links to IYP
         self.iyp.batch_add_links('PART_OF', links)
 
     def count_relation(self):
-        count = self.iyp.tx.run("MATCH (ip:IP)-[r]->()  RETURN count(r) AS count").single()
+        count = self.iyp.tx.run('MATCH (ip:IP)-[r]->()  RETURN count(r) AS count').single()
         return count
-        
+
     def unit_test(self):
-        result_before =  self.count_relation()
-        logging.info("relations before: %s" % result_before)
+        result_before = self.count_relation()
+        logging.info('relations before: %s' % result_before)
         self.run()
-        result_after =  self.count_relation()
-        logging.info("relations after: %s" % result_after)
+        result_after = self.count_relation()
+        logging.info('relations after: %s' % result_after)
         self.close()
-        print("assertion error ") if result_after <= result_before else print("assertion success")
-        assert result_after > result_before 
-        
+        print('assertion error ') if result_after <= result_before else print('assertion success')
+        assert result_after > result_before
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -60,7 +64,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )

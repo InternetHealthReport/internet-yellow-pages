@@ -1,44 +1,47 @@
 import argparse
-import arrow
 import csv
 import logging
-import lz4.frame
 import os
-import requests
 import sys
-
 from datetime import datetime, time, timezone
+
+import arrow
+import lz4.frame
+import requests
+
 from iyp import BaseCrawler
 
 # URL to the API
-URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv4/local/{year}/{month:02d}/{day:02d}/ihr_hegemony_ipv4_local_{year}-{month:02d}-{day:02d}.csv.lz4'
+URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv4/local/{year}/{month:02d}/{day:02d}/ihr_hegemony_ipv4_local_{year}-{month:02d}-{day:02d}.csv.lz4'  # noqa: E501
 ORG = 'IHR'
 NAME = 'ihr.local_hegemony'
 
+
 class lz4Csv:
     def __init__(self, filename):
-        """Start reading a lz4 compress csv file """
-    
+        """Start reading a lz4 compress csv file."""
+
         self.fp = lz4.frame.open(filename, 'rb')
 
     def __iter__(self):
-        """Read file header line and set self.fields"""
+        """Read file header line and set self.fields."""
         line = self.fp.readline()
         self.fields = line.decode('utf-8').rstrip().split(',')
         return self
 
     def __next__(self):
         line = self.fp.readline().decode('utf-8').rstrip()
-    
+
         if len(line) > 0:
             return line
         else:
             raise StopIteration
 
+
 class Crawler(BaseCrawler):
 
     def run(self):
-        """Fetch data from file and push to IYP. """
+        """Fetch data from file and push to IYP."""
 
         today = arrow.utcnow()
         url = URL.format(year=today.year, month=today.month, day=today.day)
@@ -52,7 +55,6 @@ class Crawler(BaseCrawler):
                 url = URL.format(year=today.year, month=today.month, day=today.day)
                 req = requests.head(url)
 
-
         self.reference = {
             'reference_url': url,
             'reference_org': ORG,
@@ -62,20 +64,20 @@ class Crawler(BaseCrawler):
 
         os.makedirs('tmp/', exist_ok=True)
         os.system(f'wget {url} -P tmp/')
-        
-        local_filename = 'tmp/'+url.rpartition('/')[2]
+
+        local_filename = 'tmp/' + url.rpartition('/')[2]
         self.csv = lz4Csv(local_filename)
 
         self.timebin = None
         asn_id = self.iyp.batch_get_nodes('AS', 'asn', set())
-        
+
         links = []
 
-        for line in  csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
+        for line in csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
             # header
             # timebin,originasn,asn,hege
 
-            rec = dict( zip(self.csv.fields, line) )
+            rec = dict(zip(self.csv.fields, line))
             rec['hege'] = float(rec['hege'])
 
             if self.timebin is None:
@@ -86,22 +88,23 @@ class Crawler(BaseCrawler):
             originasn = int(rec['originasn'])
             if originasn not in asn_id:
                 asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn}, create=True)
-            
+
             asn = int(rec['asn'])
             if asn not in asn_id:
                 asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
 
-            links.append( {
-                'src_id': asn_id[originasn], 
-                'dst_id': asn_id[asn], 
-                'props':[self.reference, rec]
-                } )
+            links.append({
+                'src_id': asn_id[originasn],
+                'dst_id': asn_id[asn],
+                'props': [self.reference, rec]
+            })
 
         # Push links to IYP
         self.iyp.batch_add_links('DEPENDS_ON', links)
 
         # Remove downloaded file
         os.remove(local_filename)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -112,7 +115,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
@@ -131,4 +134,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
     sys.exit(0)
-

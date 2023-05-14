@@ -1,14 +1,14 @@
 import argparse
-import flatdict
-import iso3166
 import json
 import logging
-import requests_cache
-import sys
 import os
+import sys
+
+import flatdict
+import iso3166
+import requests_cache
 
 from iyp import BaseCrawler
-
 from iyp.crawlers.peeringdb.ix import handle_social_media
 
 # NOTES This script should be executed after peeringdb.org
@@ -23,22 +23,22 @@ NAME = 'peeringdb.fac'
 ORGID_LABEL = 'PeeringdbOrgID'
 FACID_LABEL = 'PeeringdbFacID'
 
-API_KEY = ""
-if os.path.exists('config.json'): 
+API_KEY = ''
+if os.path.exists('config.json'):
     API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
+
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
-        """Initialisation for pushing peeringDB facilities to IYP. """
+        """Initialisation for pushing peeringDB facilities to IYP."""
 
-        self.headers = {"Authorization": "Api-Key " + API_KEY}
+        self.headers = {'Authorization': 'Api-Key ' + API_KEY}
         self.requests = requests_cache.CachedSession(ORG)
 
         super().__init__(organization, url, name)
 
-    
     def run(self):
-        """Fetch facilities information from PeeringDB and push to IYP"""
+        """Fetch facilities information from PeeringDB and push to IYP."""
 
         sys.stderr.write('Fetching PeeringDB data...\n')
         req = self.requests.get(URL, headers=self.headers)
@@ -56,15 +56,15 @@ class Crawler(BaseCrawler):
         facids = set()
 
         for fac in facilities:
-            facs.add( fac['name'].strip() )
-            names.add( fac['name'].strip() )
-            facids.add( fac['id'] )
-            
+            facs.add(fac['name'].strip())
+            names.add(fac['name'].strip())
+            facids.add(fac['id'])
+
             if fac['website']:
-                websites.add( fac['website'].strip() )
+                websites.add(fac['website'].strip())
 
             if fac['country'] in iso3166.countries_by_alpha2:
-                countries.add( fac['country'] )
+                countries.add(fac['country'])
 
             handle_social_media(fac, websites)
 
@@ -94,25 +94,23 @@ class Crawler(BaseCrawler):
                 sys.stderr.write(f'Cannot flatten dictionary {fac}\n{e}\n')
                 logging.error(f'Cannot flatten dictionary {fac}\n{e}')
 
+            facid_qid = self.facid_id[fac['id']]
+            fac_qid = self.fac_id[fac['name'].strip()]
+            facid_links.append({'src_id': fac_qid, 'dst_id': facid_qid, 'props': [self.reference, flat_fac]})
 
-
-            facid_qid = self.facid_id[fac['id']] 
-            fac_qid = self.fac_id[fac['name'].strip()] 
-            facid_links.append( { 'src_id':fac_qid, 'dst_id':facid_qid, 'props':[self.reference, flat_fac] } )
-
-            name_qid = self.name_id[fac['name'].strip()] 
-            name_links.append( { 'src_id':fac_qid, 'dst_id':name_qid, 'props':[self.reference] } ) 
+            name_qid = self.name_id[fac['name'].strip()]
+            name_links.append({'src_id': fac_qid, 'dst_id': name_qid, 'props': [self.reference]})
 
             if 'website' in fac and fac['website'] in self.website_id:
-                website_qid = self.website_id[fac['website'].strip()] 
-                website_links.append( { 'src_id':fac_qid, 'dst_id':website_qid, 'props':[self.reference] } )
+                website_qid = self.website_id[fac['website'].strip()]
+                website_links.append({'src_id': fac_qid, 'dst_id': website_qid, 'props': [self.reference]})
 
             if 'country' in fac and fac['country'] in self.country_id:
-                country_qid = self.country_id[fac['country']] 
-                country_links.append( { 'src_id':fac_qid, 'dst_id':country_qid, 'props':[self.reference] } )
+                country_qid = self.country_id[fac['country']]
+                country_links.append({'src_id': fac_qid, 'dst_id': country_qid, 'props': [self.reference]})
 
             org_qid = self.org_id[fac['org_id']]
-            org_links.append( { 'src_id':fac_qid, 'dst_id':org_qid, 'props':[self.reference] } )
+            org_links.append({'src_id': fac_qid, 'dst_id': org_qid, 'props': [self.reference]})
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
@@ -120,7 +118,8 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('EXTERNAL_ID', facid_links)
         self.iyp.batch_add_links('MANAGED_BY', org_links)
-        
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
@@ -130,7 +129,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/'+scriptname+'.log',
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
@@ -149,4 +148,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
     sys.exit(0)
-
