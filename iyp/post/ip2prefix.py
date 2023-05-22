@@ -24,21 +24,36 @@ class PostProcess(BasePostProcess):
         # Get all IP nodes
         ip_id = self.iyp.batch_get_nodes('IP', 'ip')
 
-        # Compute links
-        links = []
+        # Compute links for IPs
+        links_ip = []
         for ip, ip_qid in ip_id.items():
             if ip:
                 rnode = rtree.search_best(ip)
 
                 if rnode:
-                    links.append({
+                    links_ip.append({
                         'src_id': ip_qid,
                         'dst_id': rnode.data['id'],
                         'props': [self.reference]
                     })
 
-        # push links to IYP
-        self.iyp.batch_add_links('PART_OF', links)
+        # push IP to prefix links to IYP
+        self.iyp.batch_add_links('PART_OF', links_ip)
+
+        # Compute links sub-prefix and covering prefix
+        links_pfx = []
+        for rnode in rtree:
+            covering = rnode.parent
+
+            if covering:
+                links_pfx.append({
+                    'src_id': rnode.data['id'],
+                    'dst_id': covering.data['id'],
+                    'props': [self.reference]
+                })
+
+        # push sub-prefix to covering-prefix links
+        self.iyp.batch_add_links('PART_OF', links_pfx)
 
     def count_relation(self):
         count = self.iyp.tx.run('MATCH (ip:IP)-[r]->()  RETURN count(r) AS count').single()
