@@ -52,7 +52,8 @@
             "iyp.crawlers.citizenlab.urldb",
             "iyp.crawlers.inetintel.as_org",
             "iyp.crawlers.pch.daily_routing_snapshots_v4",
-            "iyp.crawlers.pch.daily_routing_snapshots_v6"
+            "iyp.crawlers.pch.daily_routing_snapshots_v6",
+            "iyp.crawlers.emileaben.as_names"
         ]
     },
 
