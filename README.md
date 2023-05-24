@@ -1,7 +1,11 @@
 # Internet Yellow Pages
 
+## Public IYP prototype
 
-## Loading a dump and playing with it
+Visit http://iyp.iijlab.net to try our online prototype. No password is required, just click the 'connect' button to get started.
+This is a read only instance.
+
+## Deploying a local IYP instance
 
 ### Prerequisites
 - [Curl](https://curl.se/download.html)
