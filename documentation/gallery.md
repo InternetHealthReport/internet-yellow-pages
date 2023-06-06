@@ -72,3 +72,12 @@ WHERE dn.name ENDS WITH '.jp' AND r.rank<10000
 RETURN dn, ip, pfx, net
 ```
 ![ASes hosting top domain names in Japan](/documentation/assets/gallery/top10kJapanAS.svg)
+
+### Topology for top ASes in Iran
+Select IHR's top 20 ASes in Iran and show how they are connected to each other using AS relationships.
+```cypher
+MATCH (a:AS)-[ra:RANK]->(:Ranking {name: 'IHR country ranking: Total AS (IR)'})<-[rb:RANK]-(b:AS)-[p:PEERS_WITH]-(a)
+WHERE ra.rank < 20 AND rb.rank < 20 AND p.rel = 0
+RETURN a, p, b
+```
+![Top ASes connecting Iran](/documentation/assets/gallery/top20IranAS.svg)
