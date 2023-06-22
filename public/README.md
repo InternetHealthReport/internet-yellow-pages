@@ -3,7 +3,7 @@
 To run the public instance copy the apache host configuration file (000-default.conf) to ```/etc/apache2/sites-enabled/```.
 Then copy the html files (guides) from the public/www folder to /var/www/iyp:
 ```
-sudo cp -r public/www /var/www/iyp
+sudo cp -r public/www/* /var/www/iyp/
 ```
 
 And restart apache:
