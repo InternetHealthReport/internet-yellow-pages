@@ -33,17 +33,15 @@ services:
     container_name: iyp
     restart: unless-stopped
     ports:
-      - 7474:7474
+      - 7473:7473
       - 7687:7687
     volumes:
       - ./data:/data
+      - ./public/certificates:/ssl
+      - ./public/conf:/conf
+      - ./public/logs:/logs
     environment:
       - NEO4J_AUTH=neo4j/password
-      - NEO4J_server_default__advertised__address=iyp.iijlab.net
-      - NEO4J_server_databases_default__to__read__only=true
-      - NEO4J_dbms_security_auth__enabled=false
-      - NEO4J_browser_remote__content__hostname__whitelist=*
-      - NEO4J_browser_post__connect__cmd=play http://iyp.iijlab.net/guides/start.html
     depends_on:
       iyp_loader:
         condition: service_completed_successfully
