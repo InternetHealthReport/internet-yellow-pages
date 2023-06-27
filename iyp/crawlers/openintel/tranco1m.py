@@ -61,9 +61,9 @@ class Crawler(BaseCrawler):
         # OpenINTEL measurement data objects base prefix
         FDNS_WAREHOUSE_S3 = 'category=fdns/type=warehouse'
 
-        # check on the website if today's data is available
-        today = arrow.utcnow()
-        url = URL.format(year=today.year, month=today.month, day=today.day)
+        # check on the website if yesterday's data is available
+        yesterday = arrow.utcnow().shift(days=-1)
+        url = URL.format(year=yesterday.year, month=yesterday.month, day=yesterday.day)
         try:
             req = requests.head(url)
 
@@ -71,19 +71,19 @@ class Crawler(BaseCrawler):
             while req.status_code != 200 and attempt > 0:
                 print(req.status_code)
                 attempt -= 1
-                today = today.shift(days=-1)
-                url = URL.format(year=today.year, month=today.month, day=today.day)
+                yesterday = yesterday.shift(days=-1)
+                url = URL.format(year=yesterday.year, month=yesterday.month, day=yesterday.day)
                 req = requests.head(url)
 
         except requests.exceptions.ConnectionError:
             logging.warning("Cannot reach OpenINTEL website, try yesterday's data")
-            today = arrow.utcnow().shift(days=-1)
-            url = URL.format(year=today.year, month=today.month, day=today.day)
+            yesterday = arrow.utcnow().shift(days=-1)
+            url = URL.format(year=yesterday.year, month=yesterday.month, day=yesterday.day)
 
-        logging.warning(f'Fetching data for {today}')
+        logging.warning(f'Fetching data for {yesterday}')
 
         # Start one day before ? # TODO remove this line?
-        today = today.shift(days=-1)
+        yesterday = yesterday.shift(days=-1)
 
         # Iterate objects in bucket with given (source, date)-partition prefix
         for i_obj in WAREHOUSE_BUCKET.objects.filter(
@@ -91,16 +91,16 @@ class Crawler(BaseCrawler):
             Prefix=os.path.join(
                 FDNS_WAREHOUSE_S3,
                 'source={}'.format(SOURCE),
-                'year={}'.format(today.year),
-                'month={:02d}'.format(today.month),
-                'day={:02d}'.format(today.day)
+                'year={}'.format(yesterday.year),
+                'month={:02d}'.format(yesterday.month),
+                'day={:02d}'.format(yesterday.day)
             )
         ):
 
             # Open a temporary file to download the Parquet object into
             with tempfile.NamedTemporaryFile(mode='w+b',
                                              dir=TMP_DIR,
-                                             prefix='{}.'.format(today.date().isoformat()),
+                                             prefix='{}.'.format(yesterday.date().isoformat()),
                                              suffix='.parquet',
                                              delete=True) as tempFile:
 
