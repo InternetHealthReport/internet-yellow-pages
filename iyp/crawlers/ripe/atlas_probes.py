@@ -16,7 +16,7 @@ from iyp import BaseCrawler
 ORG = 'RIPE NCC'
 
 URL = 'https://atlas.ripe.net/api/v2/probes'
-NAME = 'atlas.probes'
+NAME = 'ripe.atlas_probes'
 
 
 class Crawler(BaseCrawler):
