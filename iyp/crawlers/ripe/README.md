@@ -31,6 +31,22 @@ property on the relationship.
 (:AS {asn: 2497})-[:ROUTE_ORIGIN_AUTHORIZATION {maxLength: 18}]->(:Prefix {prefix: '49.239.64.0/18'})
 ```
 
+### Atlas Probes - `atlas_probes.py`
+
+[RIPE Atlas](https://atlas.ripe.net/) is an Internet measurement platform maintained by
+the RIPE NCC. RIPE Atlas employs a global network of probes that measure Internet
+connectivity and reachability.
+
+We fetch the [list of probes](https://atlas.ripe.net/docs/apis/rest-api-manual/probes/)
+to model the location of Atlas probes in the graph topology based on the probe's IP(s),
+ASN(s), and country.
+
+```Cypher
+(:AtlasProbe {id: 6425})-[:LOCATED_IN]->(:AS {asn: 2497})
+(:AtlasProbe {id: 6425})-[:COUNTRY]->(:Country {country_code: 'JP'})
+(:IP {ip: '202.214.97.16'})-[:ASSIGNED]->(:AtlasProbe {id: 6425})
+```
+
 ## Dependence
 
 This crawler is not depending on other crawlers.

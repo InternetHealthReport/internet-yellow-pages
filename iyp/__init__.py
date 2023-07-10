@@ -33,6 +33,9 @@ NODE_CONSTRAINTS = {
     'Organization': {
         'name': set(['NOT NULL'])
     },
+    'AtlasProbe': {
+        'id': set(['UNIQUE', 'NOT NULL'])
+    }
 }
 
 # Properties that may be frequently queried and that are not constraints
@@ -101,6 +104,9 @@ def dict2str(d, eq=':', pfx=''):
             data.append(f"{pfx+key}{eq} '{escaped}'")
         elif isinstance(value, str) or isinstance(value, datetime):
             data.append(f'{pfx+key}{eq} "{value}"')
+        elif value is None:
+            # Neo4j does not have the concept of empty properties.
+            pass
         else:
             data.append(f'{pfx+key}{eq} {value}')
 
@@ -281,6 +287,43 @@ class IYP(object):
             return result[0]
         else:
             return None
+
+    def batch_create_nodes(self, type, id_prop: str, node_props: list):
+        """Create multiple nodes in batches based on the entries in node_probs.
+
+        type: either a string or list of strings giving the type(s) of the node.
+        id_prob: the name of the property whose value should be used as key for the
+        returned ID map.
+        node_probs: list of dictionaries of attributes for the nodes.
+
+        Return a map of node IDs mapping the value of id_prob to the ID of the
+        corresponding node.
+        """
+
+        node_props = [format_properties(prop) for prop in node_props]
+
+        # put type in a list
+        type_str = str(type)
+        if isinstance(type, list):
+            type_str = ':'.join(type)
+
+        ids = dict()
+        # create nodes in batches
+        for i in range(0, len(node_props), BATCH_SIZE):
+            batch = node_props[i:i + BATCH_SIZE]
+
+            create_query = f"""WITH $batch AS batch
+            UNWIND batch AS item CREATE (n:{type_str})
+            SET n = item RETURN n.{id_prop} AS {id_prop}, ID(n) AS _id"""
+
+            new_nodes = self.tx.run(create_query, batch=batch)
+
+            for node in new_nodes:
+                ids[node[id_prop]] = node['_id']
+
+            self.commit()
+
+        return ids
 
     def batch_get_node_extid(self, id_type):
         """Find all nodes in the graph which have an EXTERNAL_ID relationship with the
