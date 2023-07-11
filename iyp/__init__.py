@@ -289,14 +289,14 @@ class IYP(object):
             return None
 
     def batch_create_nodes(self, type, id_prop: str, node_props: list):
-        """Create multiple nodes in batches based on the entries in node_probs.
+        """Create multiple nodes in batches based on the entries in node_props.
 
         type: either a string or list of strings giving the type(s) of the node.
-        id_prob: the name of the property whose value should be used as key for the
+        id_prop: the name of the property whose value should be used as key for the
         returned ID map.
-        node_probs: list of dictionaries of attributes for the nodes.
+        node_props: list of dictionaries of attributes for the nodes.
 
-        Return a map of node IDs mapping the value of id_prob to the ID of the
+        Return a map of node IDs mapping the value of id_prop to the ID of the
         corresponding node.
         """
 
