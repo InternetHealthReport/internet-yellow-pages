@@ -107,9 +107,9 @@ logging.warning('Fetching data...')
 status = {}
 no_error = True
 for module_name in conf['iyp']['crawlers']:
-    module = importlib.import_module(module_name)
 
     try:
+        module = importlib.import_module(module_name)
         logging.warning(f'start {module}')
         name = module_name.replace('iyp.crawlers.', '')
         crawler = module.Crawler(module.ORG, module.URL, name)
