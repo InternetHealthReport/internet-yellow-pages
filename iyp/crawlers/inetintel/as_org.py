@@ -9,31 +9,31 @@ from datetime import datetime
 
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
+from github import Github
 
 from iyp import BaseCrawler
 
 
-def get_latest_dataset_url(inetintel_data_url: str, file_name_format: str):
-    pattern = re.compile(r'^\d{4}-\d{2}$')
-    response = requests.get(inetintel_data_url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    date_elements = soup.find_all('a', string=pattern)
-    all_date = []
-    for date_element in date_elements:
-        all_date.append(date_element.text)
-    latest_date = datetime.strptime(all_date[-1], '%Y-%m')
-    dateset_file_name: str = latest_date.strftime(file_name_format)
-    inetintel_data_url_formated: str = inetintel_data_url.replace('github.com', 'raw.githubusercontent.com')
-    inetintel_data_url_formated = inetintel_data_url_formated.replace('tree/', '')
-    full_url: str = f'{inetintel_data_url_formated}/{all_date[-1]}/{dateset_file_name}'
-    return full_url
+def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str): 
+    """Return url to the first file with the given extension found in the latest
+    (alphabetically ordered) folder found in data_dir of the given github_repo.
+    Returns an empty string if no such file is found."""
+
+    gh = Github()
+    repo = gh.get_repo(github_repo)
+    all_data_dir = sorted([d.path for d in repo.get_contents(data_dir)])
+    latest_files = repo.get_contents(all_data_dir[-1])
+    for file in latest_files:
+        if file.path.endswith(file_extension):
+            print(file.download_url)
+            return file.download_url
+
+    return ''
 
 
 # Organization name and URL to data
 ORG = 'Internet Intelligence Lab'
-URL = get_latest_dataset_url('https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping/tree/master/data',
-                             'ii.as-org.v01.%Y-%m.json')
+URL = get_latest_dataset_url('InetIntel/Dataset-AS-to-Organization-Mapping', '/data', '.json')
 NAME = 'inetintel.as_org'  # should reflect the directory and name of this file
 
 
