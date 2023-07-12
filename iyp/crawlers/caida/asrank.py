@@ -19,82 +19,78 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch networks information from ASRank and push to IYP."""
+        print('Fetching CAIDA AS Rank', file=sys.stderr)
 
-        # get ASNs, names, and countries IDs
-        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn')
-        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
-        self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'}, create=True)
+        nodes = list()
 
         has_next = True
         i = 0
         while has_next:
             url = URL + f'&offset={i*10000}'
             i += 1
+            logging.info(f'Fetching {url}')
             req = requests.get(url)
             if req.status_code != 200:
+                logging.error(f'Request failed with status: {req.status_code}')
                 # FIXME should raise an exception
                 sys.exit('Error while fetching data from API')
 
             ranking = json.loads(req.text)['data']['asns']
             has_next = ranking['pageInfo']['hasNextPage']
 
-            asns = set()
-            names = set()
-            countries = set()
+            nodes += ranking['edges']
 
-            # Collect all ASNs and names
-            for node in ranking['edges']:
-                asn = node['node']
+        print(f'Fetched {len(nodes):,d} ranks.', file=sys.stderr)
+        logging.info(f'Fetched {len(nodes):,d} ranks.')
+
+        # Collect all ASNs, names, and countries
+        asns = set()
+        names = set()
+        countries = set()
+        for node in nodes:
+            asn = node['node']
+            if asn['asnName']:
                 names.add(asn['asnName'])
-                asns.add(int(asn['asn']))
-                countries.add(asn['country']['iso'])
+            asns.add(int(asn['asn']))
+            countries.add(asn['country']['iso'])
 
-            # Compute links
-            country_links = []
-            name_links = []
-            rank_links = []
-            asns = set()
-            names = set()
-            countries = set()
+        # Get/create ASNs, names, and country nodes
+        print('Pushing nodes.', file=sys.stderr)
+        logging.info('Pushing nodes.')
+        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
+        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
+        self.name_id = self.iyp.batch_get_nodes('Name', 'name', names, all=False)
+        self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'}, create=True)
 
-            for node in ranking['edges']:
-                asn = node['node']
+        # Compute links
+        country_links = list()
+        name_links = list()
+        rank_links = list()
 
-                names.add(asn['asnName'])
+        for node in nodes:
+            asn = node['node']
 
-                # This may be slow if countries and ASes are not already registered
-                if int(asn['asn']) not in self.asn_id:
-                    self.asn_id[int(asn['asn'])] = self.iyp.get_node('AS', {'asn': int(asn['asn'])}, create=True)
-                if asn['country']['iso'] not in self.country_id:
-                    self.country_id[asn['country']['iso']] = self.iyp.get_node(
-                        'Country', {'country_code': asn['country']['iso']}, create=True)
+            asn_qid = self.asn_id[int(asn['asn'])]
+            country_qid = self.country_id[asn['country']['iso']]
 
-                asn_qid = self.asn_id[int(asn['asn'])]
-                country_qid = self.country_id[asn['country']['iso']]
+            country_links.append({'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]})
 
-                country_links.append({'src_id': asn_qid, 'dst_id': country_qid,
-                                     'props': [self.reference]})  # Set AS name
-                name_links.append({'src_id': asn_qid,
-                                   'dst_name': asn['asnName'],
-                                   'props': [self.reference]})  # Set AS name
+            # Some ASes do not have a name.
+            if asn['asnName']:
+                name_qid = self.name_id[asn['asnName']]
+                name_links.append({'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]})
 
-                # flatten all attributes into one dictionary
-                flat_asn = dict(flatdict.FlatDict(asn))
+            # flatten all attributes into one dictionary
+            flat_asn = dict(flatdict.FlatDict(asn))
 
-                rank_links.append({'src_id': asn_qid, 'dst_id': self.asrank_qid,
-                                  'props': [self.reference, flat_asn]})  # Set AS name
+            rank_links.append({'src_id': asn_qid, 'dst_id': self.asrank_qid, 'props': [self.reference, flat_asn]})
 
-            # Push nodes
-            self.names_id = self.iyp.batch_get_nodes('Name', 'name', names, all=False)
-
-            # Add dst_id in name_links
-            for link in name_links:
-                link['dst_id'] = self.names_id[link['dst_name']]
-
-            # Push all links to IYP
-            self.iyp.batch_add_links('NAME', name_links)
-            self.iyp.batch_add_links('COUNTRY', country_links)
-            self.iyp.batch_add_links('RANK', rank_links)
+        # Push all links to IYP
+        print('Pushing links.', file=sys.stderr)
+        logging.info('Pushing links.')
+        self.iyp.batch_add_links('NAME', name_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('RANK', rank_links)
 
 
 def main() -> None:
