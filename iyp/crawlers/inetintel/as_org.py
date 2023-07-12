@@ -1,11 +1,9 @@
 import argparse
 import logging
 import os
-import re
 import sys
 import tempfile
 from collections import defaultdict
-from datetime import datetime
 
 import pandas as pd
 import requests
@@ -14,10 +12,12 @@ from github import Github
 from iyp import BaseCrawler
 
 
-def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str): 
+def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str):
     """Return url to the first file with the given extension found in the latest
     (alphabetically ordered) folder found in data_dir of the given github_repo.
-    Returns an empty string if no such file is found."""
+
+    Returns an empty string if no such file is found.
+    """
 
     gh = Github()
     repo = gh.get_repo(github_repo)
