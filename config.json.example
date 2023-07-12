@@ -60,7 +60,8 @@
         "post": [
             "iyp.post.ip2prefix",
             "iyp.post.address_family",
-            "iyp.post.country_information"
+            "iyp.post.country_information",
+            "iyp.post.dns_hierarchy"
         ]
     }
 }
