@@ -19,3 +19,4 @@ requests_futures
 autopep8
 flake8
 pre-commit
+PyGithub
