@@ -23,6 +23,11 @@
         "parallel_parsers": 40
     },
 
+    "openintel": {
+        "access_key": "",
+        "secret_key": ""
+    },
+
     "iyp": {
         "crawlers": [
             "iyp.crawlers.manrs.members",
@@ -47,6 +52,9 @@
             "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.tranco.top1M",
             "iyp.crawlers.openintel.tranco1m",
+            "iyp.crawlers.openintel.umbrella1m",
+            "iyp.crawlers.openintel.infra_ns",
+            "iyp.crawlers.openintel.infra_mx",
             "iyp.crawlers.citizenlab.urldb",
             "iyp.crawlers.inetintel.as_org",
             "iyp.crawlers.pch.daily_routing_snapshots_v4",

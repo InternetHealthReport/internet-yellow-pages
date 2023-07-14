@@ -5,11 +5,11 @@ import sys
 
 from iyp.crawlers.openintel import OpenIntelCrawler
 
-URL = 'https://data.openintel.nl/data/tranco1m/'
+URL = 'https://data.openintel.nl/data/umbrella1m/'
 ORG = 'OpenINTEL'
-NAME = 'openintel.tranco1m'
+NAME = 'openintel.umbrella1m'
 
-DATASET = 'tranco'
+DATASET = 'umbrella'
 
 
 class Crawler(OpenIntelCrawler):
