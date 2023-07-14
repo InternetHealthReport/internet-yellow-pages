@@ -47,15 +47,16 @@ class Crawler(OpenIntelCrawler):
         ns_id = self.iyp.batch_get_nodes('AuthoritativeNameServer', 'name', set(df['query_name']))
         ip_id = self.iyp.batch_get_nodes('IP', 'ip', set(df['ip4_address']))
 
-        links = []
-        for ind in df.index:
-            ns_qid = ns_id[df['query_name'][ind]]
-            ip_qid = ip_id[df['ip4_address'][ind]]
-
-            links.append({'src_id': ns_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+        print('Computing links.')
+        links = pd.DataFrame()
+        links['src_id'] = df['query_name'].apply(lambda x: ns_id[x])
+        links['dst_id'] = df['ip4_address'].apply(lambda x: ip_id[x])
+        links['props'] = df['ip4_address'].apply(lambda _: [self.reference])
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RESOLVES_TO', links)
+        print('Pushing {} NS links.'.format(len(links)))
+        self.iyp.batch_add_links('RESOLVES_TO', links.to_dict('records'))
+        print('Done!')
 
 
 def main() -> None:

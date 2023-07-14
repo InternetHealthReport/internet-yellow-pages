@@ -47,16 +47,16 @@ class Crawler(OpenIntelCrawler):
         mx_id = self.iyp.batch_get_nodes('MailServer', 'name', set(df['query_name']))
         ip_id = self.iyp.batch_get_nodes('IP', 'ip', set(df['ip4_address']))
 
-        links = []
-        for ind in df.index:
-            mx_qid = mx_id[df['query_name'][ind]]
-            ip_qid = ip_id[df['ip4_address'][ind]]
-
-            links.append({'src_id': mx_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+        print('Computing links.')
+        links = pd.DataFrame()
+        links['src_id'] = df['query_name'].apply(lambda x: mx_id[x])
+        links['dst_id'] = df['ip4_address'].apply(lambda x: ip_id[x])
+        links['props'] = df['ip4_address'].apply(lambda _: [self.reference])
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RESOLVES_TO', links)
-        print('Push {} unique MX links.'.format(len(links)))
+        print('Pushing {} MX links.'.format(len(links)))
+        self.iyp.batch_add_links('RESOLVES_TO', links.to_dict('records'))
+        print('Done!')
 
 
 def main() -> None:
