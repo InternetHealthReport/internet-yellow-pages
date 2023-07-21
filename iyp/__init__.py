@@ -55,7 +55,7 @@ prop_formatters = {
     'ip': str.lower,
     'prefix': str.lower,
     # country code is kept in capital letter
-    'country_code': str.upper
+    'country_code': lambda s: str.upper(str.strip(s))
 }
 
 
