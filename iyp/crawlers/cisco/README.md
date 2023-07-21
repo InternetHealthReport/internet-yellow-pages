@@ -9,7 +9,7 @@ IYP uses this data to create and annotate DomainName nodes.
 The rank of the domain is indicated by the `rank` property of the relationship.
 
 ```Cypher
-(:DomainName {name: 'com'})-[:RANK {rank: 1}]->(:Ranking {name: 'CISCO Umbrella Top 1 million TLD'})
+(:DomainName {name: 'google.com'})-[:RANK {rank: 1}]->(:Ranking {name: 'Cisco Umbrella Top 1 million'})
 ```
 
 ## Dependence
