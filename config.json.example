@@ -51,6 +51,7 @@
             "iyp.crawlers.peeringdb.ix",
             "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.tranco.top1M",
+            "iyp.crawlers.cisco.umbrella_top1M",
             "iyp.crawlers.openintel.tranco1m",
             "iyp.crawlers.openintel.umbrella1m",
             "iyp.crawlers.openintel.infra_ns",
