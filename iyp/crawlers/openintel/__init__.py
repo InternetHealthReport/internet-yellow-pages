@@ -171,6 +171,7 @@ class OpenIntelCrawler(BaseCrawler):
             )
         ][['query_name', 'response_type', 'ip4_address', 'ip6_address', 'ns_address']].drop_duplicates()
         df.query_name = df.query_name.str[:-1]  # Remove root '.'
+        df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None else None)  # Remove root '.'
 
         print('Read {} unique A records from {} Parquet file(s).'.format(len(df), len(self.pandas_df_list)))
 
