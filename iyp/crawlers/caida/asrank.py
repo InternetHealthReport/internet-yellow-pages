@@ -51,8 +51,10 @@ class Crawler(BaseCrawler):
             asn = node['node']
             if asn['asnName']:
                 names.add(asn['asnName'])
+            country_code = asn['country']['iso']
+            if country_code:
+                countries.add(country_code)
             asns.add(int(asn['asn']))
-            countries.add(asn['country']['iso'])
 
         # Get/create ASNs, names, and country nodes
         print('Pushing nodes.', file=sys.stderr)
@@ -71,13 +73,17 @@ class Crawler(BaseCrawler):
             asn = node['node']
 
             asn_qid = self.asn_id[int(asn['asn'])]
-            country_qid = self.country_id[asn['country']['iso']]
 
-            country_links.append({'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]})
+            # Some ASes do not have a country.
+            country_code = asn['country']['iso']
+            if country_code:
+                country_qid = self.country_id[country_code]
+                country_links.append({'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]})
 
             # Some ASes do not have a name.
-            if asn['asnName']:
-                name_qid = self.name_id[asn['asnName']]
+            name = asn['asnName']
+            if name:
+                name_qid = self.name_id[name]
                 name_links.append({'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]})
 
             # flatten all attributes into one dictionary

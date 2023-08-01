@@ -56,7 +56,9 @@ class UndoBot(object):
         """Sample callback function for 'private' revert bot.
 
         @param item: an item from user contributions
+
         @type item: dict
+
         @rtype: bool
         """
         if 'top' in item:

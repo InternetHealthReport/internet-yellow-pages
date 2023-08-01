@@ -1,9 +1,10 @@
 import argparse
-import os
 import logging
-import tempfile
-import requests
+import os
 import sys
+import tempfile
+
+import requests
 
 from iyp import BaseCrawler
 

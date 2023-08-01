@@ -13,7 +13,7 @@ A clear and concise description of the dataset.
 - Org name:
 - URL: 
 
-**If possible describe how you woud like to model the dataset in the Yellow Pages**
+**If possible describe how you would like to model the dataset in the Yellow Pages**
 - What is the label/type of the nodes used by this dataset?
 
 - What is the label/type of the links for this dataset?

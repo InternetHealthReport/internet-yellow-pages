@@ -5,16 +5,17 @@ import sys
 
 from iyp.crawlers.openintel import OpenIntelCrawler
 
-URL = 'https://data.openintel.nl/data/tranco1m/'
+URL = 'https://data.openintel.nl'
 ORG = 'OpenINTEL'
-NAME = 'openintel.tranco1m'
+NAME = 'openintel.infra_ns'
 
-DATASET = 'tranco'
+DATASET = 'infra:ns'
+NODE_TYPE = 'AuthoritativeNameServer'
 
 
 class Crawler(OpenIntelCrawler):
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name, DATASET)
+        super().__init__(organization, url, name, DATASET, NODE_TYPE)
 
 
 def main() -> None:
