@@ -1,8 +1,9 @@
 import argparse
+import csv
 import logging
 import os
 import sys
-import csv
+
 import requests
 
 from iyp import BaseCrawler
@@ -24,7 +25,6 @@ class Crawler(BaseCrawler):
     # and set up a dictionary with the org/url/today's date in self.reference
 
     def run(self):
-        """Fetch data and push to IYP."""
         # Fetch country codes to generate urls
         req_for_country_codes = requests.get(generate_url('00-LEGEND-country_codes'))
 
@@ -39,8 +39,9 @@ class Crawler(BaseCrawler):
         for row in csv_data:
             country_codes.append(row[0].lower())
 
-        # Iterate through country_codes, generate an url, download the csv file, extract the necessary information
-        # from the csv file, and push the data to IYP.
+        # Iterate through country_codes, generate an url, download the csv file,
+        # extract the necessary information from the csv file,
+        # and push the data to IYP.
         lines = []
         urls = set()
         categories = set()
@@ -50,7 +51,7 @@ class Crawler(BaseCrawler):
             req_with_respect_to_country_code = requests.get(url)
             print('Processing {}'.format(code))
 
-            # There is a possibility that not necessarily every country code have a csv file.
+            # Not necessarily every country code have a csv file.
             # Skipping those don't have one.
             if req_with_respect_to_country_code.status_code != 200:
                 print('Skipping {}'.format(code))
@@ -78,7 +79,7 @@ class Crawler(BaseCrawler):
 
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
-        print("Processed citizenlab/test-lists repo.")
+        print('Processed citizenlab/test-lists repo.')
 
 
 def main() -> None:
