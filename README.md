@@ -2,8 +2,9 @@
 
 ## Public IYP prototype
 
-Visit http://iyp.iijlab.net to try our online prototype. No password is required, just click the 'connect' button to get started.
-This is a read only instance.
+Visit http://iyp.iijlab.net to try our online prototype. No password is required, just click the 'connect' button to get started. Don't know how to use IYP ? Here are the [IYP guides](https://iyp.iijlab.net/guides/) and you could [start from here](https://iyp.iijlab.net/guides/start.html).
+
+Note: This is a read only instance.
 
 ## Deploying a local IYP instance
 
