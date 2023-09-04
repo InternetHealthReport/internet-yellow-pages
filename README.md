@@ -4,8 +4,6 @@
 
 Visit http://iyp.iijlab.net to try our online prototype. No password is required, just click the 'connect' button to get started. Don't know how to use IYP ? You'll find a guide after clicking the 'connect' button, see also examples [here](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/documentation/gallery.md).
 
-Note: This is a read only instance.
-
 ## Deploying a local IYP instance
 
 ### Prerequisites
