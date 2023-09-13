@@ -99,7 +99,7 @@ class Crawler(BaseCrawler):
                 asns = set()
                 for i, asn in enumerate(selected):
                     asns.add(asn['asn'])
-                    asn['rank'] = i
+                    asn['rank'] = i + 1
 
                 self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
 
