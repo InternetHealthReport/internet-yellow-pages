@@ -16,7 +16,7 @@ NAME = 'bgptools.tags'
 TAGS = {
     'cdn': 'Content Delivery Network',
     'dsl': 'Home ISP',
-    'a10k': 'Alexa 10k Host',
+    'a10k': 'Tranco 10k Host',
     'icrit': 'Internet Critical Infra',
     'tor': 'ToR Services',
     'anycast': 'Anycast',
@@ -30,7 +30,8 @@ TAGS = {
     'mobile': 'Mobile Data/Carrier',
     'satnet': 'Satellite Internet',
     'biznet': 'Business Broadband',
-    'corp': 'Corporate/Enterprise'
+    'corp': 'Corporate/Enterprise',
+    'rpkirov': 'Validating RPKI ROV'
 }
 
 

@@ -42,8 +42,13 @@ def valid_date(s):
 
 
 class OpenIntelCrawler(BaseCrawler):
-    def __init__(self, organization, url, name, dataset):
+    def __init__(self, organization, url, name, dataset, domain_type='DomainName'):
+        """Initialization of the OpenIntel crawler requires the name of the dataset
+        (e.g. tranco or infra:ns) and the node label corresponding to the fetched domain
+        names (e.g. 'Domain' or 'AuthoritativeNameServer')"""
+
         self.dataset = dataset
+        self.domain_type = domain_type
         super().__init__(organization, url, name)
 
     def get_parquet(self):
@@ -128,7 +133,12 @@ class OpenIntelCrawler(BaseCrawler):
                 self.pandas_df_list.append(
                     pd.read_parquet(tempFile.name,
                                     engine='fastparquet',
-                                    columns=['query_name', 'response_type', 'ip4_address'])
+                                    columns=[
+                                        'query_name',
+                                        'response_type',
+                                        'ip4_address',
+                                        'ip6_address',
+                                        'ns_address'])
                 )
 
     def run(self):
@@ -144,29 +154,57 @@ class OpenIntelCrawler(BaseCrawler):
         # Concatenate Parquet file-specific DFs
         pandas_df = pd.concat(self.pandas_df_list)
 
-        # Select registered domain name (SLD) to IPv4 address mappings from the
-        # measurement data
+        # Select A, AAAA, and NS mappings from the measurement data
         df = pandas_df[
-            # IPv4 record
-            (pandas_df.response_type == 'A') &
+            (
+                (pandas_df.response_type == 'A') |
+                (pandas_df.response_type == 'AAAA') |
+                (pandas_df.response_type == 'NS')
+            ) &
             # Filter out non-apex records
             (~pandas_df.query_name.str.startswith('www.')) &
-            # Filter missing IPv4 addresses (there is at least one...)
-            (pandas_df.ip4_address.notnull())
-        ][['query_name', 'ip4_address']].drop_duplicates()
+            # Filter missing addresses (there is at least one...)
+            (
+                (pandas_df.ip4_address.notnull()) |
+                (pandas_df.ip6_address.notnull()) |
+                (pandas_df.ns_address.notnull())
+            )
+        ][['query_name', 'response_type', 'ip4_address', 'ip6_address', 'ns_address']].drop_duplicates()
         df.query_name = df.query_name.str[:-1]  # Remove root '.'
+        df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None else None)  # Remove root '.'
 
         print('Read {} unique A records from {} Parquet file(s).'.format(len(df), len(self.pandas_df_list)))
 
-        domain_id = self.iyp.batch_get_nodes('DomainName', 'name', set(df['query_name']))
-        ip_id = self.iyp.batch_get_nodes('IP', 'ip', set(df['ip4_address']))
+        domain_id = self.iyp.batch_get_nodes(self.domain_type, 'name', set(df['query_name']))
+        ns_id = self.iyp.batch_get_nodes('AuthoritativeNameServer', 'name',
+                                         set(df[df.ns_address.notnull()]['ns_address']))
+        ip4_id = self.iyp.batch_get_nodes('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
+        ip6_id = self.iyp.batch_get_nodes('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
+        res_links = []
+        mng_links = []
 
-        links = []
+        print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
+
         for ind in df.index:
             domain_qid = domain_id[df['query_name'][ind]]
-            ip_qid = ip_id[df['ip4_address'][ind]]
 
-            links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+            # A Record
+            if df['response_type'][ind] == 'A' and df['ip4_address'][ind]:
+                ip_qid = ip4_id[df['ip4_address'][ind]]
+                res_links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+
+            # AAAA Record
+            elif df['response_type'][ind] == 'AAAA' and df['ip6_address'][ind]:
+                ip_qid = ip6_id[df['ip6_address'][ind]]
+                res_links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+
+            # NS Record
+            elif df['response_type'][ind] == 'NS' and df['ns_address'][ind]:
+                ns_qid = ns_id[df['ns_address'][ind]]
+                mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
+
+        print(f'Computed {len(res_links)} RESOLVES_TO links and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RESOLVES_TO', links)
+        self.iyp.batch_add_links('RESOLVES_TO', res_links)
+        self.iyp.batch_add_links('MANAGED_BY', mng_links)
