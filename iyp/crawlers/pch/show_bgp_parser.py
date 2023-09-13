@@ -90,7 +90,13 @@ class ShowBGPParser:
             # Can only happen to IPv4 addresses.
             # See RFC 791:
             # https://datatracker.ietf.org/doc/html/rfc791
-            address = IPv4Address(line_split.pop(0))
+            try:
+                address_str = line_split.pop(0)
+                address = IPv4Address(address_str)
+            except AddressValueError as e:
+                logging.error(f'{self.collector}: Invalid classful address: {address_str}')
+                logging.error(f'{self.collector}: {e}')
+                return None
             address_int = int(address.packed.hex(), base=16)
             if address_int >> 31 == 0b0:
                 network = f'{address}/8'
@@ -100,7 +106,7 @@ class ShowBGPParser:
                 network = f'{address}/24'
             else:
                 logging.error(f'{self.collector}: Invalid classful address: {address}')
-                network = str()
+                return None
             network = last_pfx
         else:
             # Prefix inherited from previous line.
@@ -161,7 +167,7 @@ class ShowBGPParser:
                 incomplete_origin_routes += 1
                 continue
             if not route.path:
-                logging.warning(f'{self.collector}: Route without AS path: {route}')
+                logging.debug(f'{self.collector}: Route without AS path: {route}')
                 continue
             origin = route.path[-1].strip('{}')
             if ',' in origin:
@@ -234,6 +240,8 @@ class ShowBGPParser:
                     # Sometimes even three...
                     line_split += next(lines).strip().split()
             route = self.__parse_line(line_split, last_pfx)
+            if route is None:
+                continue
             # Keep track of the last seen prefix, since it can be
             # inherited by subsequent lines.
             last_pfx = route.network

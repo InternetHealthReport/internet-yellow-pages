@@ -266,10 +266,9 @@ class RoutingSnapshotCrawler(BaseCrawler):
                                  f'{latest_available_date.strftime("%Y-%m-%d")}')
             if failed_fetches:
                 # Max lookback reached.
-                logging.error(f'Failed to find current data for {len(failed_fetches)} collectors: {failed_fetches}')
+                logging.warning(f'Failed to find current data for {len(failed_fetches)} collectors: {failed_fetches}')
                 print(f'Failed to find current data for {len(failed_fetches)} collectors: {failed_fetches}',
                       file=sys.stderr)
-                return True
 
         return False
 
