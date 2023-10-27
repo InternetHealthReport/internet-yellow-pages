@@ -1,8 +1,5 @@
-import argparse
 import csv
-import logging
 import os
-import sys
 from datetime import datetime, time, timezone
 
 import arrow
@@ -10,11 +7,6 @@ import lz4.frame
 import requests
 
 from iyp import BaseCrawler
-
-# URL to the API
-URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv4/local/{year}/{month:02d}/{day:02d}/ihr_hegemony_ipv4_local_{year}-{month:02d}-{day:02d}.csv.lz4'  # noqa: E501
-ORG = 'IHR'
-NAME = 'ihr.local_hegemony'
 
 
 class lz4Csv:
@@ -38,27 +30,30 @@ class lz4Csv:
             raise StopIteration
 
 
-class Crawler(BaseCrawler):
+class HegemonyCrawler(BaseCrawler):
+    def __init__(self, organization, url, name, af):
+        self.af = af
+        super().__init__(organization, url, name)
 
     def run(self):
         """Fetch data from file and push to IYP."""
 
         today = arrow.utcnow()
-        url = URL.format(year=today.year, month=today.month, day=today.day)
+        url = self.url.format(year=today.year, month=today.month, day=today.day)
         req = requests.head(url)
         if req.status_code != 200:
             today = today.shift(days=-1)
-            url = URL.format(year=today.year, month=today.month, day=today.day)
+            url = self.url.format(year=today.year, month=today.month, day=today.day)
             req = requests.head(url)
             if req.status_code != 200:
                 today = today.shift(days=-1)
-                url = URL.format(year=today.year, month=today.month, day=today.day)
+                url = self.url.format(year=today.year, month=today.month, day=today.day)
                 req = requests.head(url)
 
         self.reference = {
             'reference_url': url,
-            'reference_org': ORG,
-            'reference_name': NAME,
+            'reference_org': self.organization,
+            'reference_name': self.name,
             'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
@@ -79,6 +74,7 @@ class Crawler(BaseCrawler):
 
             rec = dict(zip(self.csv.fields, line))
             rec['hege'] = float(rec['hege'])
+            rec['af'] = self.af
 
             if self.timebin is None:
                 self.timebin = rec['timebin']
@@ -104,33 +100,3 @@ class Crawler(BaseCrawler):
 
         # Remove downloaded file
         os.remove(local_filename)
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--unit-test', action='store_true')
-    args = parser.parse_args()
-
-    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
-    FORMAT = '%(asctime)s %(levelname)s %(message)s'
-    logging.basicConfig(
-        format=FORMAT,
-        filename='log/' + scriptname + '.log',
-        level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-
-    logging.info(f'Started: {sys.argv}')
-
-    crawler = Crawler(ORG, URL, NAME)
-    if args.unit_test:
-        crawler.unit_test(logging)
-    else:
-        crawler.run()
-        crawler.close()
-    logging.info(f'Finished: {sys.argv}')
-
-
-if __name__ == '__main__':
-    main()
-    sys.exit(0)
