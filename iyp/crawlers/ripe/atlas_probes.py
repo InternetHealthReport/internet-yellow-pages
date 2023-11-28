@@ -147,13 +147,12 @@ class Crawler(BaseCrawler):
             asv4 = probe['asn_v4']
             if asv4:
                 as_qid = as_id[asv4]
-                located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference]})
+                located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]})
 
             asv6 = probe['asn_v6']
-            # Only add another LOCATED_IN link if ASes are different.
-            if asv6 and asv6 != asv4:
+            if asv6:
                 as_qid = as_id[asv6]
-                located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference]})
+                located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
 
             country_code = probe['country_code']
             if country_code and country_code in iso3166.countries_by_alpha2:
