@@ -28,6 +28,11 @@
         "secret_key": ""
     },
 
+    "ooni": {
+        "username": "",
+        "password": ""
+    },
+
     "iyp": {
         "crawlers": [
             "iyp.crawlers.manrs.members",
@@ -41,7 +46,8 @@
             "iyp.crawlers.bgpkit.peerstats",
             "iyp.crawlers.nro.delegated_stats",
             "iyp.crawlers.ripe.roa",
-            "iyp.crawlers.ihr.local_hegemony",
+            "iyp.crawlers.ihr.local_hegemony_v4",
+            "iyp.crawlers.ihr.local_hegemony_v6",
             "iyp.crawlers.ihr.rov",
             "iyp.crawlers.bgptools.tags",
             "iyp.crawlers.bgptools.anycast_prefixes",
