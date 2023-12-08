@@ -20,3 +20,4 @@ autopep8
 flake8
 pre-commit
 PyGithub
+clickhouse_driver
