@@ -103,6 +103,11 @@ if not container_ready:
 
 # ######### Fetch data and feed to neo4j ##########
 
+class RelationCountError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
 logging.warning('Fetching data...')
 status = {}
 no_error = True
@@ -113,11 +118,24 @@ for module_name in conf['iyp']['crawlers']:
         logging.warning(f'start {module}')
         name = module_name.replace('iyp.crawlers.', '')
         crawler = module.Crawler(module.ORG, module.URL, name)
+        relations_count = crawler.count_relations()
         crawler.run()
+        relations_count_new = crawler.count_relations()
         crawler.close()
+        if not relations_count_new > relations_count:
+            error_message = (
+                f"Unexpected relation count change in the crawler '{name}': "
+                f"Expected new relations ({relations_count_new}) "
+                f"to be greater than the previous relations ({relations_count})."
+            )
+            raise RelationCountError(error_message)
         status[module_name] = 'OK'
         logging.warning(f'end {module}')
-
+    except RelationCountError as relation_count_error:
+        no_error = False
+        logging.error(relation_count_error)
+        status[module_name] = relation_count_error
+        send_email(relation_count_error)
     except Exception as e:
         no_error = False
         logging.exception('crawler crashed!!')
