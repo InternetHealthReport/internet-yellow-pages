@@ -103,10 +103,12 @@ if not container_ready:
 
 # ######### Fetch data and feed to neo4j ##########
 
+
 class RelationCountError(Exception):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
+
 
 logging.warning('Fetching data...')
 status = {}
