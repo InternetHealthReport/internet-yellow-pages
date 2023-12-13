@@ -425,6 +425,28 @@ class IYP(object):
 
         self.tx.run(matches + where + merges).consume()
 
+    def batch_add_properties(self, id_prop_list):
+        """Add properties to existing nodes.
+
+        id_prop_list should be a list of (int, dict) tuples, where the int refers to the
+        node id and the dict contains the properties that should be added to the node.
+        """
+        # Ensure proper formatting and transform into dict.
+        formatted_props = [{'id': node_id, 'props': format_properties(props)} for node_id, props in id_prop_list]
+
+        for i in range(0, len(formatted_props), BATCH_SIZE):
+            batch = formatted_props[i: i + BATCH_SIZE]
+
+            add_query = """WITH $batch AS batch
+            UNWIND batch AS item
+            MATCH (n)
+            WHERE ID(n) = item.id
+            SET n += item.props"""
+
+            res = self.tx.run(add_query, batch=batch)
+            res.consume()
+        self.commit()
+
     def close(self):
         """Commit pending queries and close IYP."""
         self.tx.commit()

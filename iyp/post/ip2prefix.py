@@ -9,17 +9,36 @@ from iyp import BasePostProcess
 
 
 class PostProcess(BasePostProcess):
+    @staticmethod
+    def __get_network_and_prefixlen(prefix):
+        """Split an IP prefix into its network and prefix length.
+
+        Return the prefix length as an integer. Return None if the prefix is invalid.
+        """
+        prefix_split = prefix.split('/')
+        if len(prefix_split) != 2 or not prefix_split[1].isdigit():
+            logging.error(f'Invalid prefix: {prefix}')
+            return None
+        return (prefix_split[0], int(prefix_split[1]))
+
     def run(self):
         """Fetch all IP and Prefix nodes, then link IPs to their most specific
         prefix."""
 
-        # Get all prefixes in a radix trie
+        # Get all prefixes in a radix tree
         prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix')
+        additional_properties = list()
 
         rtree = radix.Radix()
         for prefix, prefix_qid in prefix_id.items():
-            rnode = rtree.add(prefix,)
+            rnode = rtree.add(prefix)
             rnode.data['id'] = prefix_qid
+            prefix_split = self.__get_network_and_prefixlen(prefix)
+            if prefix_split is not None:
+                additional_properties.append((prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]}))
+
+        # Add network and prefixlen properties
+        self.iyp.batch_add_properties(additional_properties)
 
         # Get all IP nodes
         ip_id = self.iyp.batch_get_nodes('IP', 'ip')
