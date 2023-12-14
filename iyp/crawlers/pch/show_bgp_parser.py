@@ -107,7 +107,6 @@ class ShowBGPParser:
             else:
                 logging.error(f'{self.collector}: Invalid classful address: {address}')
                 return None
-            network = last_pfx
         else:
             # Prefix inherited from previous line.
             network = last_pfx

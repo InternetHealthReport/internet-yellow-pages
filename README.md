@@ -13,14 +13,40 @@ Visit http://iyp.iijlab.net to try our online prototype. No password is required
 - about 30GB of free disk space
 
 ### Downloading the Database dump
-First you need to download a database dump using the following commands. 
-A preliminary dump is available at https://exp1.iijlab.net/wip/iyp/dumps/2023/05/15/iyp-2023-05-15.dump :
+
+#### Explore and Download Dumps
+
+Visit the database dumps repository at:
 ```
-mkdir dumps
-curl https://exp1.iijlab.net/wip/iyp/dumps/2023/05/15/iyp-2023-05-15.dump -o dumps/neo4j.dump
+https://exp1.iijlab.net/wip/iyp/dumps/
 ```
 
-This creates a directory named `dumps` and put the downloaded file to `dumps/neo4j.dump`
+#### Specific Dump Format
+
+Dumps are organized by year, month, and day in this format:
+```
+https://exp1.iijlab.net/wip/iyp/dumps/YYYY/MM/DD/iyp-YYYY-MM-DD.dump
+```
+
+Replace `YYYY`, `MM`, and `DD` in the URL with the desired date to access a specific database dump.
+
+#### Download Instructions
+
+1. **Create a Directory:**
+
+   Execute the following command to create a `dumps` directory in your current working directory:
+   ```
+   mkdir dumps
+   ```
+
+2. **Download the Database Dump:**
+
+   Use `curl` to download the database dump and save it in the `dumps/neo4j.dump` path:
+   ```
+   curl https://exp1.iijlab.net/wip/iyp/dumps/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
+   ```
+
+Remember to replace `YYYY`, `MM`, and `DD` in the download command with the specific date you require.
 
 ### Setting up IYP
 To uncompress the dump and start the database run the following command:

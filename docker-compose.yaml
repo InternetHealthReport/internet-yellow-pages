@@ -9,6 +9,7 @@ services:
     volumes:
       - ./data:/data
       - ./dumps:/dumps
+      - ./backups:/backups
     command: neo4j-admin database load neo4j --from-path=/dumps --verbose
 
   iyp:
