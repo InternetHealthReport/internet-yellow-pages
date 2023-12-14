@@ -52,7 +52,7 @@ class Crawler(BaseCrawler):
             # and make sure the ranking is sorted and add rank field
             ranking.sort(key=lambda x: x['percent'], reverse=True)
             for i, asn in enumerate(ranking):
-                asn['rank'] = i
+                asn['rank'] = i + 1
                 asns.add(asn['as'])
                 names.add(asn['autnum'])
 
