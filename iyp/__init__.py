@@ -313,8 +313,8 @@ class IYP(object):
             batch = node_props[i:i + BATCH_SIZE]
 
             create_query = f"""WITH $batch AS batch
-            UNWIND batch AS item CREATE (n:{type_str})
-            SET n = item RETURN n.{id_prop} AS {id_prop}, ID(n) AS _id"""
+            UNWIND batch AS item MERGE (n:{type_str} {{{id_prop}: item.{id_prop}}})
+            SET n += item RETURN n.{id_prop} AS {id_prop}, ID(n) AS _id"""
 
             new_nodes = self.tx.run(create_query, batch=batch)
 
