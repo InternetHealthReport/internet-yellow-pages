@@ -63,7 +63,7 @@ class Crawler(BaseCrawler):
                 print(req.text)
                 sys.exit('Error while fetching AS names')
 
-            self.tag_qid = self.iyp.get_node('Tag', {'label': label}, create=True)
+            self.tag_qid = self.iyp.get_node('Tag', {'label': label})
             for line in req.text.splitlines():
                 # skip header
                 if line.startswith('asn'):
@@ -71,7 +71,7 @@ class Crawler(BaseCrawler):
 
                 # Parse given line to get ASN, name, and country code
                 asn, _, _ = line.partition(',')
-                asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
+                asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]})
                 statements = [['CATEGORIZED', self.tag_qid, self.reference]]  # Set AS name
 
                 try:

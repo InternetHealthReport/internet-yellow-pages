@@ -63,8 +63,7 @@ class Crawler(BaseCrawler):
             stats = json.load(bz2.open(req.raw))
             collector_qid = self.iyp.get_node(
                 'BGPCollector',
-                {'name': stats['collector'], 'project': stats['project']},
-                create=True
+                {'name': stats['collector'], 'project': stats['project']}
             )
             self.reference['reference_url'] = url
 
@@ -75,7 +74,7 @@ class Crawler(BaseCrawler):
                 asns.add(peer['asn'])
 
             # get ASNs' IDs
-            self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
+            self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
 
             # Compute links
             links = []

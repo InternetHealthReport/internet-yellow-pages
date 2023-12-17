@@ -74,10 +74,10 @@ class Crawler(BaseCrawler):
         self.csv = lz4Csv(local_filename)
 
         logging.warning('Getting node IDs from neo4j...\n')
-        asn_id = self.iyp.batch_get_nodes('AS', 'asn')
-        prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix')
-        tag_id = self.iyp.batch_get_nodes('Tag', 'label')
-        country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix')
+        tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label')
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
 
         orig_links = []
         tag_links = []
@@ -98,26 +98,26 @@ class Crawler(BaseCrawler):
 
             prefix = rec['prefix']
             if prefix not in prefix_id:
-                prefix_id[prefix] = self.iyp.get_node('Prefix', {'prefix': prefix}, create=True)
+                prefix_id[prefix] = self.iyp.get_node('Prefix', {'prefix': prefix})
 
             # make status/country/origin links only for lines where asn=originasn
             if rec['asn_id'] == rec['originasn_id']:
                 # Make sure all nodes exist
                 originasn = int(rec['originasn_id'])
                 if originasn not in asn_id:
-                    asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn}, create=True)
+                    asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn})
 
                 rpki_status = 'RPKI ' + rec['rpki_status']
                 if rpki_status not in tag_id:
-                    tag_id[rpki_status] = self.iyp.get_node('Tag', {'label': rpki_status}, create=True)
+                    tag_id[rpki_status] = self.iyp.get_node('Tag', {'label': rpki_status})
 
                 irr_status = 'IRR ' + rec['irr_status']
                 if irr_status not in tag_id:
-                    tag_id[irr_status] = self.iyp.get_node('Tag', {'label': irr_status}, create=True)
+                    tag_id[irr_status] = self.iyp.get_node('Tag', {'label': irr_status})
 
                 cc = rec['country_id']
                 if cc not in country_id:
-                    country_id[cc] = self.iyp.get_node('Country', {'country_code': cc}, create=True)
+                    country_id[cc] = self.iyp.get_node('Country', {'country_code': cc})
 
                 # Compute links
                 orig_links.append({
@@ -147,7 +147,7 @@ class Crawler(BaseCrawler):
             # Dependency links
             asn = int(rec['asn_id'])
             if asn not in asn_id:
-                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
+                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn})
 
             dep_links.append({
                 'src_id': prefix_id[prefix],

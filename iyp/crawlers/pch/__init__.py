@@ -306,8 +306,8 @@ class RoutingSnapshotCrawler(BaseCrawler):
         # Get/push nodes.
         logging.info(f'Fetching {len(ases)} AS and {len(prefixes)} Prefix nodes.')
         print(f'Fetching {len(ases)} AS and {len(prefixes)} Prefix nodes.')
-        as_ids = self.iyp.batch_get_nodes('AS', 'asn', ases, all=False)
-        prefix_ids = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes, all=False)
+        as_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
+        prefix_ids = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
 
         # Push relationships.
         relationships = list()

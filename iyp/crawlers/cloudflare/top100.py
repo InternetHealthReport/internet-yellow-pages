@@ -26,7 +26,7 @@ class Crawler(BaseCrawler):
         """Fetch data and push to IYP."""
 
         self.cf_qid = self.iyp.get_node(
-            'Ranking', {'name': 'Cloudflare top 100 domains'}, create=True)
+            'Ranking', {'name': 'Cloudflare top 100 domains'})
 
         # Fetch data
         headers = {
@@ -52,7 +52,7 @@ class Crawler(BaseCrawler):
 
         # Commit to IYP
         # Get the AS's node ID (create if it is not yet registered) and commit changes
-        domain_qid = self.iyp.get_node('DomainName', {'name': entry['domain']}, create=True)
+        domain_qid = self.iyp.get_node('DomainName', {'name': entry['domain']})
         self.iyp.add_links(domain_qid, statements)
 
 

@@ -121,10 +121,10 @@ class Crawler(BaseCrawler):
         probe_id = dict()
         # Each probe is a JSON object with nested fields, so we need to flatten it.
         flattened_probes = [dict(flatdict.FlatterDict(probe, delimiter='_')) for probe in valid_probes]
-        probe_id = self.iyp.batch_create_nodes('AtlasProbe', 'id', flattened_probes)
-        ip_id = self.iyp.batch_get_nodes('IP', 'ip', ips, all=False)
-        as_id = self.iyp.batch_get_nodes('AS', 'asn', ases, all=False)
-        country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
+        probe_id = self.iyp.batch_get_nodes('AtlasProbe', flattened_probes, ['id'])
+        ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False)
+        as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
 
         # compute links
         assigned_links = list()

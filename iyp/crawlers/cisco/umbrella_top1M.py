@@ -20,7 +20,7 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch Umbrella top 1M and push to IYP."""
 
-        self.cisco_qid = self.iyp.get_node('Ranking', {'name': 'Cisco Umbrella Top 1 million'}, create=True)
+        self.cisco_qid = self.iyp.get_node('Ranking', {'name': 'Cisco Umbrella Top 1 million'})
 
         sys.stderr.write('Downloading latest list...\n')
         req = requests.get(URL)
@@ -40,7 +40,7 @@ class Crawler(BaseCrawler):
                     links.append({'src_name': domain, 'dst_id': self.cisco_qid,
                                   'props': [self.reference, {'rank': int(rank)}]})
 
-        name_id = self.iyp.batch_get_nodes('DomainName', 'name', domains)
+        name_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains)
 
         for link in links:
             link['src_id'] = name_id[link['src_name']]

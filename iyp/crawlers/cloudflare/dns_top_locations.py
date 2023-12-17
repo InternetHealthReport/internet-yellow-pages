@@ -103,7 +103,7 @@ class Crawler(BaseCrawler):
         # FIXME this should be called before/separately
         self.fetch()
 
-        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
         self.statements = []
 
         tmp_dir = self.get_tmp_dir()

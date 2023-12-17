@@ -27,7 +27,7 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             sys.exit('Error while fetching delegated file')
 
-        asn_id = self.iyp.batch_get_nodes('AS', 'asn')
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
 
         # Read delegated-stats file. see documentation:
         # https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt
@@ -66,9 +66,9 @@ class Crawler(BaseCrawler):
 
         # Create all nodes
         logging.warning('Pushing nodes to neo4j...\n')
-        opaqueid_id = self.iyp.batch_get_nodes('OpaqueID', 'id', opaqueids)
-        prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes)
-        country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
+        opaqueid_id = self.iyp.batch_get_nodes_by_single_prop('OpaqueID', 'id', opaqueids)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
 
         # Compute links
         country_links = []

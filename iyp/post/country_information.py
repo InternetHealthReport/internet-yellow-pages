@@ -13,7 +13,7 @@ class PostProcess(BasePostProcess):
         """Enrich Country nodes with additional information like alpha-3 codes and
         country names."""
 
-        country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
 
         for country_code in country_id:
             if country_code not in iso3166.countries_by_alpha2:

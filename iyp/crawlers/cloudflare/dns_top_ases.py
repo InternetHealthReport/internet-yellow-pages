@@ -18,7 +18,7 @@ class Crawler(Crawler):
     def run(self):
         """Push data to IYP."""
 
-        self.as_id = self.iyp.batch_get_nodes('AS', 'asn')
+        self.as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
 
         super().run()
 

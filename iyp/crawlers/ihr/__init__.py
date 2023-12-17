@@ -64,7 +64,7 @@ class HegemonyCrawler(BaseCrawler):
         self.csv = lz4Csv(local_filename)
 
         self.timebin = None
-        asn_id = self.iyp.batch_get_nodes('AS', 'asn', set())
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', set())
 
         links = []
 
@@ -83,11 +83,11 @@ class HegemonyCrawler(BaseCrawler):
 
             originasn = int(rec['originasn'])
             if originasn not in asn_id:
-                asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn}, create=True)
+                asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn})
 
             asn = int(rec['asn'])
             if asn not in asn_id:
-                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn}, create=True)
+                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn})
 
             links.append({
                 'src_id': asn_id[originasn],

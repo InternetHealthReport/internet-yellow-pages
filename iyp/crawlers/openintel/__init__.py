@@ -175,11 +175,11 @@ class OpenIntelCrawler(BaseCrawler):
 
         print('Read {} unique A records from {} Parquet file(s).'.format(len(df), len(self.pandas_df_list)))
 
-        domain_id = self.iyp.batch_get_nodes(self.domain_type, 'name', set(df['query_name']))
-        ns_id = self.iyp.batch_get_nodes('AuthoritativeNameServer', 'name',
-                                         set(df[df.ns_address.notnull()]['ns_address']))
-        ip4_id = self.iyp.batch_get_nodes('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
-        ip6_id = self.iyp.batch_get_nodes('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
+        domain_id = self.iyp.batch_get_nodes_by_single_prop(self.domain_type, 'name', set(df['query_name']))
+        ns_id = self.iyp.batch_get_nodes_by_single_prop('AuthoritativeNameServer', 'name',
+                                                        set(df[df.ns_address.notnull()]['ns_address']))
+        ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
+        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
         res_links = []
         mng_links = []
 

@@ -21,7 +21,7 @@ class PostProcess(BasePostProcess):
         print('Building DNS hierarchy.', file=sys.stderr)
 
         # Fetch all existing DomainName nodes.
-        dns_id = self.iyp.batch_get_nodes('DomainName', 'name')
+        dns_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
         logging.info(f'Fetched {len(dns_id):,d} DomainName nodes.')
         print(f'Fetched {len(dns_id):,d} DomainName nodes.', file=sys.stderr)
 
@@ -42,7 +42,7 @@ class PostProcess(BasePostProcess):
         # Create new nodes.
         logging.info(f'Creating {len(new_nodes):,d} new DomainName nodes.')
         print(f'Creating {len(new_nodes):,d} new DomainName nodes.', file=sys.stderr)
-        dns_id.update(self.iyp.batch_get_nodes('DomainName', 'name', new_nodes, all=False))
+        dns_id.update(self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', new_nodes, all=False))
 
         # Build relationships and push to IYP.
         part_of_links = list()

@@ -34,7 +34,7 @@ class Crawler(BaseCrawler):
             rels.append(rel)
 
         # get ASNs IDs
-        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
+        self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
 
         # Compute links
         links = []

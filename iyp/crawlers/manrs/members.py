@@ -23,8 +23,7 @@ class Crawler(BaseCrawler):
 
         self.manrs_qid = self.iyp.get_node(
             'Organization',
-            {'name': 'MANRS'},
-            create=True
+            {'name': 'MANRS'}
         )
 
         # Actions defined by MANRS
@@ -55,7 +54,7 @@ class Crawler(BaseCrawler):
                     'name': action['label'],
                     'description': action['description']
                 },
-                create=True
+                id_properties={'name'}
             )
 
         # Reference information for data pushed to IYP
@@ -94,7 +93,7 @@ class Crawler(BaseCrawler):
 
         # set countries
         for cc in areas.split(';'):
-            country_qid = self.iyp.get_node('Country', {'country_code': cc}, create=True)
+            country_qid = self.iyp.get_node('Country', {'country_code': cc})
             statements.append(['COUNTRY', country_qid, self.reference])
 
         # set actions
@@ -106,7 +105,7 @@ class Crawler(BaseCrawler):
         for asn in asns.split(';'):
             if asn:     # ignore organizations with no ASN
                 # Get the AS QID (create if AS is not yet registered) and commit changes
-                as_qid = self.iyp.get_node('AS', {'asn': str(asn)}, create=True)
+                as_qid = self.iyp.get_node('AS', {'asn': str(asn)})
                 self.iyp.add_links(as_qid, statements)
 
 
