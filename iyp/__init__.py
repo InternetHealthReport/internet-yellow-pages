@@ -190,7 +190,7 @@ class IYP(object):
         set all=False.
         This method commits changes to the database.
         """
-        if type(label) is list and create:
+        if isinstance(label, list) and create:
             raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
         if prop_set and prop_name in prop_formatters:
@@ -280,6 +280,7 @@ class IYP(object):
         #   64497.
         #   The returned id map would be:
         #     {1: x, 2: y}
+
         if isinstance(label, list) and create:
             raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
@@ -307,7 +308,7 @@ class IYP(object):
         # predicate that is contained within the node specification.
         # For id_properties = ['x', 'y'] this will result in
         #   {x: prop.x, y: prop.y}
-        # The RETURN clause is actually only a part, namely
+        # The RETURN clause is actually only a part of it, namely
         #   a.x AS x, a.y AS y
         # for the example above.
         where_clause = ['{']
