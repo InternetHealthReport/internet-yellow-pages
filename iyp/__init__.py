@@ -193,16 +193,21 @@ class IYP(object):
         if isinstance(label, list) and create:
             raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
+        # Assemble label
+        label_str = str(label)
+        if isinstance(label, list):
+            label_str = ':'.join(label)
+
         if prop_set and prop_name in prop_formatters:
             prop_set = set(map(prop_formatters[prop_name], prop_set))
 
         if all:
-            existing_nodes = self.tx.run(f'MATCH (n:{label}) RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id')
+            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id')
         else:
             list_prop = list(prop_set)
             existing_nodes = self.tx.run(f"""
             WITH $list_prop AS list_prop
-            MATCH (n:{label})
+            MATCH (n:{label_str})
             WHERE n.{prop_name} IN list_prop
             RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id""", list_prop=list_prop)
 
@@ -217,7 +222,7 @@ class IYP(object):
                 batch = missing_nodes[i:i + BATCH_SIZE]
 
                 create_query = f"""WITH $batch AS batch
-                UNWIND batch AS item CREATE (n:{label})
+                UNWIND batch AS item CREATE (n:{label_str})
                 SET n = item RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id"""
 
                 new_nodes = self.tx.run(create_query, batch=batch)
