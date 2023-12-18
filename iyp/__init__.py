@@ -9,41 +9,6 @@ from shutil import rmtree
 
 from neo4j import GraphDatabase
 
-# Usual constraints on nodes' properties
-NODE_CONSTRAINTS = {
-    'AS': {
-        'asn': set(['UNIQUE', 'NOT NULL'])
-    },
-    'Prefix': {
-        'prefix': set(['UNIQUE', 'NOT NULL']),
-        #                'af': set(['NOT NULL'])
-    },
-    'IP': {
-        'ip': set(['UNIQUE', 'NOT NULL']),
-        # 'af': set(['NOT NULL'])
-    },
-    'DomainName': {
-        'name': set(['UNIQUE', 'NOT NULL'])
-    },
-    'Country': {
-        'country_code': set(['UNIQUE', 'NOT NULL'])
-    },
-    'Organization': {
-        'name': set(['NOT NULL'])
-    },
-    'AtlasProbe': {
-        'id': set(['UNIQUE', 'NOT NULL'])
-    }
-}
-
-# Properties that may be frequently queried and that are not constraints
-NODE_INDEXES = {
-    'PeeringdbOrgID': ['id']
-}
-
-# Set of node labels with constrains (ease search for node merging)
-NODE_CONSTRAINTS_LABELS = set(NODE_CONSTRAINTS.keys())
-
 BATCH_SIZE = 50000
 
 prop_formatters = {
@@ -137,34 +102,57 @@ class IYP(object):
 
         self.session = self.db.session()
 
-        self._db_init()
         self.tx = self.session.begin_transaction()
 
-    def _db_init(self):
-        """Add constraints and indexes."""
+    def __create_unique_constraint(self, label, prop):
+        """Create a UNIQUE constraint on the given properties for the given node label.
 
-        # Create constraints (implicitly add corresponding indexes)
-        for label, prop_constraints in NODE_CONSTRAINTS.items():
-            for property, constraints in prop_constraints.items():
+        label: a string specifying the node label.
+        property: a string or list of strings specifying the property name(s). A list of
+        properties with more than one entry will create a combined constraint.
+        """
+        # The Neo4j Community Edition only supports UNIQUE constraints, i.e., no reason
+        # to make this function more flexible.
+        if isinstance(prop, list):
+            require_str = '(' + ','.join([f'a.{p}' for p in prop]) + ')'
+            prop = '_'.join(prop)
+        else:
+            require_str = f'a.{prop}'
 
-                for constraint in constraints:
-                    # neo4j-community only implements the UNIQUE constraint
-                    if not self.neo4j_enterprise and constraint != 'UNIQUE':
-                        continue
+        # Schema modifications are not allowed in the same transaction as writes.
+        self.commit()
+        self.tx.run(f"""CREATE CONSTRAINT {label}_UNIQUE_{prop} IF NOT EXISTS
+                        FOR (a:{label})
+                        REQUIRE {require_str} IS UNIQUE""")
+        self.commit()
 
-                    constraint_formated = constraint.replace(' ', '')
-                    self.session.run(
-                        f' CREATE CONSTRAINT {label}_{constraint_formated}_{property} IF NOT EXISTS '
-                        f' FOR (n:{label}) '
-                        f' REQUIRE n.{property} IS {constraint} ')
+    def __create_range_index(self, label_type, prop, on_relationship):
+        """Create a RANGE index (the default) on the given properties for the given node
+        label or relationship type.
 
-        # Create indexes
-        for label, indexes in NODE_INDEXES.items():
-            for index in indexes:
-                self.session.run(
-                    f' CREATE INDEX {label}_INDEX_{index} IF NOT EXISTS '
-                    f' FOR (n:{label}) '
-                    f' ON (n.{index}) ')
+        label_type: a string specifying a node label or a relationship type.
+        prop: a string or list of strings specifying the property name(s). A list of
+        properties with more than one entry will create a combined index.
+        on_relationship: a bool specifying if label_type refers to a relationship type
+        (True) or a node label (False).
+        """
+        if isinstance(prop, list):
+            on_str = '(' + ','.join([f'n.{p}' for p in prop]) + ')'
+            prop = '_'.join(prop)
+        else:
+            on_str = f'a.{prop}'
+
+        if on_relationship:
+            for_str = f'()-[a:{label_type}]-()'
+        else:
+            for_str = f'(a:{label_type})'
+
+        # Schema modifications are not allowed in the same transaction as writes.
+        self.commit()
+        self.tx.run(f"""CREATE INDEX {label_type}_INDEX_{prop} IF NOT EXISTS
+                        FOR {for_str}
+                        ON {on_str}""")
+        self.commit()
 
     def commit(self):
         """Commit all pending queries (node/link creation) and start a new
@@ -180,6 +168,12 @@ class IYP(object):
         self.tx.rollback()
         self.tx = self.session.begin_transaction()
 
+    def close(self):
+        """Commit pending queries and close IYP."""
+        self.tx.commit()
+        self.session.close()
+        self.db.close()
+
     def batch_get_nodes_by_single_prop(self, label, prop_name, prop_set=set(), all=True, create=True):
         """Find the ID of all nodes in the graph for the given label and check that a
         node exists for each value in prop_set for the property prop. Create these nodes
@@ -192,6 +186,10 @@ class IYP(object):
         """
         if isinstance(label, list) and create:
             raise NotImplementedError('Can not implicitly create multi-label nodes.')
+
+        if create:
+            # Ensure UNIQUE constraint on id property.
+            self.__create_unique_constraint(label, prop_name)
 
         # Assemble label
         label_str = str(label)
@@ -229,8 +227,7 @@ class IYP(object):
 
                 for node in new_nodes:
                     ids[node[prop_name]] = node['_id']
-
-            self.commit()
+                self.commit()
 
         return ids
 
@@ -332,6 +329,7 @@ class IYP(object):
         if create:
             action = 'MERGE'
             set_line = 'SET a += prop'
+            self.__create_unique_constraint(label, id_properties)
 
         query = f"""UNWIND $props AS prop
                     {action} (a:{label_str} {where_clause_str})
@@ -353,7 +351,7 @@ class IYP(object):
                 for r in results:
                     id_key = tuple([r[prop] for prop in id_properties])
                     ids[id_key] = r['_id']
-        self.commit()
+            self.commit()
         return ids
 
     def get_node(self, label, properties, id_properties=list(), create=True):
@@ -388,6 +386,7 @@ class IYP(object):
                 id_property_dict = properties
             else:
                 id_property_dict = {prop: properties[prop] for prop in id_properties}
+            self.__create_unique_constraint(label, list(id_property_dict.keys()))
             result = self.tx.run(
                 f"""MERGE (a:{label} {dict2str(id_property_dict)})
                 SET a += {dict2str(properties)}
@@ -463,6 +462,8 @@ class IYP(object):
 
         batch_format_link_properties(links, inplace=True)
 
+        self.__create_range_index(type, 'reference_name', on_relationship=True)
+
         # Create links in batches
         for i in range(0, len(links), BATCH_SIZE):
             batch = links[i:i + BATCH_SIZE]
@@ -503,6 +504,10 @@ class IYP(object):
         if len(links) == 0:
             return
 
+        relationship_types = {e[0] for e in links}
+        for relationship_type in relationship_types:
+            self.__create_range_index(relationship_type, 'reference_name', on_relationship=True)
+
         matches = ' MATCH (x)'
         where = f' WHERE ID(x) = {src_node}'
         merges = ''
@@ -521,6 +526,7 @@ class IYP(object):
             merges += f' MERGE (x)-[:{type}  {dict2str(prop)}]->(x{i}) '
 
         self.tx.run(matches + where + merges).consume()
+        self.commit()
 
     def batch_add_properties(self, id_prop_list):
         """Add properties to existing nodes.
@@ -542,13 +548,7 @@ class IYP(object):
 
             res = self.tx.run(add_query, batch=batch)
             res.consume()
-        self.commit()
-
-    def close(self):
-        """Commit pending queries and close IYP."""
-        self.tx.commit()
-        self.session.close()
-        self.db.close()
+            self.commit()
 
 
 class BasePostProcess(object):
