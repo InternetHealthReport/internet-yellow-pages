@@ -6,6 +6,11 @@ labels: ""
 assignees: ""
 ---
 
+*NOTE (Delete after reading): There is no need to open bug reports based on
+error messages in the log of the weekly database dump. We usually notice them
+and can judge if a simple rerun of the crawler suffices (e.g., due to a
+temporary connectivity issue), or if there is a bug in the crawler.*
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
