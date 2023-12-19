@@ -17,7 +17,7 @@ NAME = 'iana.root_zone'  # should reflect the directory and name of this file
 class Crawler(BaseCrawler):
 
     def run(self):
-        r = requests.get('https://www.internic.net/domain/root.zone')
+        r = requests.get(self.url)
         r.raise_for_status()
 
         lines = [line.split() for line in r.text.splitlines()]
