@@ -205,22 +205,22 @@ class OpenIntelCrawler(BaseCrawler):
         if self.additional_domain_type:
             print(f'Added "{self.additional_domain_type}" label to {len(additional_id)} nodes.')
 
-        for ind in df.index:
-            domain_qid = domain_id[df['query_name'][ind]]
+        for row in df.itertuples():
+            domain_qid = domain_id[row.query_name]
 
             # A Record
-            if df['response_type'][ind] == 'A' and df['ip4_address'][ind]:
-                ip_qid = ip4_id[df['ip4_address'][ind]]
+            if row.response_type == 'A' and row.ip4_address:
+                ip_qid = ip4_id[row.ip4_address]
                 res_links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
 
             # AAAA Record
-            elif df['response_type'][ind] == 'AAAA' and df['ip6_address'][ind]:
-                ip_qid = ip6_id[df['ip6_address'][ind]]
+            elif row.response_type == 'AAAA' and row.ip6_address:
+                ip_qid = ip6_id[row.ip6_address]
                 res_links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
 
             # NS Record
-            elif df['response_type'][ind] == 'NS' and df['ns_address'][ind]:
-                ns_qid = ns_id[df['ns_address'][ind]]
+            elif row.response_type == 'NS' and row.ns_address:
+                ns_qid = ns_id[row.ns_address]
                 mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
 
         print(f'Computed {len(res_links)} RESOLVES_TO links and {len(mng_links)} MANAGED_BY links')
