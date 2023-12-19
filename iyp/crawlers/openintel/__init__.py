@@ -42,13 +42,17 @@ def valid_date(s):
 
 
 class OpenIntelCrawler(BaseCrawler):
-    def __init__(self, organization, url, name, dataset, domain_type='DomainName'):
+    def __init__(self, organization, url, name, dataset, additional_domain_type=str()):
         """Initialization of the OpenIntel crawler requires the name of the dataset
-        (e.g. tranco or infra:ns) and the node label corresponding to the fetched domain
-        names (e.g. 'Domain' or 'AuthoritativeNameServer')"""
+        (e.g. tranco or infra:ns).
+
+        If the dataset contains special types of domain
+        names, an additional label can be specified (e.g., `AuthoritativeNameServer`)
+        that will be attached to the `DomainName` nodes.
+        """
 
         self.dataset = dataset
-        self.domain_type = domain_type
+        self.additional_domain_type = additional_domain_type
         super().__init__(organization, url, name)
 
     def get_parquet(self):
@@ -173,17 +177,33 @@ class OpenIntelCrawler(BaseCrawler):
         df.query_name = df.query_name.str[:-1]  # Remove root '.'
         df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None else None)  # Remove root '.'
 
-        print('Read {} unique A records from {} Parquet file(s).'.format(len(df), len(self.pandas_df_list)))
+        print(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
-        domain_id = self.iyp.batch_get_nodes_by_single_prop(self.domain_type, 'name', set(df['query_name']))
-        ns_id = self.iyp.batch_get_nodes_by_single_prop('AuthoritativeNameServer', 'name',
-                                                        set(df[df.ns_address.notnull()]['ns_address']))
+        # Only domain names from the `query_name` column that will receive the
+        # additional_domain_type label (if present).
+        query_domain_names = set(df['query_name'])
+        # Name server domain names.
+        ns_domain_names = set(df[df.ns_address.notnull()]['ns_address'])
+        # All domain names, including the ones from the name server column.
+        all_domain_names = query_domain_names.union(ns_domain_names)
+        # Create all DomainName nodes.
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', all_domain_names)
+        # Get node IDs for NS nodes and add NS label.
+        ns_id = {name: domain_id[name] for name in ns_domain_names}
+        self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
+        # Add additional node label if present.
+        additional_id = set()
+        if self.additional_domain_type and self.additional_domain_type != 'DomainName':
+            additional_id = {domain_id[name] for name in query_domain_names}
+            self.iyp.batch_add_node_label(list(additional_id), self.additional_domain_type)
         ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
         ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
         res_links = []
         mng_links = []
 
         print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
+        if self.additional_domain_type:
+            print(f'Added "{self.additional_domain_type}" label to {len(additional_id)} nodes.')
 
         for ind in df.index:
             domain_qid = domain_id[df['query_name'][ind]]
