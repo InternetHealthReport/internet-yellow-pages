@@ -59,10 +59,10 @@ class Crawler(BaseCrawler):
         # Get/create ASNs, names, and country nodes
         print('Pushing nodes.', file=sys.stderr)
         logging.info('Pushing nodes.')
-        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
-        self.name_id = self.iyp.batch_get_nodes('Name', 'name', names, all=False)
-        self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'}, create=True)
+        self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names, all=False)
+        self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'})
 
         # Compute links
         country_links = list()

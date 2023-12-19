@@ -48,8 +48,8 @@ class Crawler(BaseCrawler):
                 as_names.add(as_name)
                 lines.append(values)
 
-            asns_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
-            as_names_id = self.iyp.batch_get_nodes('Name', 'name', as_names, all=False)
+            asns_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
+            as_names_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', as_names, all=False)
 
             links = []
 

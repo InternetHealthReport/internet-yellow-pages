@@ -44,8 +44,7 @@ class Crawler(BaseCrawler):
             {
                 'example_property_0': value,
                 'example_property_1': value,
-            },
-            create=True
+            }
         )
 
         # set relationship
@@ -53,7 +52,7 @@ class Crawler(BaseCrawler):
 
         # Commit to IYP
         # Get the AS's node ID (create if it is not yet registered) and commit changes
-        as_qid = self.iyp.get_node('AS', {'asn': asn}, create=True)
+        as_qid = self.iyp.get_node('AS', {'asn': asn})
         self.iyp.add_links(as_qid, statements)
 
 

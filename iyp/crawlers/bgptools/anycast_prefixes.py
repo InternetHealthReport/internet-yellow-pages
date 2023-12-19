@@ -76,8 +76,8 @@ class Crawler(BaseCrawler):
                 prefixes.add(line)
                 lines.append(line)
 
-            prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes)
-            tag_id = self.iyp.get_node('Tag', {'label': 'Anycast'}, create=True)
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
+            tag_id = self.iyp.get_node('Tag', {'label': 'Anycast'})
 
             links = []
             for line in lines:

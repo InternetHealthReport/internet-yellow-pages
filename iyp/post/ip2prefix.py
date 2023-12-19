@@ -26,7 +26,7 @@ class PostProcess(BasePostProcess):
         prefix."""
 
         # Get all prefixes in a radix tree
-        prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix')
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix')
         additional_properties = list()
 
         rtree = radix.Radix()
@@ -41,7 +41,7 @@ class PostProcess(BasePostProcess):
         self.iyp.batch_add_properties(additional_properties)
 
         # Get all IP nodes
-        ip_id = self.iyp.batch_get_nodes('IP', 'ip')
+        ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip')
 
         # Compute links for IPs
         links = []

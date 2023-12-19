@@ -83,7 +83,7 @@ class Crawler(BaseCrawler):
         # domain_ids, but iterate over the domains set instead.
         logging.info(f'Adding/retrieving {len(all_domains)} DomainName nodes.')
         print(f'Adding/retrieving {len(all_domains)} DomainName nodes')
-        domain_ids = self.iyp.batch_get_nodes('DomainName', 'name', all_domains)
+        domain_ids = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', all_domains)
 
         for dataset, domains in datasets:
             dataset_title = f'Cloudflare {dataset["title"]}'
@@ -96,7 +96,7 @@ class Crawler(BaseCrawler):
                                                'description': dataset['description'],
                                                'top': dataset['meta']['top']
                                            },
-                                           create=True)
+                                           id_properties={'name'})
 
             # Create RANK relationships
             domain_links = [{'src_id': domain_ids[domain], 'dst_id': ranking_id, 'props': [self.reference]}

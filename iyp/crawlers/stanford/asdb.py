@@ -61,8 +61,8 @@ class Crawler(BaseCrawler):
                     lines.append([asn, category])
 
         # get ASNs and names IDs
-        asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-        category_id = self.iyp.batch_get_nodes('Tag', 'label', categories)
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
+        category_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', categories)
 
         # Compute links
         links = []

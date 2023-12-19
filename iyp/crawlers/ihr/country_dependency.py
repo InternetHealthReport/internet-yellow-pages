@@ -62,8 +62,7 @@ class Crawler(BaseCrawler):
             country_qid = self.iyp.get_node('Country',
                                             {
                                                 'country_code': cc,
-                                            },
-                                            create=True
+                                            }
                                             )
 
             countryrank_statements = []
@@ -81,8 +80,7 @@ class Crawler(BaseCrawler):
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
 
                 self.countryrank_qid = self.iyp.get_node('Ranking',
-                                                         {'name': f'IHR country ranking: {metric} ({cc})'},
-                                                         create=True
+                                                         {'name': f'IHR country ranking: {metric} ({cc})'}
                                                          )
                 self.iyp.add_links(self.countryrank_qid, countryrank_statements)
 
@@ -101,7 +99,7 @@ class Crawler(BaseCrawler):
                     asns.add(asn['asn'])
                     asn['rank'] = i + 1
 
-                self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns, all=False)
+                self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
 
                 # Compute links
                 for asn in selected:

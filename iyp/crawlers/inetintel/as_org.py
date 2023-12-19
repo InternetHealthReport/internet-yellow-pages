@@ -108,8 +108,8 @@ class Crawler(BaseCrawler):
                 batch_lines.append([asn, url, sibling_asns, pdb_orgs])
                 count_rows += 1
 
-            asn_id = self.iyp.batch_get_nodes('AS', 'asn', batch_asns, all=False)
-            url_id = self.iyp.batch_get_nodes('URL', 'url', batch_urls, all=False)
+            asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', batch_asns, all=False)
+            url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', batch_urls, all=False)
 
             asn_to_url_links = []
             asn_to_sibling_asn_links = []

@@ -69,11 +69,11 @@ class Crawler(BaseCrawler):
             handle_social_media(fac, websites)
 
         # push nodes
-        self.fac_id = self.iyp.batch_get_nodes('Facility', 'name', facs)
-        self.name_id = self.iyp.batch_get_nodes('Name', 'name', names)
-        self.website_id = self.iyp.batch_get_nodes('URL', 'url', websites)
-        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code', countries)
-        self.facid_id = self.iyp.batch_get_nodes(FACID_LABEL, 'id', facids)
+        self.fac_id = self.iyp.batch_get_nodes_by_single_prop('Facility', 'name', facs)
+        self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
+        self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', websites)
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        self.facid_id = self.iyp.batch_get_nodes_by_single_prop(FACID_LABEL, 'id', facids)
 
         # get organization nodes
         self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)

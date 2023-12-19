@@ -68,8 +68,8 @@ class Crawler(BaseCrawler):
                     continue
                 lines.append([url, category])
 
-        url_id = self.iyp.batch_get_nodes('URL', 'url', urls)
-        category_id = self.iyp.batch_get_nodes('Tag', 'label', categories)
+        url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls)
+        category_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', categories)
 
         links = []
         for (url, category) in lines:

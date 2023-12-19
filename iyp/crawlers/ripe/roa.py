@@ -67,8 +67,8 @@ class Crawler(BaseCrawler):
                     'end': end})
 
             # get ASNs and prefixes IDs
-            asn_id = self.iyp.batch_get_nodes('AS', 'asn', asns)
-            prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', set(prefix_info.keys()))
+            asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', set(prefix_info.keys()))
 
             links = []
             for prefix, attributes in prefix_info.items():

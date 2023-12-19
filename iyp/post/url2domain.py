@@ -11,10 +11,10 @@ class PostProcess(BasePostProcess):
         """Link URLs and their corresponding DomainNames."""
 
         # Get all URL nodes.
-        url_id = self.iyp.batch_get_nodes('URL', 'url')
+        url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url')
 
         # Get all DomainName Nodes
-        domain_id = self.iyp.batch_get_nodes('DomainName', 'name')
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
 
         # Compute links
         links = []

@@ -96,7 +96,7 @@ class Crawler(BaseCrawler):
         # get organization, country nodes
         self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)
         self.fac_id = self.iyp.batch_get_node_extid(FACID_LABEL)
-        self.country_id = self.iyp.batch_get_nodes('Country', 'country_code')
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
 
         req = self.requests.get(URL_PDB_IXS, headers=self.headers)
         if req.status_code != 200:
@@ -145,8 +145,8 @@ class Crawler(BaseCrawler):
 
         for netfac in self.netfacs:
             if netfac['net_id'] not in net_id:
-                as_qid = self.iyp.get_node('AS', {'asn': netfac['local_asn']}, create=True)
-                extid_qid = self.iyp.get_node(NETID_LABEL, {'id': netfac['net_id']}, create=True)
+                as_qid = self.iyp.get_node('AS', {'asn': netfac['local_asn']})
+                extid_qid = self.iyp.get_node(NETID_LABEL, {'id': netfac['net_id']})
                 links = [['EXTERNAL_ID', extid_qid, self.reference_netfac]]
                 self.iyp.add_links(as_qid, links)
                 net_id[netfac['net_id']] = as_qid
@@ -195,11 +195,11 @@ class Crawler(BaseCrawler):
                         handle_social_media(network, net_website)
 
         # TODO add the type PEERING_LAN? may break the unique constraint
-        self.prefix_id = self.iyp.batch_get_nodes('Prefix', 'prefix', prefixes)
-        self.name_id = self.iyp.batch_get_nodes('Name', 'name', net_names)
-        self.website_id = self.iyp.batch_get_nodes('URL', 'url', net_website)
-        self.netid_id = self.iyp.batch_get_nodes(NETID_LABEL, 'id', net_extid)
-        self.asn_id = self.iyp.batch_get_nodes('AS', 'asn', net_asn)
+        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
+        self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', net_names)
+        self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', net_website)
+        self.netid_id = self.iyp.batch_get_nodes_by_single_prop(NETID_LABEL, 'id', net_extid)
+        self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', net_asn)
 
         # compute links
         prefix_links = []
@@ -287,10 +287,10 @@ class Crawler(BaseCrawler):
             all_ixs_website.add(ix['website'])
             handle_social_media(ix, all_ixs_website)
 
-        self.ixext_id = self.iyp.batch_get_nodes(IXID_LABEL, 'id', all_ixs_id)
-        self.ix_id = self.iyp.batch_get_nodes('IXP', 'name', all_ixs_name)
-        self.website_id = self.iyp.batch_get_nodes('URL', 'url', all_ixs_website)
-        self.name_id = self.iyp.batch_get_nodes('Name', 'name', all_ixs_name)
+        self.ixext_id = self.iyp.batch_get_nodes_by_single_prop(IXID_LABEL, 'id', all_ixs_id)
+        self.ix_id = self.iyp.batch_get_nodes_by_single_prop('IXP', 'name', all_ixs_name)
+        self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', all_ixs_website)
+        self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', all_ixs_name)
 
         # Compute links
         name_links = []
