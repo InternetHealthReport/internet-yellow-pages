@@ -6,6 +6,7 @@ import pickle
 import sys
 from datetime import datetime, time, timezone
 from shutil import rmtree
+from typing import Optional
 
 from neo4j import GraphDatabase
 
@@ -38,7 +39,7 @@ def format_properties(prop):
     return prop
 
 
-def batch_format_link_properties(links: list, inplace=True) -> list:
+def batch_format_link_properties(links: list, inplace=True) -> Optional[list]:
     """Helper function that applies format_properties to the relationship properties.
 
     Warning: Formats properties in-place to save memory by default.
@@ -50,7 +51,6 @@ def batch_format_link_properties(links: list, inplace=True) -> list:
         for link in links:
             for idx, prop_dict in enumerate(link['props']):
                 link['props'][idx] = format_properties(prop_dict)
-        return links
     return [{'src_id': link['src_id'],
              'dst_id': link['dst_id'],
              'props': [format_properties(d) for d in link['props']]}
