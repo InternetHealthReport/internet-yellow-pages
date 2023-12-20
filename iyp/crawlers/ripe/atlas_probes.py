@@ -1,4 +1,5 @@
 import argparse
+import ipaddress
 import json
 import logging
 import os
@@ -64,7 +65,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         params = {'format': 'json',
-                  'status': 1,  # Connected
                   'is_public': True,
                   'page_size': 500}
         r = self.session.get(URL, params=params)
@@ -73,7 +73,7 @@ class Crawler(BaseCrawler):
             next_url, next_data = self.__execute_query(next_url)
             data += next_data
             logging.info(f'Added {len(next_data)} probes. Total: {len(data)}')
-        print(f'Fetched {len(data)} connected probes.', file=sys.stderr)
+        print(f'Fetched {len(data)} probes.', file=sys.stderr)
 
         # Compute nodes
         probe_ids = set()
@@ -92,14 +92,15 @@ class Crawler(BaseCrawler):
                 logging.warning(f'Duplicate probe ID: {probe_id}. Probably caused by changing probe connectivity while '
                                 'fetching.')
                 continue
+
             ipv4 = probe['address_v4']
-            asv4 = probe['asn_v4']
+            # Ensure proper IP formatting.
             ipv6 = probe['address_v6']
+            if ipv6:
+                ipv6 = ipaddress.ip_address(ipv6).compressed
+                probe['address_v6'] = ipv6
+            asv4 = probe['asn_v4']
             asv6 = probe['asn_v6']
-            # A probe should have at least IP/AS information for IPv4 or IPv6.
-            if not all((ipv4, asv4)) and not all((ipv6, asv6)):
-                logging.warning(f'No IPv4/v6 information for probe {probe}')
-                continue
 
             probe_ids.add(probe_id)
             valid_probes.append(probe)
@@ -115,6 +116,10 @@ class Crawler(BaseCrawler):
                 else:
                     logging.warning(f'Skipping creation of COUNTRY relationship of probe {probe["id"]} due to non-ISO '
                                     f'country code: {country_code}')
+            else:
+                # Our country_code property formatter does not like None objects, so
+                # remove the property instead.
+                probe.pop('country_code')
 
         # push nodes
         logging.info('Fetching/pushing nodes')
@@ -154,8 +159,9 @@ class Crawler(BaseCrawler):
                 as_qid = as_id[asv6]
                 located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
 
-            country_code = probe['country_code']
-            if country_code and country_code in iso3166.countries_by_alpha2:
+            if ('country_code' in probe
+                and (country_code := probe['country_code'])
+                    and country_code in iso3166.countries_by_alpha2):
                 country_qid = country_id[country_code]
                 country_links.append({'src_id': probe_qid, 'dst_id': country_qid,
                                      'props': [self.reference]})
