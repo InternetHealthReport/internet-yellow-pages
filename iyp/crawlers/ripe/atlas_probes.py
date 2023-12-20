@@ -50,7 +50,7 @@ class Crawler(BaseCrawler):
         next_url = data['next']
         if not next_url:
             logging.info('Reached end of list')
-            next_url = str()
+            next_url = None
         return next_url, data['results']
 
     def __execute_query(self, url: str):
