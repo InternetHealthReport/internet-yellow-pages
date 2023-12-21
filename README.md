@@ -144,3 +144,7 @@ This will take a couple of hours to download all datasets and push them to neo4j
 
 See: https://github.com/InternetHealthReport/internet-yellow-pages/releases
 
+## External links
+- Public instance of IYP: https://iyp.iijlab.net
+- RIPE86 presentation: https://ripe86.ripe.net/archives/video/1073/
+- APNIC blog article: https://blog.apnic.net/2023/09/06/understanding-the-japanese-internet-with-the-internet-yellow-pages/
