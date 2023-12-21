@@ -51,6 +51,7 @@ def batch_format_link_properties(links: list, inplace=True) -> Optional[list]:
         for link in links:
             for idx, prop_dict in enumerate(link['props']):
                 link['props'][idx] = format_properties(prop_dict)
+        return None
     return [{'src_id': link['src_id'],
              'dst_id': link['dst_id'],
              'props': [format_properties(d) for d in link['props']]}
