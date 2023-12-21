@@ -39,8 +39,9 @@ class AS2RelCrawler(BaseCrawler):
         for rel in rels:
             as1_qid = self.asn_id[rel['asn1']]
             as2_qid = self.asn_id[rel['asn2']]
+            rel['af'] = self.af
 
-            links.append({'src_id': as1_qid, 'dst_id': as2_qid, 'props': [self.reference, rel], 'af': self.af})
+            links.append({'src_id': as1_qid, 'dst_id': as2_qid, 'props': [self.reference, rel]})
 
         # Push all links to IYP
         self.iyp.batch_add_links('PEERS_WITH', links)
