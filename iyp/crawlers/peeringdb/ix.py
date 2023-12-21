@@ -60,7 +60,7 @@ class Crawler(BaseCrawler):
         self.reference_ix = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL,
+            'reference_url': URL_PDB_IXS,
             'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
         }
 
