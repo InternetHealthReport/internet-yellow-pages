@@ -69,8 +69,6 @@
             "iyp.crawlers.pch.daily_routing_snapshots_v6",
             "iyp.crawlers.emileaben.as_names",
             "iyp.crawlers.ripe.atlas_probes",
-            "iyp.crawlers.cloudflare.dns_top_locations",
-            "iyp.crawlers.cloudflare.dns_top_ases",
             "iyp.crawlers.iana.root_zone",
             "iyp.crawlers.alice_lg.amsix",
             "iyp.crawlers.alice_lg.bcix",
@@ -78,7 +76,9 @@
             "iyp.crawlers.alice_lg.ixbr",
             "iyp.crawlers.alice_lg.linx",
             "iyp.crawlers.alice_lg.megaport",
-            "iyp.crawlers.alice_lg.netnod"
+            "iyp.crawlers.alice_lg.netnod",
+            "iyp.crawlers.cloudflare.dns_top_locations",
+            "iyp.crawlers.cloudflare.dns_top_ases"
         ],
 
         "post": [

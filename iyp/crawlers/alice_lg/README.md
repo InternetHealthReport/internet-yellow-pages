@@ -22,7 +22,7 @@ List of supported IXPs:
 ## Graph representation
 
 ```Cypher
-(:AS {asn: 2497})-[:MEMBER_OF {address: '80.81.193.136', routeserver_id: 'rs1_fra_ipv4'}]->(:IXP {name: 'DE-CIX Frankfurt'})(:AS {asn: 2497})-[:MEMBER_OF]->(:IXP {name: 'DE-CIX Frankfurt'})
+(:AS {asn: 2497})-[:MEMBER_OF {address: '80.81.193.136', routeserver_id: 'rs1_fra_ipv4'}]->(:IXP {name: 'DE-CIX Frankfurt'})
 // Routes are not crawled by default
 (:AS {asn: 3333})-[:ORIGINATE {neighbor_id: 'pb_0280_as20562', routeserver_id: 'rs01-bcix-v4'}]->(:Prefix {prefix: '193.0.0.0/21'})
 ```
