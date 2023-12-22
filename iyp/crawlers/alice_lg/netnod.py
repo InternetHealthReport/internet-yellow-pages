@@ -6,8 +6,8 @@ import sys
 from iyp.crawlers.alice_lg import Crawler
 
 ORG = 'Alice-LG'
-URL = 'https://lg.ams-ix.net/api/v1/'
-NAME = 'alice_lg.amsix'
+URL = 'https://lg.netnod.se/api/v1/'
+NAME = 'alice_lg.netnod'
 
 
 def main() -> None:

@@ -71,7 +71,14 @@
             "iyp.crawlers.ripe.atlas_probes",
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
-            "iyp.crawlers.iana.root_zone"
+            "iyp.crawlers.iana.root_zone",
+            "iyp.crawlers.alice_lg.amsix",
+            "iyp.crawlers.alice_lg.bcix",
+            "iyp.crawlers.alice_lg.decix",
+            "iyp.crawlers.alice_lg.ixbr",
+            "iyp.crawlers.alice_lg.linx",
+            "iyp.crawlers.alice_lg.megaport",
+            "iyp.crawlers.alice_lg.netnod"
         ],
 
         "post": [
