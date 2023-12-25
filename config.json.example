@@ -69,6 +69,7 @@
             "iyp.crawlers.pch.daily_routing_snapshots_v6",
             "iyp.crawlers.emileaben.as_names",
             "iyp.crawlers.ripe.atlas_probes",
+            "iyp.crawlers.ripe.atlas_measurements",
             "iyp.crawlers.iana.root_zone",
             "iyp.crawlers.alice_lg.amsix",
             "iyp.crawlers.alice_lg.bcix",
