@@ -15,7 +15,7 @@ direction gives the type of relationship between the two ASes:
 - rel=1: provider/customer relationship. A->B means A is the provider of B.
 
 ```
-(:AS {asn:2497})-[:PEERS_WITH {rel: 0}]-(:AS {asn:2914})
+(:AS {asn:2497})-[:PEERS_WITH {rel: 0, af=4}]-(:AS {asn:2914})
 ```
 
 
