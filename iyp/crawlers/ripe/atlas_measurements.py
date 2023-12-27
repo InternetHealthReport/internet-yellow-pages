@@ -142,13 +142,10 @@ class Crawler(BaseCrawler):
                   'page_size': 500}
         r = self.session.get(URL, params=params)
         next_url, data = self.__process_response(r)
-        count = 0
         while next_url:
             next_url, next_data = self.__execute_query(next_url)
             data += next_data
             logging.info(f'Added {len(next_data)} probes. Total: {len(data)}')
-            if count == 5:
-                break
         print(f'Fetched {len(data)} probe measurements', file=sys.stderr)
 
         # Transform the data to be compatible with the flatdict format.
