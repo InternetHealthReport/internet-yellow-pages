@@ -49,17 +49,23 @@ ASN(s), and country.
 
 ### Atlas Measurements - `atlas_measurements.py`
 
-We fetch the [list of probe measurements](https://atlas.ripe.net/api/v2/measurements) to obtain the measurement data of the `AtlasProbe`. This data is based on the probe's ID, connected through relationships defined by `PART_OF` and `TARGET`. The `TARGET` relationship encompass associations with both `DOMAIN` and `IP`.
+We fetch the [list of
+measurements](https://atlas.ripe.net/docs/apis/rest-api-manual/measurements/)
+to obtain metadata of *ongoing* Atlas measurements.  `AtlasProbe`s are `PART_OF`
+`AtlasMeasurement`s and measurements `TARGET` one or more `IP`s, a `DomainName`, or
+both. The Atlas platform also maps the measurement target to an `AS` number if possible.
+The crawler includes this relationship as well.
 
-The Cypher query for these relationships appears as follows:
+To reduce the number of `PART_OF` relationships, this crawler ignores probes that were
+never connected or are abandoned.
 
 ```Cypher
-(:AtlasProbe)-[:PART_OF]->(:AtlasMeasurement)-[:TARGET]->(:DomainName)
-(:AtlasProbe)-[:PART_OF]->(:AtlasMeasurement)-[:TARGET]->(:IP)
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:AS {asn: 2497})
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:DomainName {name: 'jp-tyo-as2497.anchors.atlas.ripe.net'})
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:IP {ip: '202.214.87.158'})
 ```
-
-This query is designed to identify `AtlasProbes` linked via the `PART_OF` relationship to `AtlasMeasurements`, which, in turn, are linked through `TARGET` to either a `DomainName` or an `IP`.
 
 ## Dependence
 
-This crawler is not depending on other crawlers.
+The `atlas_measurement` crawler fetches probe IDs for abandoned and never-connected
+probes and thus should be run after the `atlas_probes` crawler.

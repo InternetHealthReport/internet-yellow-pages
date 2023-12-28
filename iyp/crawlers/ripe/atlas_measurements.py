@@ -134,6 +134,15 @@ class Crawler(BaseCrawler):
         for item in lst:
             Crawler.__add_if_not_none(item, s)
 
+    def __get_abandoned_probe_ids(self) -> set:
+        # status_id
+        #   0: Never Connected
+        #   3: Abandoned
+        query = """MATCH (n:AtlasProbe)
+                   WHERE n.status_id IN [0, 3]
+                   RETURN n.id AS prb_id"""
+        return set(e['prb_id'] for e in self.iyp.tx.run(query))
+
     def run(self):
         params = {'format': 'json',
                   'is_public': True,
@@ -145,8 +154,8 @@ class Crawler(BaseCrawler):
         while next_url:
             next_url, next_data = self.__execute_query(next_url)
             data += next_data
-            logging.info(f'Added {len(next_data)} probes. Total: {len(data)}')
-        print(f'Fetched {len(data)} probe measurements', file=sys.stderr)
+            logging.info(f'Added {len(next_data)} measurements. Total: {len(data)}')
+        print(f'Fetched {len(data)} measurements', file=sys.stderr)
 
         # Transform the data to be compatible with the flatdict format.
         self.__transform_data(data)
@@ -159,6 +168,11 @@ class Crawler(BaseCrawler):
         domains = set()
 
         valid_probe_measurements = list()
+
+        # To reduce the number of PART_OF relationships, we do not consider probes that
+        # were never connected or are abandoned.
+        abandoned_prb_ids = self.__get_abandoned_probe_ids()
+        logging.info(f'Fetched {len(abandoned_prb_ids)} abandoned probe IDs.')
 
         for probe_measurement in data:
             probe_measurement_id = probe_measurement['id']
@@ -201,21 +215,33 @@ class Crawler(BaseCrawler):
             probe_measurement_flattened = dict(flatdict.FlatterDict(probe_measurement_copy, delimiter='_'))
             attrs_flattened.append(probe_measurement_flattened)
 
+        logging.info(f'{len(attrs_flattened)} measurements')
         probe_measurement_ids = self.iyp.batch_get_nodes('AtlasMeasurement', attrs_flattened, ['id'], create=True)
+        logging.info(f'{len(probe_ids)} probes')
         probe_ids = self.iyp.batch_get_nodes_by_single_prop('AtlasProbe', 'id', probe_ids, all=False, create=True)
+        logging.info(f'{len(ips)} IPs')
         ip_ids = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False, create=True)
+        logging.info(f'{len(domains)} domains')
         domain_ids = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains, all=False, create=True)
-        _ = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False, create=True)
+        logging.info(f'{len(ases)} ASNs')
+        asn_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False, create=True)
 
         # compute links
         target_links = list()
         part_of_links = list()
 
+        logging.info('Computing links')
         for probe_measurement in valid_probe_measurements:
             probe_measurement_qid = probe_measurement_ids[probe_measurement['id']]
             probe_measurement_reference = self.reference.copy()
             probe_measurement_reference['reference_url'] = probe_measurement_reference['reference_url'] + \
-                f'/{probe_measurement_qid}'
+                f'/{probe_measurement["id"]}'
+
+            probe_measurement_asn = probe_measurement['target']['asn']
+            if probe_measurement_asn:
+                asn_qid = asn_ids[probe_measurement_asn]
+                target_links.append({'src_id': probe_measurement_qid, 'dst_id': asn_qid,
+                                    'props': [probe_measurement_reference]})
 
             probe_measurement_domain = probe_measurement['target']['domain']
             if probe_measurement_domain:
@@ -232,14 +258,19 @@ class Crawler(BaseCrawler):
             probe_ids_participated = probe_measurement['current_probes']
             if probe_ids_participated:
                 for probe_id in probe_ids_participated:
+                    if probe_id in abandoned_prb_ids:
+                        continue
                     probe_qid = probe_ids[probe_id]
                     part_of_links.append({'src_id': probe_qid, 'dst_id': probe_measurement_qid,
                                           'props': [probe_measurement_reference]})
 
         # Push all links to IYP
         logging.info('Fetching/pushing relationships')
+        logging.info(f'{len(target_links)} TARGET')
         self.iyp.batch_add_links('TARGET', target_links)
+        logging.info(f'{len(part_of_links)} PART_OF')
         self.iyp.batch_add_links('PART_OF', part_of_links)
+        logging.info('Done.')
 
 
 def main() -> None:
