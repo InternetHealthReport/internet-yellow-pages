@@ -126,9 +126,9 @@ for module_name in conf['iyp']['crawlers']:
         crawler.close()
         if not relations_count_new > relations_count:
             error_message = (
-                f"Unexpected relation count change in the crawler '{name}': "
-                f"Expected new relations ({relations_count_new}) "
-                f"to be greater than the previous relations ({relations_count})."
+                f'Unexpected relation count change in the crawler "{name}": '
+                f'Expected new relations ({relations_count_new}) '
+                f'to be greater than the previous relations ({relations_count}).'
             )
             raise RelationCountError(error_message)
         status[module_name] = 'OK'
