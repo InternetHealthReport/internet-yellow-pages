@@ -4,6 +4,7 @@ import sys
 import requests
 
 from iyp.wiki.wikihandy import Wikihandy
+from iyp import RequestStatusError
 
 # URL to ASN Drop List
 URL = 'https://www.spamhaus.org/drop/asndrop.txt'
@@ -65,7 +66,7 @@ class Crawler(object):
 
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching the blocklist')
+            raise RequestStatusError('Error while fetching the blocklist')
 
         for i, row in enumerate(req.text.splitlines()):
             # Skip the header

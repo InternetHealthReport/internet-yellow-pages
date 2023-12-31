@@ -4,6 +4,7 @@ import sys
 import requests
 
 from iyp.wiki.wikihandy import Wikihandy
+from iyp import RequestStatusError
 
 # URL to spamhaus data
 URL = 'https://www.spamhaus.org/drop/drop.txt'
@@ -66,7 +67,7 @@ class Crawler(object):
 
         req = requests.get(self.url)
         if req.status_code != 200:
-            sys.exit('Error while fetching the blocklist')
+            raise RequestStatusError('Error while fetching the blocklist')
 
         for i, row in enumerate(req.text.splitlines()):
             # Skip the header

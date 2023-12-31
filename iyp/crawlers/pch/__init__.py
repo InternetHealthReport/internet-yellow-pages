@@ -15,7 +15,7 @@ from requests.exceptions import ChunkedEncodingError
 from requests_futures.sessions import FuturesSession
 from urllib3.util.retry import Retry
 
-from iyp import BaseCrawler, CacheHandler
+from iyp import BaseCrawler, CacheHandler, AddressValueError
 from iyp.crawlers.pch.show_bgp_parser import ShowBGPParser
 
 PARALLEL_DOWNLOADS = 8
@@ -47,7 +47,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         """af: Address family of the crawler. Must be 4 or 6."""
         if af not in (4, 6):
             logging.error(f'Invalid address family: {af}')
-            sys.exit(f'Invalid address family: {af}')
+            raise AddressValueError(f'Invalid address family: {af}')
         self.MAX_LOOKBACK = timedelta(days=7)
         self.af = af
         if self.af == 4:

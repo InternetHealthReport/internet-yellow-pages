@@ -12,7 +12,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError, JSONDecodeError, MissingKeyError
 
 ORG = 'RIPE NCC'
 
@@ -39,13 +39,13 @@ class Crawler(BaseCrawler):
     @staticmethod
     def __process_response(response: requests.Response):
         if response.status_code != requests.codes.ok:
-            sys.exit(f'Request to {response.url} failed with status: {response.status_code}')
+            raise RequestStatusError(f'Request to {response.url} failed with status: {response.status_code}')
         try:
             data = response.json()
         except json.decoder.JSONDecodeError as e:
-            sys.exit(f'Decoding JSON reply from {response.url} failed with exception: {e}')
+            raise RequestStatusError(f'Decoding JSON reply from {response.url} failed with exception: {e}')
         if 'next' not in data or 'results' not in data:
-            sys.exit('"next" or "results" key missing from response data.')
+            raise MissingKeyError('"next" or "results" key missing from response data.')
 
         next_url = data['next']
         if not next_url:

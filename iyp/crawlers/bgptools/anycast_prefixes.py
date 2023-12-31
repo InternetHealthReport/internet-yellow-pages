@@ -6,7 +6,7 @@ import tempfile
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError, ConnectionError
 
 # Organization name and URL to data
 ORG = 'BGP.Tools'
@@ -29,10 +29,10 @@ def fetch_dataset(url: str):
         return res
     except requests.exceptions.ConnectionError as e:
         logging.error(e)
-        sys.exit('Connection error while fetching data file')
+        raise ConnectionError('Connection error while fetching data file')
     except requests.exceptions.HTTPError as e:
         logging.error(e)
-        sys.exit('Error while fetching data file')
+        raise RequestStatusError('Error while fetching data file')
 
 
 class Crawler(BaseCrawler):

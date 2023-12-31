@@ -4,7 +4,7 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 
 class AS2RelCrawler(BaseCrawler):
@@ -20,7 +20,7 @@ class AS2RelCrawler(BaseCrawler):
 
         req = requests.get(self.url, stream=True)
         if req.status_code != 200:
-            sys.exit('Error while fetching AS relationships')
+            raise RequestStatusError('Error while fetching AS relationships')
 
         rels = []
         asns = set()

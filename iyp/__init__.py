@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, time, timezone
 from shutil import rmtree
 from typing import Optional
+import requests
 
 from neo4j import GraphDatabase
 
@@ -76,6 +77,30 @@ def dict2str(d, eq=':', pfx=''):
 
     return '{' + ','.join(data) + '}'
 
+class RequestStatusError(requests.HTTPError):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+class JSONDecodeError(ValueError):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+class MissingKeyError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+class ConnectionError(requests.exceptions.ConnectionError):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+class AddressValueError(ValueError):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 class IYP(object):
 
@@ -95,7 +120,7 @@ class IYP(object):
         self.db = GraphDatabase.driver(uri, auth=(self.login, self.password))
 
         if self.db is None:
-            sys.exit('Could not connect to the Neo4j database!')
+            raise ConnectionError('Could not connect to the Neo4j database!')
         # Raises an exception if there is a problem.
         # "Best practice" is to just let the program
         # crash: https://neo4j.com/docs/python-manual/current/connect/

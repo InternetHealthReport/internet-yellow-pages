@@ -11,7 +11,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # URL to the API
 URL = 'https://ihr.iijlab.net/ihr/api/hegemony/countries/?country={country}&af=4'
@@ -46,7 +46,7 @@ class Crawler(BaseCrawler):
             self.url = URL.format(country=cc)
             req = self.http_session.get(self.url + '&format=json')
             if req.status_code != 200:
-                sys.exit('Error while fetching data for ' + cc)
+                raise RequestStatusError('Error while fetching data for ' + cc)
             data = json.loads(req.text)
             ranking = data['results']
 
