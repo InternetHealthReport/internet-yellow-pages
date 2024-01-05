@@ -451,7 +451,7 @@ class IYP(object):
         else:
             return None
 
-    def batch_add_links(self, type, links, action='create'):
+    def batch_add_links(self, type, links, source_node_labels=[], dest_node_label='', action='create'):
         """Create links of the given type in batches (this is faster than add_links).
         The links parameter is a list of {"src_id":int, "dst_id":int, "props":[dict].
         The dictionary prop_dict should at least contain a 'source', 'point in time',
@@ -460,6 +460,10 @@ class IYP(object):
 
         Notice: this method commit changes to neo4j
         """
+
+        source_node_labels = ':' + ':'.join(map(str, source_node_labels)) if source_node_labels else ''
+
+        dest_node_label = ':' + dest_node_label if dest_node_label else ''
 
         batch_format_link_properties(links, inplace=True)
 
@@ -471,7 +475,7 @@ class IYP(object):
 
             create_query = f"""WITH $batch AS batch
             UNWIND batch AS link
-                MATCH (x), (y)
+                MATCH (x{source_node_labels}), (y{dest_node_label})
                 WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
                 CREATE (x)-[l:{type}]->(y)
                 WITH l, link
@@ -481,7 +485,7 @@ class IYP(object):
             if action == 'merge':
                 create_query = f"""WITH $batch AS batch
                 UNWIND batch AS link
-                    MATCH (x), (y)
+                    MATCH (x{source_node_labels}), (y{dest_node_label})
                     WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
                     MERGE (x)-[l:{type}]-(y)
                     WITH l,  link
