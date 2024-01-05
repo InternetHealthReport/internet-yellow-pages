@@ -3,12 +3,11 @@ import glob
 import logging
 import os
 import pickle
-import sys
 from datetime import datetime, time, timezone
 from shutil import rmtree
 from typing import Optional
-import requests
 
+import requests
 from neo4j import GraphDatabase
 
 BATCH_SIZE = 50000
@@ -66,41 +65,47 @@ def dict2str(d, eq=':', pfx=''):
     for key, value in d.items():
         if isinstance(value, str) and '"' in value:
             escaped = value.replace("'", r"\'")
-            data.append(f"{pfx+key}{eq} '{escaped}'")
+            data.append(f"{pfx + key}{eq} '{escaped}'")
         elif isinstance(value, str) or isinstance(value, datetime):
-            data.append(f'{pfx+key}{eq} "{value}"')
+            data.append(f'{pfx + key}{eq} "{value}"')
         elif value is None:
             # Neo4j does not have the concept of empty properties.
             pass
         else:
-            data.append(f'{pfx+key}{eq} {value}')
+            data.append(f'{pfx + key}{eq} {value}')
 
     return '{' + ','.join(data) + '}'
+
 
 class RequestStatusError(requests.HTTPError):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
 
+
 class JSONDecodeError(ValueError):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
+
 
 class MissingKeyError(Exception):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
 
+
 class ConnectionError(requests.exceptions.ConnectionError):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
 
+
 class AddressValueError(ValueError):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
+
 
 class IYP(object):
 

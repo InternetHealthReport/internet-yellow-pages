@@ -15,7 +15,7 @@ from requests.exceptions import ChunkedEncodingError
 from requests_futures.sessions import FuturesSession
 from urllib3.util.retry import Retry
 
-from iyp import BaseCrawler, CacheHandler, AddressValueError
+from iyp import AddressValueError, BaseCrawler, CacheHandler
 from iyp.crawlers.pch.show_bgp_parser import ShowBGPParser
 
 PARALLEL_DOWNLOADS = 8

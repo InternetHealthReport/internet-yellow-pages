@@ -26,7 +26,7 @@ class Crawler(BaseCrawler):
         has_next = True
         i = 0
         while has_next:
-            url = URL + f'&offset={i*10000}'
+            url = URL + f'&offset={i * 10000}'
             i += 1
             logging.info(f'Fetching {url}')
             req = requests.get(url)

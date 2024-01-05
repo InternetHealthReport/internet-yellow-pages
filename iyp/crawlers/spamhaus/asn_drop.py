@@ -3,8 +3,8 @@ import sys
 
 import requests
 
-from iyp.wiki.wikihandy import Wikihandy
 from iyp import RequestStatusError
+from iyp.wiki.wikihandy import Wikihandy
 
 # URL to ASN Drop List
 URL = 'https://www.spamhaus.org/drop/asndrop.txt'
@@ -74,7 +74,7 @@ class Crawler(object):
                 continue
 
             self.update_net(row)
-            sys.stderr.write(f'\rProcessed {i+1} ASes')
+            sys.stderr.write(f'\rProcessed {i + 1} ASes')
         sys.stderr.write('\n')
 
         self.iyp.close()

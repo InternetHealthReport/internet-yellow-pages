@@ -1,6 +1,5 @@
 import bz2
 import json
-import sys
 
 import requests
 

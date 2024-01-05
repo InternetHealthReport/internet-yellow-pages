@@ -12,7 +12,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from iyp import BaseCrawler, RequestStatusError, JSONDecodeError, MissingKeyError
+from iyp import BaseCrawler, MissingKeyError, RequestStatusError
 
 ORG = 'RIPE NCC'
 

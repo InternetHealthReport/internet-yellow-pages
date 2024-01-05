@@ -6,7 +6,7 @@ import tempfile
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError, ConnectionError
+from iyp import BaseCrawler, ConnectionError, RequestStatusError
 
 # Organization name and URL to data
 ORG = 'BGP.Tools'
