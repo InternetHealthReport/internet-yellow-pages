@@ -168,9 +168,9 @@ class Crawler(BaseCrawler):
 
         # Push all links to IYP
         logging.info('Fetching/pushing relationships')
-        self.iyp.batch_add_links('ASSIGNED', assigned_links)
-        self.iyp.batch_add_links('LOCATED_IN', located_in_links)
-        self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('ASSIGNED', assigned_links, ['IP'], 'AS')
+        self.iyp.batch_add_links('LOCATED_IN', located_in_links, ['AtlasProbe'], 'AS')
+        self.iyp.batch_add_links('COUNTRY', country_links, ['AtlasProbe'], 'Country')
 
 
 def main() -> None:
