@@ -641,7 +641,7 @@ class Wikihandy(object):
                                 statements=[
                                     [self.get_pid('instance of'), self.get_qid('autonomous system'), []],
                                     [self.get_pid('autonomous system number'), str(asn), []]
-            ])
+                                ])
 
         return qid
 
