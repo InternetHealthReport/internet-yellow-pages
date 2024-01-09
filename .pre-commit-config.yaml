@@ -9,6 +9,7 @@ repos:
     rev: 5.13.2
     hooks:
     -   id: isort
+        args: [--thirdparty, neo4j]
 -   repo: https://github.com/pre-commit/mirrors-autopep8
     rev: v2.0.4
     hooks:
