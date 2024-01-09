@@ -8,7 +8,6 @@ from shutil import rmtree
 from typing import Optional
 
 import requests
-
 from neo4j import GraphDatabase
 
 BATCH_SIZE = 50000
