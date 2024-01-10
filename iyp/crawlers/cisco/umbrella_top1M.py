@@ -7,7 +7,7 @@ from zipfile import ZipFile
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # URL to Tranco top 1M
 URL = 'http://s3-us-west-1.amazonaws.com/umbrella-static/top-1m.csv.zip'
@@ -25,7 +25,7 @@ class Crawler(BaseCrawler):
         sys.stderr.write('Downloading latest list...\n')
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching Cisco Umbrella Top 1M csv file')
+            raise RequestStatusError('Error while fetching Cisco Umbrella Top 1M csv file')
 
         links = []
         domains = set()

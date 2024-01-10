@@ -3,6 +3,7 @@ import sys
 
 import requests
 
+from iyp import RequestStatusError
 from iyp.wiki.wikihandy import Wikihandy
 
 # URL to spamhaus data
@@ -63,7 +64,7 @@ class Crawler(object):
 
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching the blocklist')
+            raise RequestStatusError('Error while fetching the blocklist')
 
         for i, row in enumerate(req.text.splitlines()):
             # Skip the header
@@ -71,7 +72,7 @@ class Crawler(object):
                 continue
 
             self.update_net(row)
-            sys.stderr.write(f'\rProcessed {i+1} prefixes')
+            sys.stderr.write(f'\rProcessed {i + 1} prefixes')
         sys.stderr.write('\n')
 
         self.iyp.close()

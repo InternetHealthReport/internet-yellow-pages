@@ -6,7 +6,7 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # Organization name and URL to data
 ORG = 'Citizen Lab'
@@ -30,7 +30,7 @@ class Crawler(BaseCrawler):
 
         if req_for_country_codes.status_code != 200:
             logging.error('Cannot download data {req.status_code}: {req.text}')
-            sys.exit('Error while fetching data file')
+            raise RequestStatusError('Error while fetching data file')
 
         content = req_for_country_codes.content.decode('utf-8')
         csv_data = csv.reader(content.splitlines(), delimiter=',')

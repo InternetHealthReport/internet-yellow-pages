@@ -5,7 +5,7 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # curl -s https://bgp.tools/asns.csv | head -n 5
 URL = 'https://bgp.tools/asns.csv'
@@ -27,7 +27,7 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL, headers=self.headers)
         if req.status_code != 200:
-            sys.exit('Error while fetching AS names')
+            raise RequestStatusError('Error while fetching AS names')
 
         lines = []
         asns = set()

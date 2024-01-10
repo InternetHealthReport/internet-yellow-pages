@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # URL to RIPE repository
 URL = 'https://ftp.ripe.net/rpki/'
@@ -44,7 +44,7 @@ class Crawler(BaseCrawler):
             logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get(self.url)
             if req.status_code != 200:
-                sys.exit('Error while fetching data for ' + self.url)
+                raise RequestStatusError('Error while fetching data for ' + self.url)
 
             # Aggregate data per prefix
             asns = set()

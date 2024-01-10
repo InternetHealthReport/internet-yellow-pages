@@ -7,7 +7,7 @@ from zipfile import ZipFile
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # URL to Tranco top 1M
 URL = 'https://tranco-list.eu/top-1m.csv.zip'
@@ -25,7 +25,7 @@ class Crawler(BaseCrawler):
         sys.stderr.write('Downloading latest list...\n')
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching Tranco csv file')
+            raise RequestStatusError('Error while fetching Tranco csv file')
 
         links = []
         domains = set()

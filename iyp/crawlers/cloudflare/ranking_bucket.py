@@ -7,7 +7,7 @@ import sys
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, JSONDecodeError, RequestStatusError
 
 # Organization name and URL to data
 ORG = 'Cloudflare'
@@ -45,12 +45,12 @@ class Crawler(BaseCrawler):
         req = req_session.get(URL_DATASETS)
         if req.status_code != 200:
             logging.error(f'Cannot download data {req.status_code}: {req.text}')
-            sys.exit('Error while fetching data file')
+            raise RequestStatusError('Error while fetching data file')
 
         datasets_json = req.json()
         if 'success' not in datasets_json or not datasets_json['success']:
             logging.error(f'HTTP request succeeded but API returned: {req.text}')
-            sys.exit('Error while fetching data file')
+            raise JSONDecodeError('Error while fetching data file')
 
         # Fetch all datasets first before starting to process them. This way we can
         # get/create all DomainName nodes in one go and then just add the RANK

@@ -5,7 +5,7 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 URL = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 ORG = 'RIPE NCC'
@@ -19,7 +19,7 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching AS names')
+            raise RequestStatusError('Error while fetching AS names')
 
         lines = []
         asns = set()

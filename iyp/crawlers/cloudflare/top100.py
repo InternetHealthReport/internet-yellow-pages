@@ -6,7 +6,7 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # Organization name and URL to data
 ORG = 'Cloudflare'
@@ -37,7 +37,7 @@ class Crawler(BaseCrawler):
         req = requests.get(self.reference['reference_url'], headers=headers)
         if req.status_code != 200:
             print(f'Cannot download data {req.status_code}: {req.text}')
-            sys.exit('Error while fetching data file')
+            raise RequestStatusError('Error while fetching data file')
 
         # Process line one after the other
         for i, _ in enumerate(map(self.update, req.json()['result']['top'])):

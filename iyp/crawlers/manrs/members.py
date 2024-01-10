@@ -6,7 +6,7 @@ from datetime import datetime, time, timezone
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # URL to MANRS csv file
 URL = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
@@ -70,7 +70,7 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching MANRS csv file')
+            raise RequestStatusError('Error while fetching MANRS csv file')
 
         for i, row in enumerate(req.text.splitlines()):
             # Skip the header

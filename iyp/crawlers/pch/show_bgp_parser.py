@@ -25,7 +25,7 @@ class ShowBGPParser:
         """af: Address family of the parser. Must be 4 or 6."""
         if af not in (4, 6):
             logging.error(f'Invalid address family specified: {af}')
-            sys.exit('Invalid address family specified.')
+            AddressValueError('Invalid address family specified.')
         self.af = af
         self.status_codes = {'s': 'suppressed',
                              'd': 'damped',

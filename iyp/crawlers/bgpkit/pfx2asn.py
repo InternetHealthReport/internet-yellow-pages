@@ -7,7 +7,7 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
 ORG = 'BGPKIT'
@@ -22,7 +22,7 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL, stream=True)
         if req.status_code != 200:
-            sys.exit('Error while fetching pfx2as relationships')
+            raise RequestStatusError('Error while fetching pfx2as relationships')
 
         entries = []
         asns = set()

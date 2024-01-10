@@ -11,30 +11,13 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from iyp import BaseCrawler
+from iyp import (BaseCrawler, JSONDecodeError, MissingKeyError,
+                 RequestStatusError)
 
 ORG = 'RIPE NCC'
 
 URL = 'https://atlas.ripe.net/api/v2/measurements'
 NAME = 'ripe.atlas_measurements'
-
-
-class RequestStatusError(requests.HTTPError):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-
-class JSONDecodeError(ValueError):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-
-class MissingKeyError(Exception):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
 
 
 class Crawler(BaseCrawler):
