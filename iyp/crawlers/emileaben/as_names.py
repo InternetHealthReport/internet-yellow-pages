@@ -6,7 +6,7 @@ import tempfile
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # Organization name and URL to data
 ORG = 'emileaben'
@@ -27,10 +27,10 @@ class Crawler(BaseCrawler):
             res = requests.get(URL)
         except requests.exceptions.ConnectionError as e:
             logging.error(e)
-            sys.exit('Connection error while fetching data file')
+            raise ConnectionError('Connection error while fetching data file')
         except requests.exceptions.HTTPError as e:
             logging.error(e)
-            sys.exit('Error while fetching data file')
+            raise RequestStatusError('Error while fetching data file')
         with open(filename, 'w') as file:
             file.write(res.text)
 

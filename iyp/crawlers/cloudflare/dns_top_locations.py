@@ -116,7 +116,7 @@ class Crawler(BaseCrawler):
                     self.compute_link(domain_top)
 
             if i % 100 == 0:
-                sys.stderr.write(f'Pushing link batch #{int(i/100)}...\r')
+                sys.stderr.write(f'Pushing link batch #{int(i / 100)}...\r')
                 self.iyp.batch_add_links('QUERIED_FROM', self.statements)
                 self.statements = []
 

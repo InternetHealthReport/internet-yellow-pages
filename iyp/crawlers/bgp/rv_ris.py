@@ -57,7 +57,7 @@ class Crawler(object):
 
             for asn in origin_asns:
                 rnode.data['origin'][asn].add(elem.collector)
-                sys.stderr.write(f'\rProcessed {i+1} BGP messages')
+                sys.stderr.write(f'\rProcessed {i + 1} BGP messages')
 
         sys.stderr.write('\nPushing data to IYP...\n')
 
@@ -65,7 +65,7 @@ class Crawler(object):
         for i, rnode in enumerate(rtree):
             data = rnode.data['origin']
             self.update_entry(rnode.prefix, data)
-            sys.stderr.write(f'\rProcessed {i+1} prefixes')
+            sys.stderr.write(f'\rProcessed {i + 1} prefixes')
 
     def update_entry(self, prefix, originasn_collector):
         """Add the prefix to wikibase if it's not already there and update its

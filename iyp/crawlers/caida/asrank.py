@@ -7,7 +7,7 @@ import sys
 import flatdict
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # URL to ASRank API
 URL = 'https://api.asrank.caida.org/v2/restful/asns/?first=10000'
@@ -26,14 +26,13 @@ class Crawler(BaseCrawler):
         has_next = True
         i = 0
         while has_next:
-            url = URL + f'&offset={i*10000}'
+            url = URL + f'&offset={i * 10000}'
             i += 1
             logging.info(f'Fetching {url}')
             req = requests.get(url)
             if req.status_code != 200:
                 logging.error(f'Request failed with status: {req.status_code}')
-                # FIXME should raise an exception
-                sys.exit('Error while fetching data from API')
+                raise RequestStatusError('Error while fetching data from API')
 
             ranking = json.loads(req.text)['data']['asns']
             has_next = ranking['pageInfo']['hasNextPage']

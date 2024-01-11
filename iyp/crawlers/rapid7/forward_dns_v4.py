@@ -122,7 +122,7 @@ class Crawler(object):
                          f'{len(self.wh._domain2qid)} domain names in wiki\n')
         # push data to wiki
         for i, (tld, pfxs) in enumerate(self.tld_pfx.items()):
-            sys.stderr.write(f'\33[2K\rUpdating iyp... {i+1}/{len(self.tld_pfx)}\t{tld} {len(pfxs)} prefixes')
+            sys.stderr.write(f'\33[2K\rUpdating iyp... {i + 1}/{len(self.tld_pfx)}\t{tld} {len(pfxs)} prefixes')
             self.update(tld, pfxs)
 
         sys.stderr.write('\n')

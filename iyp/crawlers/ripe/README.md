@@ -47,6 +47,25 @@ ASN(s), and country.
 (:IP {ip: '202.214.97.16'})-[:ASSIGNED]->(:AtlasProbe {id: 6425})
 ```
 
+### Atlas Measurements - `atlas_measurements.py`
+
+We fetch the [list of
+measurements](https://atlas.ripe.net/docs/apis/rest-api-manual/measurements/)
+to obtain metadata of *ongoing* Atlas measurements.  `AtlasProbe`s are `PART_OF`
+`AtlasMeasurement`s and measurements `TARGET` one or more `IP`s, a `DomainName`, or
+both. The Atlas platform also maps the measurement target to an `AS` number if possible.
+The crawler includes this relationship as well.
+
+To reduce the number of `PART_OF` relationships, this crawler ignores probes that were
+never connected or are abandoned.
+
+```Cypher
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:AS {asn: 2497})
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:DomainName {name: 'jp-tyo-as2497.anchors.atlas.ripe.net'})
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:IP {ip: '202.214.87.158'})
+```
+
 ## Dependence
 
-This crawler is not depending on other crawlers.
+The `atlas_measurement` crawler fetches probe IDs for abandoned and never-connected
+probes and thus should be run after the `atlas_probes` crawler.

@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # NOTE: this script is not adding new ASNs. It only adds links for existing ASNs
 # Should be run after crawlers that push many ASNs (e.g. ripe.as_names)
@@ -25,7 +25,7 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL)
         if req.status_code != 200:
-            sys.exit('Error while fetching delegated file')
+            raise RequestStatusError('Error while fetching delegated file')
 
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
 

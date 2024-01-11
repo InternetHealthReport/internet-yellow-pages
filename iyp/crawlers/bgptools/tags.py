@@ -6,7 +6,7 @@ from datetime import datetime, time, timezone
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, RequestStatusError
 
 # curl -s https://bgp.tools/asns.csv | head -n 5
 URL = 'https://bgp.tools/tags/'
@@ -61,7 +61,7 @@ class Crawler(BaseCrawler):
             req = requests.get(url, headers=self.headers)
             if req.status_code != 200:
                 print(req.text)
-                sys.exit('Error while fetching AS names')
+                raise RequestStatusError('Error while fetching AS names')
 
             self.tag_qid = self.iyp.get_node('Tag', {'label': label})
             for line in req.text.splitlines():
