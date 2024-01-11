@@ -66,47 +66,68 @@ class Crawler(BaseCrawler):
         }
 
     def run(self):
-        """Fetch networks information from MANRS and push to wikibase."""
-
         req = requests.get(URL)
         if req.status_code != 200:
             raise RequestStatusError('Error while fetching MANRS csv file')
 
+        # Keep track of unique nodes and relationships.
+        asn_set = set()
+        country_set = set()
+        country_rel_set = set()
+        implement_rel_set = set()
+
+        # Process CSV file.
         for i, row in enumerate(req.text.splitlines()):
-            # Skip the header
+            # Skip the header.
             if i == 0:
                 continue
 
-            self.update_net(row)
-            sys.stderr.write(f'\rProcessed {i} organizations')
+            org, areas, asns, act1, act2, act3, act4 = [col.strip() for col in row.split(',')]
 
-    def update_net(self, one_line):
-        """Add the network to wikibase if it's not already there and update its
-        properties."""
+            # Ignore organizations without ASN.
+            if not asns:
+                continue
 
-        _, areas, asns, act1, act2, act3, act4 = [col.strip() for col in one_line.split(',')]
+            for asn in asns.split(';'):
+                asn = int(asn)
+                asn_set.add(asn)
+                for cc in areas.split(';'):
+                    cc = cc.strip()
+                    country_set.add(cc)
+                    country_rel_set.add((asn, cc))
+                for j, action_bool in enumerate([act1, act2, act3, act4]):
+                    if action_bool == 'Yes':
+                        implement_rel_set.add((asn, self.actions[j]['qid']))
 
-        # Properties
-        statements = [
-            ['MEMBER_OF', self.manrs_qid, self.reference],
-        ]
+            print(f'\rProcessed {i} organizations', file=sys.stderr, end='')
+        print()
 
-        # set countries
-        for cc in areas.split(';'):
-            country_qid = self.iyp.get_node('Country', {'country_code': cc})
-            statements.append(['COUNTRY', country_qid, self.reference])
+        # Get/create nodes.
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asn_set, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', country_set)
 
-        # set actions
-        for i, action_bool in enumerate([act1, act2, act3, act4]):
-            if action_bool == 'Yes':
-                statements.append(['IMPLEMENT', self.actions[i]['qid'], self.reference])
+        # Compute relationships.
+        member_of_rels = list()
+        country_rels = list()
+        implement_rels = list()
+        for asn in asn_set:
+            member_of_rels.append({'src_id': asn_id[asn],
+                                   'dst_id': self.manrs_qid,
+                                   'props': [self.reference]})
+        for asn, cc in country_rel_set:
+            country_rels.append({'src_id': asn_id[asn],
+                                 'dst_id': country_id[cc],
+                                 'props': [self.reference]})
+        # Translate to QIDs.
+        for asn, action_qid in implement_rel_set:
+            implement_rels.append({'src_id': asn_id[asn],
+                                   'dst_id': action_qid,
+                                   'props': [self.reference]})
 
-        # Commit to IYP
-        for asn in asns.split(';'):
-            if asn:     # ignore organizations with no ASN
-                # Get the AS QID (create if AS is not yet registered) and commit changes
-                as_qid = self.iyp.get_node('AS', {'asn': str(asn)})
-                self.iyp.add_links(as_qid, statements)
+        # Push relationships.
+        self.iyp.batch_add_links('MEMBER_OF', member_of_rels)
+        self.iyp.batch_add_links('COUNTRY', country_rels)
+        self.iyp.batch_add_links('IMPLEMENT', implement_rels)
 
 
 def main() -> None:
