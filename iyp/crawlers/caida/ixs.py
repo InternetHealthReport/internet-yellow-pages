@@ -30,12 +30,10 @@ class Crawler(BaseCrawler):
             if req.status_code == 200:
                 url = full_url
                 break
-            else:
-                print(req.status_code)
 
             date = date.shift(months=-1)
 
-        print('going to use this URL: ' + url)
+        logging.info('going to use this URL: ' + url)
         super().__init__(organization, url, name)
 
     def run(self):
@@ -58,7 +56,6 @@ class Crawler(BaseCrawler):
             if line.startswith('#'):
                 continue
 
-            print(line)
             ix = json.loads(line)
             lines.append(ix)
 
@@ -119,7 +116,6 @@ class Crawler(BaseCrawler):
         prefix_links = []
 
         for ix in lines:
-            print(ix)
             caida_qid = caida_id[ix['ix_id']]
             name_qid = name_id[ix['name']]
 
