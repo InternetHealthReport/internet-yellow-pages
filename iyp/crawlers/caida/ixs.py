@@ -7,6 +7,7 @@ import sys
 
 import arrow
 import requests
+from iso3166 import countries as cc_convert
 
 from iyp import BaseCrawler, RequestStatusError
 
@@ -74,16 +75,24 @@ class Crawler(BaseCrawler):
                 ixcc = ix.get('country')
                 if isinstance(ixcc, list):
                     for cc in ixcc:
-                        countries.add(cc)
+                        # We sometimes have a non-standard long name and the
+                        # country code. We can ignore non-standard names
+                        try:
+                            countries.add(cc_convert.get(cc).alpha2)
+                        except BaseException:
+                            logging.warning(f'Unknown country: {cc}')
                 else:
-                    countries.add(ix.get('country'))
+                    try:
+                        countries.add(cc_convert.get(ix.get('country')).alpha2)
+                    except BaseException:
+                        logging.warning(f'Unknown country: {ix.get("country")}')
 
             # usually a single URL but can be a list of URLs
             if ix.get('url'):
                 ixurl = ix.get('url')
                 if isinstance(ixurl, list):
                     for url in ixurl:
-                        countries.add(url)
+                        urls.add(url)
                 else:
                     urls.add(ix.get('url'))
 
@@ -124,7 +133,7 @@ class Crawler(BaseCrawler):
 
             # Compute new links
             caida_id_links.append({'src_id': ixp_qid, 'dst_id': caida_qid,
-                                   'props': [self.reference, ix]})
+                                   'props': [self.reference]})
 
             name_links.append({'src_id': ixp_qid, 'dst_id': name_qid,
                                'props': [self.reference]})
@@ -133,13 +142,21 @@ class Crawler(BaseCrawler):
                 ixcc = ix.get('country')
                 if isinstance(ixcc, list):
                     for cc in ixcc:
-                        country_qid = country_id[cc]
+                        # We sometimes have a non-standard long name and the
+                        # country code. We can ignore non-standard names
+                        try:
+                            country_qid = country_id[cc_convert.get(cc).alpha2]
+                            country_links.append({'src_id': ixp_qid, 'dst_id': country_qid,
+                                                  'props': [self.reference]})
+                        except BaseException:
+                            logging.warning(f'Unknown country: {cc}')
+                else:
+                    try:
+                        country_qid = country_id[cc_convert.get(ix['country']).alpha2]
                         country_links.append({'src_id': ixp_qid, 'dst_id': country_qid,
                                               'props': [self.reference]})
-                else:
-                    country_qid = country_id[ix['country']]
-                    country_links.append({'src_id': ixp_qid, 'dst_id': country_qid,
-                                          'props': [self.reference]})
+                    except BaseException:
+                        logging.warning(f'Unknown country: {ix["country"]}')
 
             if 'url' in ix:
                 urls = ix.get('url')
@@ -158,7 +175,7 @@ class Crawler(BaseCrawler):
                     for pfx in pfx_af:
                         pfx = ipaddress.ip_network(pfx).compressed
                         pfx_qid = prefix_id[pfx]
-                        prefix_links.append({'src_id': ixp_qid, 'dst_id': pfx_qid,
+                        prefix_links.append({'src_id': pfx_qid, 'dst_id': ixp_qid,
                                              'props': [self.reference]})
 
         # Push all links to IYP
