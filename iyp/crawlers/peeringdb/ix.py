@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 
 import flatdict
 import requests_cache
@@ -82,7 +82,7 @@ class Crawler(BaseCrawler):
         self.nets = {}
 
         # Using cached queries
-        self.requests = requests_cache.CachedSession(ORG)
+        self.requests = requests_cache.CachedSession(ORG, expire_after=timedelta(days=6))
 
         # connection to IYP database
         super().__init__(organization, url, name)

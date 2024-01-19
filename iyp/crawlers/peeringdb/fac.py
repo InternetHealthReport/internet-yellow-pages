@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from datetime import timedelta
 
 import flatdict
 import iso3166
@@ -33,7 +34,7 @@ class Crawler(BaseCrawler):
         """Initialisation for pushing peeringDB facilities to IYP."""
 
         self.headers = {'Authorization': 'Api-Key ' + API_KEY}
-        self.requests = requests_cache.CachedSession(ORG)
+        self.requests = requests_cache.CachedSession(ORG, expire_after=timedelta(days=6))
 
         super().__init__(organization, url, name)
 
