@@ -31,7 +31,7 @@ class Crawler(BaseCrawler):
         """Initialisation for pushing peeringDB organizations to IYP."""
 
         self.headers = {'Authorization': 'Api-Key ' + API_KEY}
-        self.requests = requests_cache.CachedSession(ORG, expire_after=timedelta(days=6))
+        self.requests = requests_cache.CachedSession(f'tmp/{ORG}', expire_after=timedelta(days=6))
 
         super().__init__(organization, url, name)
 

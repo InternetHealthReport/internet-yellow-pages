@@ -82,7 +82,7 @@ class Crawler(BaseCrawler):
         self.nets = {}
 
         # Using cached queries
-        self.requests = requests_cache.CachedSession(ORG, expire_after=timedelta(days=6))
+        self.requests = requests_cache.CachedSession(f'tmp/{ORG}', expire_after=timedelta(days=6))
 
         # connection to IYP database
         super().__init__(organization, url, name)
