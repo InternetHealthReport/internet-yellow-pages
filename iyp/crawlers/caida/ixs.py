@@ -33,6 +33,10 @@ class Crawler(BaseCrawler):
 
             date = date.shift(months=-1)
 
+        else:
+            # for loop was not 'broken', no file available
+            raise Exception('No recent CAIDA ix-asns file available')
+
         logging.info('going to use this URL: ' + url)
         super().__init__(organization, url, name)
 
@@ -122,7 +126,7 @@ class Crawler(BaseCrawler):
             # optional attributes
             ixp_qid = ixp_id.get(ix.get('pdb_id'))
 
-            if ixp_qid is None and 'name' in ix:
+            if ixp_qid is None:
                 # IXP not in PeeringDB:
                 # Create this IXP, this should be rare.
                 ixp_qid = self.iyp.get_node('IXP', {'name': ix['name']})

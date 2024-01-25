@@ -12,7 +12,7 @@ from iyp import BaseCrawler, RequestStatusError
 
 URL = 'https://publicdata.caida.org/datasets/ixps/'
 ORG = 'CAIDA'
-NAME = 'caida.ix-asns'
+NAME = 'caida.ix_asns'
 
 
 class Crawler(BaseCrawler):
@@ -32,6 +32,10 @@ class Crawler(BaseCrawler):
 
             date = date.shift(months=-1)
 
+        else:
+            # for loop was not 'broken', no file available
+            raise Exception('No recent CAIDA ix-asns file available')
+
         logging.info('going to use this URL: ' + url)
         super().__init__(organization, url, name)
 
@@ -43,7 +47,6 @@ class Crawler(BaseCrawler):
             raise RequestStatusError('Error while fetching CAIDA ix-asns file')
 
         lines = []
-        caida_ids = set()
         asns = set()
 
         # Find all possible values and create corresponding nodes
@@ -53,8 +56,6 @@ class Crawler(BaseCrawler):
 
             ix = json.loads(line)
             lines.append(ix)
-
-            caida_ids.add(ix.get('ix_id'))
             asns.add(int(ix.get('asn')))
 
         # get node IDs for ASNs, names, and countries
