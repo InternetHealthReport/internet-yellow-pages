@@ -1,4 +1,9 @@
 {
+    "cache": {
+        "directory": "tmp/",
+        "duration_in_days": 6
+    },
+
     "peeringdb": {
         "apikey": ""
     },

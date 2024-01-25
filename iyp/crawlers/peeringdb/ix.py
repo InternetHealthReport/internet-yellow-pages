@@ -34,8 +34,15 @@ NETID_LABEL = 'PeeringdbNetID'
 FACID_LABEL = 'PeeringdbFacID'
 
 API_KEY = ''
+CACHE_DIR = ''
+CACHE_DURATION = requests_cache.DO_NOT_CACHE
 if os.path.exists('config.json'):
-    API_KEY = json.load(open('config.json', 'r'))['peeringdb']['apikey']
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+    API_KEY = config['peeringdb']['apikey']
+    CACHE_DIR = config['cache']['directory']
+    CACHE_DURATION = timedelta(days=config['cache']['duration_in_days'])
+    del config  # Do not leave as a global variable.
 
 
 def handle_social_media(d: dict, website_set: set = None):
@@ -82,7 +89,7 @@ class Crawler(BaseCrawler):
         self.nets = {}
 
         # Using cached queries
-        self.requests = requests_cache.CachedSession(f'tmp/{ORG}', expire_after=timedelta(days=6))
+        self.requests = requests_cache.CachedSession(os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION)
 
         # connection to IYP database
         super().__init__(organization, url, name)
