@@ -4,7 +4,8 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
-
+import lzma
+from io import BytesIO
 import requests
 
 from iyp import BaseCrawler, RequestStatusError
@@ -25,7 +26,7 @@ class Crawler(BaseCrawler):
         self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
 
         # Check if today's data is available
-        self.url = f'{URL}/afrinic.tal/{self.date_path}/roas.csv'
+        self.url = f'{URL}/afrinic.tal/{self.date_path}/roas.csv.xz'
         req = requests.head(self.url)
         if req.status_code != 200:
             now -= timedelta(days=1)
@@ -37,20 +38,21 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch data from RIPE and push to IYP."""
-
         for tal in TALS:
-
-            self.url = f'{URL}/{tal}/{self.date_path}/roas.csv'
+            self.url = f'{URL}/{tal}/{self.date_path}/roas.csv.xz'
             logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get(self.url)
             if req.status_code != 200:
                 raise RequestStatusError('Error while fetching data for ' + self.url)
 
+            # Decompress the .xz file and read it as CSV
+            with lzma.open(BytesIO(req.content)) as xz_file:
+                csv_content = xz_file.read().decode('utf-8').splitlines()
+
             # Aggregate data per prefix
             asns = set()
-
             prefix_info = defaultdict(list)
-            for line in req.text.splitlines():
+            for line in csv_content:
                 url, asn, prefix, max_length, start, end = line.split(',')
 
                 # Skip header
