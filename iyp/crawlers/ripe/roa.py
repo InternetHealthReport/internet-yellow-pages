@@ -4,9 +4,9 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
+import requests
 import lzma
 from io import BytesIO
-import requests
 
 from iyp import BaseCrawler, RequestStatusError
 
