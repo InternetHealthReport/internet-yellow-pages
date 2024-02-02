@@ -6,6 +6,7 @@ import sys
 from zipfile import ZipFile
 
 import requests
+import tldextract
 
 from iyp import BaseCrawler, RequestStatusError
 
@@ -40,10 +41,35 @@ class Crawler(BaseCrawler):
                     links.append({'src_name': domain, 'dst_id': self.cisco_qid,
                                   'props': [self.reference, {'rank': int(rank)}]})
 
-        name_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains)
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains, create=False)
+        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', domains, create=False)
+
+        # Umbrella mixes up domain and host names.
+        # By order of preferences we rank:
+        # 1) existing domain name
+        # 2) existing host name
+        # 3) do our best to figure out if it is a domain or host and create the
+        # corresponding node
 
         for link in links:
-            link['src_id'] = name_id[link['src_name']]
+            if link['src_name'] in domain_id:
+                link['src_id'] = domain_id[link['src_name']]
+            elif link['src_name'] in host_id:
+                link['src_id'] = host_id[link['src_name']]
+            else:
+                # Create new nodes (should be rare as openintel should already
+                # have created these nodes)
+                ranked_thing = tldextract.extract(link['src_name'])
+                if link['src_name'] == ranked_thing.registered_domain:
+                    prop = dict(self.reference)
+                    prop['name'] = link['src_name']
+                    node_id = self.iyp.get_node('DomainName', prop, ['name'])
+                    link['src_id'] = node_id
+                else:
+                    prop = dict(self.reference)
+                    prop['name'] = link['src_name']
+                    node_id = self.iyp.get_node('HostName', prop, ['name'])
+                    link['src_id'] = node_id
 
         # Push all links to IYP
         self.iyp.batch_add_links('RANK', links)
