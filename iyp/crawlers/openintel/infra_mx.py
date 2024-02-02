@@ -19,6 +19,12 @@ class Crawler(OpenIntelCrawler):
 
 
 def main() -> None:
+
+    ############################################
+    # This crawler is not working the NODE_TYPE argument has been deprecated
+    ############################################
+    return
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
