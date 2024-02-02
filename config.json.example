@@ -75,7 +75,6 @@
             "iyp.crawlers.emileaben.as_names",
             "iyp.crawlers.ripe.atlas_probes",
             "iyp.crawlers.ripe.atlas_measurements",
-            "iyp.crawlers.iana.root_zone",
             "iyp.crawlers.alice_lg.amsix",
             "iyp.crawlers.alice_lg.bcix",
             "iyp.crawlers.alice_lg.decix",
@@ -91,7 +90,6 @@
             "iyp.post.ip2prefix",
             "iyp.post.address_family",
             "iyp.post.country_information",
-            "iyp.post.dns_hierarchy",
             "iyp.post.url2domain"
         ]
     }
