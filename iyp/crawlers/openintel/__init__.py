@@ -189,6 +189,7 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
         ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
         ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
+        dns_qid = self.iyp.get_node('Service', {'name': 'DNS'})
 
         print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, \
                 {len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
@@ -197,6 +198,7 @@ class OpenIntelCrawler(BaseCrawler):
         res_links = []
         mng_links = []
         partof_links = []
+        serve_links = []
 
         # RESOLVES_TO and MANAGED_BY links
         for row in df.itertuples():
@@ -213,11 +215,19 @@ class OpenIntelCrawler(BaseCrawler):
                 ip_qid = ip4_id[row.ip4_address]
                 res_links.append({'src_id': host_qid, 'dst_id': ip_qid, 'props': [self.reference]})
 
+                # Authoritative name servers serve DNS
+                if host_qid in ns_id:
+                    serve_links.append({'src_id': ip_qid, 'dst_id': dns_qid, 'props': [self.reference]})
+
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
                 host_qid = host_id[row.query_name]
                 ip_qid = ip6_id[row.ip6_address]
                 res_links.append({'src_id': host_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+
+                # Authoritative name servers serve DNS
+                if host_qid in ns_id:
+                    serve_links.append({'src_id': ip_qid, 'dst_id': dns_qid, 'props': [self.reference]})
 
         # PART_OF links between HostNames and DomainNames
         for hd in host_names.intersection(domain_names):
@@ -229,3 +239,4 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_links('RESOLVES_TO', res_links)
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
         self.iyp.batch_add_links('PART_OF', partof_links)
+        self.iyp.batch_add_links('SERVE', serve_links)

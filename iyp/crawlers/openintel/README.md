@@ -21,6 +21,7 @@ IP resolution for  popular host names:
 IP resolution of authoritative name servers:
 ```Cypher
 (:HostName:AuthoritativeNameServer {name: 'ns1.google.com'})-[:RESOLVES_TO]->(:IP {ip: '216.239.32.10'})
+(:IP {ip: '216.239.32.10'})-[:SERVE]->(:Service {name: 'DNS'})
 ```
 
 Domain names managed by name servers:
