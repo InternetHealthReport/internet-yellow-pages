@@ -8,21 +8,24 @@ the [Tranco top 1 million list](https://data.openintel.nl/data/tranco1m/) and th
 top 1 million list since it combines rankings.
 IYP also get the list of authoritative names servers seen by OpenINTEL.
 
-IYP uses only `A` queries to add IP resolution for DomainName and AuthoritativeNameServer nodes.
-
 A crawler of mail servers is also implemented but not used as it creates a very large number
 of links and this dataset is currently not requested/needed by anyone.
 
 ## Graph representation
 
-IP resolution for  popular domain names:
+IP resolution for  popular host names:
 ```Cypher
-(:DomainName {name: 'google.com'})-[:RESOLVES_TO]->(:IP {ip: '142.250.179.142'})
+(:HostName {name: 'google.com'})-[:RESOLVES_TO]->(:IP {ip: '142.250.179.142'})
 ```
 
 IP resolution of authoritative name servers:
 ```Cypher
-(:AuthoritativeNameServer {name: 'ns1.google.com'})-[:RESOLVES_TO]->(:IP {ip: '216.239.32.10'})
+(:HostName:AuthoritativeNameServer {name: 'ns1.google.com'})-[:RESOLVES_TO]->(:IP {ip: '216.239.32.10'})
+```
+
+Domain names managed by name servers:
+```Cypher
+(:DomainName {name: 'google.com'})-[:MANAGED_BY]->(:HostName:AuthoritativeNameServer {name: 'ns1.google.com'})
 ```
 ## Dependence
 
