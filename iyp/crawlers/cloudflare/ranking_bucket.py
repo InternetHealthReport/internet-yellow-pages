@@ -24,6 +24,9 @@ if os.path.exists('config.json'):
 class Crawler(BaseCrawler):
     # Base Crawler provides access to IYP via self.iyp and setup a dictionary with the
     # org/url/today's date in self.reference
+    #
+    # Cloudflare ranks second and third level domain names (not host names).
+    # See https://blog.cloudflare.com/radar-domain-rankings/
 
     def run(self):
         """Fetch data and push to IYP."""

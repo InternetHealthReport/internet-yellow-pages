@@ -19,6 +19,11 @@ provide various datasets, including:
   fetch AS numbers instead.
   
 All rankings are based on one week of data.
+Cloudflare radar's top location and ASes is available for both domain names
+and host names. Results are likely accounting for all NS, A, AAAA queries made to
+cloudlare resolver, since NS queries for hostnames make no sense IYP links these 
+results to `DomanName` nodes.
+
 
 ## Graph representation
 
