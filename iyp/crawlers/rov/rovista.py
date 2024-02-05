@@ -18,10 +18,12 @@ class Crawler(BaseCrawler):
         """Fetch the prefix to ASN file from BGPKIT website and process lines one by
         one."""
         
+        
         batch_size = 1000  # Adjust batch size as needed
         offset = 0
         while True:
             # Make a request with the current offset
+            
             response = requests.get(URL, params={"offset": offset, "count": batch_size})
             if response.status_code != 200:
                 raise RequestStatusError('Error while fetching RoVista data')
@@ -30,9 +32,17 @@ class Crawler(BaseCrawler):
                 asn = entry['asn']
                 ratio = entry['ratio']
                 if ratio > 0.5:
-                    self.iyp.add_relationship_properties(node_label_properties=f"AS{{asn: {asn}}}",relationship="CATEGORIZED",connected_node_label_properties='Tag{label:"Validating RPKI ROV"}',properties={'ratio':ratio})
+                    self.iyp.add_relationship_properties(
+                        node_label_properties=f"AS{{asn: {asn}}}",
+                        relationship="CATEGORIZED",
+                        connected_node_label_properties='Tag{label:"Validating RPKI ROV"}',
+                        properties={'ratio':ratio})
                 else:
-                    self.iyp.add_relationship_properties(node_label_properties=f"AS{{asn: {asn}}}",relationship="CATEGORIZED",connected_node_label_properties='Tag{label:"Not Validating RPKI ROV"}',properties={'ratio':ratio})
+                    self.iyp.add_relationship_properties(
+                        node_label_properties=f"AS{{asn: {asn}}}",
+                        relationship="CATEGORIZED",
+                        connected_node_label_properties='Tag{label:"Not Validating RPKI ROV"}',
+                        properties={'ratio':ratio})
             # Move to the next page
             offset += batch_size
             # Break the loop if there's no more data
