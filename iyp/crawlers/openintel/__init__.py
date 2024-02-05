@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import tempfile
+from ipaddress import IPv6Address
 
 import arrow
 import boto3
@@ -182,13 +183,23 @@ class OpenIntelCrawler(BaseCrawler):
         # query_names for A and AAAA records are host names
         host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['query_name'])
 
+        ipv6_addresses = set()
+        # Normalize IPv6 addresses.
+        for ip in df[df.ip6_address.notnull()]['ip6_address']:
+            try:
+                ip_normalized = IPv6Address(ip).compressed
+            except ValueError as e:
+                logging.error(f'Ignoring invalid IPv6 address "{ip}": {e}')
+                continue
+            ipv6_addresses.add(ip_normalized)
+
         # Get/create all nodes:
         domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domain_names)
         host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names)
         ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', name_servers)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
         ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
-        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
+        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses)
         dns_qid = self.iyp.get_node('Service', {'name': 'DNS'})
 
         print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, \
@@ -221,8 +232,13 @@ class OpenIntelCrawler(BaseCrawler):
 
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
+                try:
+                    ip_normalized = IPv6Address(row.ip6_address).compressed
+                except ValueError:
+                    # Error message was already logged above.
+                    continue
                 host_qid = host_id[row.query_name]
-                ip_qid = ip6_id[row.ip6_address]
+                ip_qid = ip6_id[ip_normalized]
                 res_links.append({'src_id': host_qid, 'dst_id': ip_qid, 'props': [self.reference]})
 
                 # Authoritative name servers serve DNS
