@@ -66,7 +66,6 @@
             "iyp.crawlers.openintel.tranco1m",
             "iyp.crawlers.openintel.umbrella1m",
             "iyp.crawlers.openintel.infra_ns",
-            "iyp.crawlers.openintel.infra_mx",
             "iyp.crawlers.cisco.umbrella_top1M",
             "iyp.crawlers.citizenlab.urldb",
             "iyp.crawlers.inetintel.as_org",
