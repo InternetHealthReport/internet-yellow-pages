@@ -8,27 +8,27 @@ from iyp import BasePostProcess
 
 class PostProcess(BasePostProcess):
     def run(self):
-        """Link URLs and their corresponding DomainNames."""
+        """Link URLs and their corresponding HostNames."""
 
         # Get all URL nodes.
         url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url')
 
-        # Get all DomainName Nodes
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
+        # Get all HostName Nodes
+        hostname_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name')
 
         # Compute links
         links = []
         for url, url_qid in url_id.items():
-            # Extract domain name from URL
-            domain = tldextract.extract(url).registered_domain
+            # Extract host name from URL
+            hostname = tldextract.extract(url).fqdn
 
-            # Get DomainName node for the domain
-            domain_qid = domain_id.get(domain)
+            # Get HostName node for the fqdn of the URL
+            hostname_qid = hostname_id.get(hostname)
 
-            if domain_qid is not None:
+            if hostname_qid is not None:
                 links.append({
                     'src_id': url_qid,
-                    'dst_id': domain_qid,
+                    'dst_id': hostname_qid,
                     'props': [self.reference]
                 })
 

@@ -6,6 +6,7 @@ import sys
 from zipfile import ZipFile
 
 import requests
+import tldextract
 
 from iyp import BaseCrawler, RequestStatusError
 
@@ -22,31 +23,75 @@ class Crawler(BaseCrawler):
 
         self.cisco_qid = self.iyp.get_node('Ranking', {'name': 'Cisco Umbrella Top 1 million'})
 
-        sys.stderr.write('Downloading latest list...\n')
+        logging.info('Downloading latest list...')
         req = requests.get(URL)
         if req.status_code != 200:
             raise RequestStatusError('Error while fetching Cisco Umbrella Top 1M csv file')
 
         links = []
-        domains = set()
         # open zip file and read top list
         with ZipFile(io.BytesIO(req.content)) as z:
-            with z.open('top-1m.csv') as list:
-                for i, row in enumerate(io.TextIOWrapper(list)):
+            with z.open('top-1m.csv') as top_list:
+                for i, row in enumerate(io.TextIOWrapper(top_list)):
                     row = row.rstrip()
                     rank, domain = row.split(',')
 
-                    domains.add(domain)
                     links.append({'src_name': domain, 'dst_id': self.cisco_qid,
                                   'props': [self.reference, {'rank': int(rank)}]})
 
-        name_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains)
+        logging.info('Fetching DomainName/HostName nodes...')
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
+        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name')
 
+        # Umbrella mixes up domain and host names.
+        # By order of preferences we rank:
+        # 1) existing domain name
+        # 2) existing host name
+        # 3) do our best to figure out if it is a domain or host and create the
+        # corresponding node
+
+        new_domain_names = set()
+        new_host_names = set()
+        unprocessed_links = list()
+        processed_links = list()
+
+        logging.info('Building relationships...')
         for link in links:
-            link['src_id'] = name_id[link['src_name']]
+            if link['src_name'] in domain_id:
+                link['src_id'] = domain_id[link['src_name']]
+                processed_links.append(link)
+            elif link['src_name'] in host_id:
+                link['src_id'] = host_id[link['src_name']]
+                processed_links.append(link)
+            else:
+                unprocessed_links.append(link)
+                ranked_thing = tldextract.extract(link['src_name'])
+                name = link['src_name']
+                if name == ranked_thing.registered_domain:
+                    new_domain_names.add(name)
+                else:
+                    new_host_names.add(name)
+
+        if new_domain_names:
+            logging.info(f'Pushing {len(new_domain_names)} additional DomainName nodes...')
+            domain_id.update(self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', new_domain_names, all=False))
+        if new_host_names:
+            logging.info(f'Pushing {len(new_host_names)} additional HostName nodes...')
+            host_id.update(self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', new_host_names, all=False))
+
+        for link in unprocessed_links:
+            if link['src_name'] in domain_id:
+                link['src_id'] = domain_id[link['src_name']]
+            elif link['src_name'] in host_id:
+                link['src_id'] = host_id[link['src_name']]
+            else:
+                logging.error(f'Missing DomainName/HostName node for name "{link["src_name"]}". Should not happen.')
+                continue
+            processed_links.append(link)
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RANK', links)
+        logging.info(f'Pushing {len(processed_links)} RANK relationships...')
+        self.iyp.batch_add_links('RANK', processed_links)
 
 
 def main() -> None:

@@ -3,28 +3,19 @@ import logging
 import os
 import sys
 
-from iyp.crawlers.openintel import OpenIntelCrawler
+from iyp.crawlers.openintel import DnsDependencyCrawler
 
-URL = 'https://data.openintel.nl'
+URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep/JP'
 ORG = 'OpenINTEL'
-NAME = 'openintel.infra_mx'
-
-DATASET = 'infra:mx'
-NODE_TYPE = 'MailServer'
+NAME = 'openintel.dns_dependency_jp'
 
 
-class Crawler(OpenIntelCrawler):
+class Crawler(DnsDependencyCrawler):
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name, DATASET, NODE_TYPE)
+        super().__init__(organization, url, name)
 
 
 def main() -> None:
-
-    ############################################
-    # This crawler is not working the NODE_TYPE argument has been deprecated
-    ############################################
-    return
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()

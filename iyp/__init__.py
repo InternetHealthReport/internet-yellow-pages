@@ -576,30 +576,10 @@ class IYP(object):
             MATCH (n)
             WHERE ID(n) = item.id
             SET n += item.props"""
+
             res = self.tx.run(add_query, batch=batch)
             res.consume()
             self.commit()
-        
-        
-        # Function to execute the Cypher query to set properties on relationships
-    def add_relationship_properties(self,node_label_properties, relationship, connected_node_label_properties,properties):
-        """
-            he function goes through each provided property and adds it to the relationship
-            between the specified nodes, but only if that property doesn't already
-            exist in the relationship.
-        """
-        property_setters = ", ".join([f"rel.{prop} = ${{props}}.${{prop}}" for prop in properties.keys()])
-        add_query = f"""
-            MATCH (node1:{node_label_properties})-[rel:{relationship}]-(node2:{connected_node_label_properties})
-            WITH rel
-            UNWIND keys($properties) AS prop
-            WHERE NOT EXISTS(rel[prop])
-            SET {property_setters}
-            """
-    
-        res = self.tx.run(add_query,properties=properties)
-        res.consume()
-        self.commit()
 
 
 class BasePostProcess(object):
