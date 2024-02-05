@@ -90,7 +90,7 @@
             "iyp.post.ip2prefix",
             "iyp.post.address_family",
             "iyp.post.country_information",
-            "iyp.post.url2domain"
+            "iyp.post.url2hostname"
         ]
     }
 }
