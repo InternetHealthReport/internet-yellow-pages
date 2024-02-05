@@ -30,11 +30,9 @@ class Crawler(BaseCrawler):
                 asn = entry['asn']
                 ratio = entry['ratio']
                 if ratio > 0.5:
-                    self.iyp.add_relationship_properties(node_label_properties=f"AS{{asn: {asn}}}",relationship="CATEGORIZED",connected_node_label_properties='Tag{label:"Validating RPKI ROV"}',
-                    properties={'ratio':ratio})
+                    self.iyp.add_relationship_properties(node_label_properties=f"AS{{asn: {asn}}}",relationship="CATEGORIZED",connected_node_label_properties='Tag{label:"Validating RPKI ROV"}',properties={'ratio':ratio})
                 else:
-                    self.iyp.add_relationship_properties(node_label_properties=f"AS{{asn: {asn}}}",relationship="CATEGORIZED",connected_node_label_properties='Tag{label:"Not Validating RPKI ROV"}',
-                    properties={'ratio':ratio})
+                    self.iyp.add_relationship_properties(node_label_properties=f"AS{{asn: {asn}}}",relationship="CATEGORIZED",connected_node_label_properties='Tag{label:"Not Validating RPKI ROV"}',properties={'ratio':ratio})
             # Move to the next page
             offset += batch_size
             # Break the loop if there's no more data
