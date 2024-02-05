@@ -60,16 +60,16 @@ class Crawler(BaseCrawler):
                 # Create new nodes (should be rare as openintel should already
                 # have created these nodes)
                 ranked_thing = tldextract.extract(link['src_name'])
+                prop = {'name': link['src_name']}
                 if link['src_name'] == ranked_thing.registered_domain:
-                    prop = dict(self.reference)
-                    prop['name'] = link['src_name']
-                    node_id = self.iyp.get_node('DomainName', prop, ['name'])
+                    node_id = self.iyp.get_node('DomainName', prop)
                     link['src_id'] = node_id
+                    created_node_label = 'DomainName'
                 else:
-                    prop = dict(self.reference)
-                    prop['name'] = link['src_name']
-                    node_id = self.iyp.get_node('HostName', prop, ['name'])
+                    node_id = self.iyp.get_node('HostName', prop)
                     link['src_id'] = node_id
+                    created_node_label = 'HostName'
+                logging.info(f'New {created_node_label} node created for name "{prop["name"]}"')
 
         # Push all links to IYP
         self.iyp.batch_add_links('RANK', links)
