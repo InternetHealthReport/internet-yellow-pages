@@ -177,7 +177,7 @@ class OpenIntelCrawler(BaseCrawler):
         # query_names for NS records are domain names
         domain_names = set(df[df.response_type == 'NS']['query_name'])
 
-        # response values of NS records are names servers
+        # response values of NS records are name servers
         name_servers = set(df[df.ns_address.notnull()]['ns_address'])
 
         # query_names for A and AAAA records are host names
@@ -202,8 +202,8 @@ class OpenIntelCrawler(BaseCrawler):
         ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses)
         dns_qid = self.iyp.get_node('Service', {'name': 'DNS'})
 
-        print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, \
-                {len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
+        print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, {len(ip4_id)} IPv4, '
+              f'{len(ip6_id)} IPv6')
 
         # Compute links
         res_links = []

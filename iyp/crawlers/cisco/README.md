@@ -16,4 +16,4 @@ The rank of the domain is indicated by the `rank` property of the relationship.
 
 ## Dependence
 
-This crawler dependents on openintel/umbrella1m.
+This crawler depends on `openintel.umbrella1m`.

@@ -1,4 +1,4 @@
-# Cloudflare Radar -- https://radar.cloudflare.com/ 
+# Cloudflare Radar -- https://radar.cloudflare.com/
 
 Cloudflare uses aggregated and anonymized DNS queries to their `1.1.1.1` public resolver service to
 provide various datasets, including:
@@ -17,13 +17,12 @@ provide various datasets, including:
 - [Top 100 ASes querying each of the 10,000 highest ranked domain
   names](https://developers.cloudflare.com/api/operations/radar_get__top_ases): Same as above, but
   fetch AS numbers instead.
-  
+
 All rankings are based on one week of data.
 Cloudflare radar's top location and ASes is available for both domain names
 and host names. Results are likely accounting for all NS, A, AAAA queries made to
-cloudlare resolver, since NS queries for hostnames make no sense IYP links these 
-results to `DomanName` nodes.
-
+Cloudflare's resolver. Since NS queries for host names make no sense IYP links these
+results to `DomainName` nodes.
 
 ## Graph representation
 

@@ -1,7 +1,7 @@
 # Cloudflare radar's top location and ASes is available for both domain names
 # and host names. Results are likely accounting for all NS, A, AAAA queries made to
-# cloudlare resolver, since NS queries for hostnames make no sense it seems
-# more intruitive to link these results to DomanName nodes.
+# Cloudflare's resolver. Since NS queries for host names make no sense it seems
+# more intuitive to link these results to DomainName nodes.
 
 import argparse
 import glob
