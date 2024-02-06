@@ -29,7 +29,6 @@ class Crawler(BaseCrawler):
             raise RequestStatusError('Error while fetching Cisco Umbrella Top 1M csv file')
 
         links = []
-        domains = set()
         # open zip file and read top list
         with ZipFile(io.BytesIO(req.content)) as z:
             with z.open('top-1m.csv') as top_list:
@@ -37,13 +36,12 @@ class Crawler(BaseCrawler):
                     row = row.rstrip()
                     rank, domain = row.split(',')
 
-                    domains.add(domain)
                     links.append({'src_name': domain, 'dst_id': self.cisco_qid,
                                   'props': [self.reference, {'rank': int(rank)}]})
 
         logging.info('Fetching DomainName/HostName nodes...')
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains, create=False)
-        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', domains, create=False)
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
+        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name')
 
         # Umbrella mixes up domain and host names.
         # By order of preferences we rank:
