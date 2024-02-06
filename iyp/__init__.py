@@ -558,7 +558,7 @@ class IYP(object):
 
         self.tx.run(matches + where + merges).consume()
         self.commit()
-        
+
     def add_relationship_properties(
             self,
             node_label_properties,
