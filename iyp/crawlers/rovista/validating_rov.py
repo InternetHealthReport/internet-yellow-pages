@@ -11,6 +11,7 @@ URL = 'https://api.rovista.netsecurelab.org/rovista/api/overview'
 ORG = 'RoVista'
 NAME = 'rovista.validating_rov'
 
+
 class Crawler(BaseCrawler):
 
     def run(self):
@@ -19,19 +20,21 @@ class Crawler(BaseCrawler):
         offset = 0
         entries = []
         asns = set()
+
         while True:
             # Make a request with the current offset
             response = requests.get(URL, params={'offset': offset, 'count': batch_size})
             if response.status_code != 200:
                 raise RequestStatusError('Error while fetching RoVista data')
-            
+
             data = response.json().get('data', [])
             for entry in data:
                 asns.add(entry['asn'])
                 if entry['ratio'] > 0.5:
                     entries.append({'asn': entry['asn'], 'ratio': entry['ratio'], 'label': 'Validating RPKI ROV'})
                 else:
-                   entries.append({'asn': entry['asn'], 'ratio': entry['ratio'], 'label': 'Not Validating RPKI ROV'})
+                    entries.append({'asn': entry['asn'], 'ratio': entry['ratio'], 'label': 'Not Validating RPKI ROV'})
+
             # Move to the next page
             offset += 1
             # Break the loop if there's no more data
@@ -40,20 +43,21 @@ class Crawler(BaseCrawler):
         logging.info('Pushing nodes to neo4j...\n')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        tag_id_not_vali= self.iyp.get_node('Tag',{'label':"Not Validating RPKI ROV"},create=True)
-        tag_id_vali=self.iyp.get_node('Tag',{'label':"Validating RPKI ROV"},create=True)
+        tag_id_not_vali = self.iyp.get_node('Tag', {'label': "Not Validating RPKI ROV"}, create=True)
+        tag_id_vali = self.iyp.get_node('Tag', {'label': "Validating RPKI ROV"}, create=True)
         # Compute links
         links = []
         for entry in entries:
             asn_qid = self.asn_id[entry['asn']]
             if entry['ratio'] > 0.5:
-                links.append({'src_id': asn_qid, 'dst_id':tag_id_vali , 'props': [self.reference, entry]})
-            else :
-                links.append({'src_id': asn_qid, 'dst_id':tag_id_not_vali , 'props': [self.reference, entry]})
-                
+                links.append({'src_id': asn_qid, 'dst_id': tag_id_vali, 'props': [self.reference, entry]})
+            else:
+                links.append({'src_id': asn_qid, 'dst_id': tag_id_not_vali, 'props': [self.reference, entry]})
+
         logging.info('Pushing links to neo4j...\n')
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
