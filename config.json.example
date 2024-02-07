@@ -81,6 +81,8 @@
             "iyp.crawlers.alice_lg.linx",
             "iyp.crawlers.alice_lg.megaport",
             "iyp.crawlers.alice_lg.netnod",
+            "iyp.crawlers.openintel.dns_dependency_nl",
+            "iyp.crawlers.openintel.dns_dependency_jp",
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases"
         ],
