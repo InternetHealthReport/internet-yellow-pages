@@ -73,7 +73,7 @@ class Crawler(BaseCrawler):
             # on the '_' delimiter, this action would potentially
             # cause a TypeError from flatdict if it isn't handled properly.
             target_info = {
-                'domain': item.pop('target', None),
+                'hostname': item.pop('target', None),
                 'asn': item.pop('target_asn', None),
                 'ip': item.pop('target_ip', None),
                 'prefix': item.pop('target_prefix', None),
@@ -148,7 +148,7 @@ class Crawler(BaseCrawler):
         probe_ids = set()
         ips = set()
         ases = set()
-        domains = set()
+        hostnames = set()
 
         valid_probe_measurements = list()
 
@@ -171,16 +171,16 @@ class Crawler(BaseCrawler):
                 probe_af = int(probe_measurement['af'])
                 resolved_ips[i] = ipaddress.ip_address(resolved_ips[i]).compressed if probe_af == 6 else resolved_ips[i]
 
-            domain = probe_measurement['target']['domain']
-            if domain == '' or self.__is_valid_ip(domain):
-                domain = None
-                probe_measurement['target']['domain'] = None
+            hostname = probe_measurement['target']['hostname']
+            if hostname == '' or self.__is_valid_ip(hostname):
+                hostname = None
+                probe_measurement['target']['hostname'] = None
 
             asn = probe_measurement['target']['asn']
             probe_ids_participated = probe_measurement['current_probes']
 
             self.__add_if_not_none(probe_measurement_id, probe_measurement_ids)
-            self.__add_if_not_none(domain, domains)
+            self.__add_if_not_none(hostname, hostnames)
             self.__add_if_not_none(asn, ases)
             self.__add_if_not_none_values(resolved_ips, ips)
             self.__add_if_not_none_values(probe_ids_participated, probe_ids)
@@ -204,8 +204,8 @@ class Crawler(BaseCrawler):
         probe_ids = self.iyp.batch_get_nodes_by_single_prop('AtlasProbe', 'id', probe_ids, all=False, create=True)
         logging.info(f'{len(ips)} IPs')
         ip_ids = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False, create=True)
-        logging.info(f'{len(domains)} domains')
-        domain_ids = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains, all=False, create=True)
+        logging.info(f'{len(hostnames)} hostnames')
+        hostname_ids = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', hostnames, all=False, create=True)
         logging.info(f'{len(ases)} ASNs')
         asn_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False, create=True)
 
@@ -226,10 +226,10 @@ class Crawler(BaseCrawler):
                 target_links.append({'src_id': probe_measurement_qid, 'dst_id': asn_qid,
                                     'props': [probe_measurement_reference]})
 
-            probe_measurement_domain = probe_measurement['target']['domain']
-            if probe_measurement_domain:
-                domain_qid = domain_ids[probe_measurement_domain]
-                target_links.append({'src_id': probe_measurement_qid, 'dst_id': domain_qid,
+            probe_measurement_hostname = probe_measurement['target']['hostname']
+            if probe_measurement_hostname:
+                hostname_qid = hostname_ids[probe_measurement_hostname]
+                target_links.append({'src_id': probe_measurement_qid, 'dst_id': hostname_qid,
                                     'props': [probe_measurement_reference]})
 
             probe_measurement_ips = self.__get_all_resolved_ips(probe_measurement)

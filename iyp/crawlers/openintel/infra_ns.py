@@ -10,12 +10,11 @@ ORG = 'OpenINTEL'
 NAME = 'openintel.infra_ns'
 
 DATASET = 'infra:ns'
-NODE_TYPE = 'AuthoritativeNameServer'
 
 
 class Crawler(OpenIntelCrawler):
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name, DATASET, NODE_TYPE)
+        super().__init__(organization, url, name, DATASET)
 
 
 def main() -> None:

@@ -63,11 +63,10 @@
             "iyp.crawlers.peeringdb.ix",
             "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.tranco.top1M",
-            "iyp.crawlers.cisco.umbrella_top1M",
             "iyp.crawlers.openintel.tranco1m",
             "iyp.crawlers.openintel.umbrella1m",
             "iyp.crawlers.openintel.infra_ns",
-            "iyp.crawlers.openintel.infra_mx",
+            "iyp.crawlers.cisco.umbrella_top1M",
             "iyp.crawlers.citizenlab.urldb",
             "iyp.crawlers.inetintel.as_org",
             "iyp.crawlers.pch.daily_routing_snapshots_v4",
@@ -75,7 +74,6 @@
             "iyp.crawlers.emileaben.as_names",
             "iyp.crawlers.ripe.atlas_probes",
             "iyp.crawlers.ripe.atlas_measurements",
-            "iyp.crawlers.iana.root_zone",
             "iyp.crawlers.alice_lg.amsix",
             "iyp.crawlers.alice_lg.bcix",
             "iyp.crawlers.alice_lg.decix",
@@ -91,8 +89,7 @@
             "iyp.post.ip2prefix",
             "iyp.post.address_family",
             "iyp.post.country_information",
-            "iyp.post.dns_hierarchy",
-            "iyp.post.url2domain"
+            "iyp.post.url2hostname"
         ]
     }
 }

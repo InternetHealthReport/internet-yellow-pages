@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import tempfile
+from ipaddress import IPv6Address
 
 import arrow
 import boto3
@@ -42,17 +43,11 @@ def valid_date(s):
 
 
 class OpenIntelCrawler(BaseCrawler):
-    def __init__(self, organization, url, name, dataset, additional_domain_type=str()):
+    def __init__(self, organization, url, name, dataset):
         """Initialization of the OpenIntel crawler requires the name of the dataset
-        (e.g. tranco or infra:ns).
-
-        If the dataset contains special types of domain
-        names, an additional label can be specified (e.g., `AuthoritativeNameServer`)
-        that will be attached to the `DomainName` nodes.
-        """
+        (e.g. tranco or infra:ns)."""
 
         self.dataset = dataset
-        self.additional_domain_type = additional_domain_type
         super().__init__(organization, url, name)
 
     def get_parquet(self):
@@ -179,52 +174,74 @@ class OpenIntelCrawler(BaseCrawler):
 
         print(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
-        # Only domain names from the `query_name` column that will receive the
-        # additional_domain_type label (if present).
-        query_domain_names = set(df['query_name'])
-        # Name server domain names.
-        ns_domain_names = set(df[df.ns_address.notnull()]['ns_address'])
-        # All domain names, including the ones from the name server column.
-        all_domain_names = query_domain_names.union(ns_domain_names)
-        # Create all DomainName nodes.
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', all_domain_names)
-        # Get node IDs for NS nodes and add NS label.
-        ns_id = {name: domain_id[name] for name in ns_domain_names}
+        # query_names for NS records are domain names
+        domain_names = set(df[df.response_type == 'NS']['query_name'])
+
+        # response values of NS records are name servers
+        name_servers = set(df[df.ns_address.notnull()]['ns_address'])
+
+        # query_names for A and AAAA records are host names
+        host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['query_name'])
+
+        ipv6_addresses = set()
+        # Normalize IPv6 addresses.
+        for ip in df[df.ip6_address.notnull()]['ip6_address']:
+            try:
+                ip_normalized = IPv6Address(ip).compressed
+            except ValueError as e:
+                logging.error(f'Ignoring invalid IPv6 address "{ip}": {e}')
+                continue
+            ipv6_addresses.add(ip_normalized)
+
+        # Get/create all nodes:
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domain_names)
+        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names)
+        ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', name_servers)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
-        # Add additional node label if present.
-        additional_id = set()
-        if self.additional_domain_type and self.additional_domain_type != 'DomainName':
-            additional_id = {domain_id[name] for name in query_domain_names}
-            self.iyp.batch_add_node_label(list(additional_id), self.additional_domain_type)
         ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
-        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip6_address.notnull()]['ip6_address']))
+        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses)
+
+        print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, {len(ip4_id)} IPv4, '
+              f'{len(ip6_id)} IPv6')
+
+        # Compute links
         res_links = []
         mng_links = []
+        partof_links = []
 
-        print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
-        if self.additional_domain_type:
-            print(f'Added "{self.additional_domain_type}" label to {len(additional_id)} nodes.')
-
+        # RESOLVES_TO and MANAGED_BY links
         for row in df.itertuples():
-            domain_qid = domain_id[row.query_name]
+
+            # NS Record
+            if row.response_type == 'NS' and row.ns_address:
+                domain_qid = domain_id[row.query_name]
+                ns_qid = ns_id[row.ns_address]
+                mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
 
             # A Record
-            if row.response_type == 'A' and row.ip4_address:
+            elif row.response_type == 'A' and row.ip4_address:
+                host_qid = host_id[row.query_name]
                 ip_qid = ip4_id[row.ip4_address]
-                res_links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+                res_links.append({'src_id': host_qid, 'dst_id': ip_qid, 'props': [self.reference]})
 
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
-                ip_qid = ip6_id[row.ip6_address]
-                res_links.append({'src_id': domain_qid, 'dst_id': ip_qid, 'props': [self.reference]})
+                try:
+                    ip_normalized = IPv6Address(row.ip6_address).compressed
+                except ValueError:
+                    # Error message was already logged above.
+                    continue
+                host_qid = host_id[row.query_name]
+                ip_qid = ip6_id[ip_normalized]
+                res_links.append({'src_id': host_qid, 'dst_id': ip_qid, 'props': [self.reference]})
 
-            # NS Record
-            elif row.response_type == 'NS' and row.ns_address:
-                ns_qid = ns_id[row.ns_address]
-                mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
+        # PART_OF links between HostNames and DomainNames
+        for hd in host_names.intersection(domain_names):
+            partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
 
         print(f'Computed {len(res_links)} RESOLVES_TO links and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
         self.iyp.batch_add_links('RESOLVES_TO', res_links)
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
+        self.iyp.batch_add_links('PART_OF', partof_links)

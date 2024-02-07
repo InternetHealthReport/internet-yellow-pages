@@ -52,7 +52,7 @@ ASN(s), and country.
 We fetch the [list of
 measurements](https://atlas.ripe.net/docs/apis/rest-api-manual/measurements/)
 to obtain metadata of *ongoing* Atlas measurements.  `AtlasProbe`s are `PART_OF`
-`AtlasMeasurement`s and measurements `TARGET` one or more `IP`s, a `DomainName`, or
+`AtlasMeasurement`s and measurements `TARGET` one or more `IP`s, a `HostName`, or
 both. The Atlas platform also maps the measurement target to an `AS` number if possible.
 The crawler includes this relationship as well.
 
@@ -61,7 +61,7 @@ never connected or are abandoned.
 
 ```Cypher
 (:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:AS {asn: 2497})
-(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:DomainName {name: 'jp-tyo-as2497.anchors.atlas.ripe.net'})
+(:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:HostName {name: 'jp-tyo-as2497.anchors.atlas.ripe.net'})
 (:AtlasProbe {id: 6425})-[:PART_OF]->(:AtlasMeasurement {id: 17635549})-[:TARGET]->(:IP {ip: '202.214.87.158'})
 ```
 
