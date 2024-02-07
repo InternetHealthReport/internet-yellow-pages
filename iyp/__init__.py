@@ -705,3 +705,4 @@ class CacheHandler:
 
     def clear_cache(self) -> None:
         rmtree(self.cache_dir)
+        
