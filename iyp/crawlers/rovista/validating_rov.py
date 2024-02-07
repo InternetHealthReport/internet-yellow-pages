@@ -11,7 +11,6 @@ URL = 'https://api.rovista.netsecurelab.org/rovista/api/overview'
 ORG = 'RoVista'
 NAME = 'rovista.validating_rov'
 
-
 class Crawler(BaseCrawler):
 
     def run(self):
@@ -20,7 +19,6 @@ class Crawler(BaseCrawler):
         offset = 0
         entries = []
         asns = set()
-        
         while True:
             # Make a request with the current offset
             response = requests.get(URL, params={'offset': offset, 'count': batch_size})
@@ -31,10 +29,9 @@ class Crawler(BaseCrawler):
             for entry in data:
                 asns.add(entry['asn'])
                 if entry['ratio'] > 0.5:
-                    entries.append({'asn':entry['asn'],'ratio':entry['ratio'],'label':'Validating RPKI ROV'})
+                    entries.append({'asn': entry['asn'], 'ratio': entry['ratio'], 'label': 'Validating RPKI ROV'})
                 else:
-                    entries.append({'asn':entry['asn'],'ratio':entry['ratio'],'label':'Not Validating RPKI ROV'})
-                
+                   entries.append({'asn': entry['asn'], 'ratio': entry['ratio'], 'label': 'Not Validating RPKI ROV'})
             # Move to the next page
             offset += 1
             # Break the loop if there's no more data
