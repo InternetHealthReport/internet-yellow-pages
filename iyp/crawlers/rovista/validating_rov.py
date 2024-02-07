@@ -43,8 +43,8 @@ class Crawler(BaseCrawler):
         logging.info('Pushing nodes to neo4j...\n')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        tag_id_not_vali = self.iyp.get_node('Tag', {'label': "Not Validating RPKI ROV"}, create=True)
-        tag_id_vali = self.iyp.get_node('Tag', {'label': "Validating RPKI ROV"}, create=True)
+        tag_id_not_vali = self.iyp.get_node('Tag', {'label': 'Not Validating RPKI ROV'}, create=True)
+        tag_id_vali = self.iyp.get_node('Tag', {'label': 'Validating RPKI ROV'}, create=True)
         # Compute links
         links = []
         for entry in entries:
