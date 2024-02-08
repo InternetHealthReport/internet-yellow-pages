@@ -50,9 +50,9 @@ class Crawler(BaseCrawler):
         for entry in entries:
             asn_qid = self.asn_id[entry['asn']]
             if entry['ratio'] > 0.5:
-                links.append({'src_id': asn_qid, 'dst_id': tag_id_valid, 'props': [self.reference, {'ratio': entry['ratio']}])
+                links.append({'src_id': asn_qid, 'dst_id': tag_id_valid, 'props': [self.reference, {'ratio': entry['ratio']}]})
             else:
-                links.append({'src_id': asn_qid, 'dst_id': tag_id_not_valid, 'props': [self.reference, {'ratio': entry['ratio']}])
+                links.append({'src_id': asn_qid, 'dst_id': tag_id_not_valid, 'props': [self.reference, {'ratio': entry['ratio']}]})
 
         logging.info('Pushing links to neo4j...')
         # Push all links to IYP
