@@ -40,21 +40,21 @@ class Crawler(BaseCrawler):
             # Break the loop if there's no more data
             if len(data) < batch_size:
                 break
-        logging.info('Pushing nodes to neo4j...\n')
+        logging.info('Pushing nodes to neo4j...')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        tag_id_not_vali = self.iyp.get_node('Tag', {'label': 'Not Validating RPKI ROV'}, create=True)
-        tag_id_vali = self.iyp.get_node('Tag', {'label': 'Validating RPKI ROV'}, create=True)
+        tag_id_not_valid = self.iyp.get_node('Tag', {'label': 'Not Validating RPKI ROV'}, create=True)
+        tag_id_valid = self.iyp.get_node('Tag', {'label': 'Validating RPKI ROV'}, create=True)
         # Compute links
         links = []
         for entry in entries:
             asn_qid = self.asn_id[entry['asn']]
             if entry['ratio'] > 0.5:
-                links.append({'src_id': asn_qid, 'dst_id': tag_id_vali, 'props': [self.reference, entry]})
+                links.append({'src_id': asn_qid, 'dst_id': tag_id_valid, 'props': [self.reference, {'ratio': entry['ratio']})
             else:
-                links.append({'src_id': asn_qid, 'dst_id': tag_id_not_vali, 'props': [self.reference, entry]})
+                links.append({'src_id': asn_qid, 'dst_id': tag_id_not_valid, 'props': [self.reference, {'ratio': entry['ratio']})
 
-        logging.info('Pushing links to neo4j...\n')
+        logging.info('Pushing links to neo4j...')
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
 
