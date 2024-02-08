@@ -250,6 +250,20 @@ class DnsDependencyCrawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
 
+    @staticmethod
+    def remove_root(name):
+        if name == '.':
+            return name
+        return name.rstrip('.')
+
+    @staticmethod
+    def normalize_ipv6(address):
+        if ':' in address:
+            # The source data should never contain invalid IPs, so let it crash if that
+            # should ever happen.
+            return IPv6Address(address).compressed
+        return address
+
     def run(self):
         # Extract current date for partitioning
         logging.info('Probing available data')
@@ -276,9 +290,27 @@ class DnsDependencyCrawler(BaseCrawler):
         logging.info('Reading connections')
         connections = pd.read_json(f'{base_url}/connections.json.gz', lines=True)
 
-        unique_domain_names = set(domains['name'])
-        unique_host_names = set(hosts['name'])
-        unique_ips = set(ips['address'])
+        logging.info('Stripping root "." and normalizing IPs')
+        # Remove root "." from names that are not the root.
+        domains['name'] = domains['name'].map(self.remove_root)
+        hosts['name'] = hosts['name'].map(self.remove_root)
+        # Currently there are only DOMAIN and HOSTNAME entries in from_nodeType, but
+        # maybe that changes in the future.
+        connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'] = \
+            connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'].map(self.remove_root)
+        connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'] = \
+            connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'].map(self.remove_root)
+        # Normalize IPv6 addresses.
+        ips['address'] = ips['address'].map(self.normalize_ipv6)
+        connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'] = \
+            connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'].map(self.normalize_ipv6)
+        connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'] = \
+            connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'].map(self.normalize_ipv6)
+
+        # Pandas' unique is faster than plain set.
+        unique_domain_names = set(domains['name'].unique())
+        unique_host_names = set(hosts['name'].unique())
+        unique_ips = set(ips['address'].unique())
         logging.info(f'Pushing/getting {len(unique_domain_names)} DomainName {len(unique_host_names)} HostName '
                      f'{len(unique_ips)} IP nodes...')
         domains_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', unique_domain_names)
@@ -290,10 +322,20 @@ class DnsDependencyCrawler(BaseCrawler):
         links_alias_of = list()
         links_managed_by = list()
         links_resolves_to = list()
+        unique_relationships = set()
 
         logging.info('Computing relationships...')
         start_ts = datetime.now().timestamp()
         for connection in connections.itertuples():
+            relationship_tuple = (connection.relation_name,
+                                  connection.from_nodeType,
+                                  connection.from_nodeKey,
+                                  connection.to_nodeType,
+                                  connection.to_nodeKey,
+                                  str(connection.properties))
+            if relationship_tuple in unique_relationships:
+                continue
+            unique_relationships.add(relationship_tuple)
             if connection.relation_name == 'PARENT':
                 links_parent.append({
                     'src_id': domains_id[connection.from_nodeKey],
