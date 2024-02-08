@@ -293,39 +293,39 @@ class DnsDependencyCrawler(BaseCrawler):
 
         logging.info('Computing relationships...')
         start_ts = datetime.now().timestamp()
-        for index, connection in connections.iterrows():
-            if connection['relation_name'] == 'PARENT':
+        for connection in connections.itertuples():
+            if connection.relation_name == 'PARENT':
                 links_parent.append({
-                    'src_id': domains_id[connection['from_nodeKey']],
-                    'dst_id': domains_id[connection['to_nodeKey']],
-                    'props': [self.reference, connection['properties']],
+                    'src_id': domains_id[connection.from_nodeKey],
+                    'dst_id': domains_id[connection.to_nodeKey],
+                    'props': [self.reference, connection.properties],
                 })
-            elif connection['relation_name'] == 'MANAGED_BY':
+            elif connection.relation_name == 'MANAGED_BY':
                 links_managed_by.append({
-                    'src_id': domains_id[connection['from_nodeKey']],
-                    'dst_id': hosts_id[connection['to_nodeKey']],
-                    'props': [self.reference, connection['properties']],
+                    'src_id': domains_id[connection.from_nodeKey],
+                    'dst_id': hosts_id[connection.to_nodeKey],
+                    'props': [self.reference, connection.properties],
                 })
-            elif connection['relation_name'] == 'PART_OF':
+            elif connection.relation_name == 'PART_OF':
                 links_part_of.append({
-                    'src_id': hosts_id[connection['from_nodeKey']],
-                    'dst_id': domains_id[connection['to_nodeKey']],
-                    'props': [self.reference, connection['properties']],
+                    'src_id': hosts_id[connection.from_nodeKey],
+                    'dst_id': domains_id[connection.to_nodeKey],
+                    'props': [self.reference, connection.properties],
                 })
-            elif connection['relation_name'] == 'ALIAS_OF':
+            elif connection.relation_name == 'ALIAS_OF':
                 links_alias_of.append({
-                    'src_id': hosts_id[connection['from_nodeKey']],
-                    'dst_id': hosts_id[connection['to_nodeKey']],
-                    'props': [self.reference, connection['properties']],
+                    'src_id': hosts_id[connection.from_nodeKey],
+                    'dst_id': hosts_id[connection.to_nodeKey],
+                    'props': [self.reference, connection.properties],
                 })
-            elif connection['relation_name'] == 'RESOLVES_TO':
+            elif connection.relation_name == 'RESOLVES_TO':
                 links_resolves_to.append({
-                    'src_id': hosts_id[connection['from_nodeKey']],
-                    'dst_id': ips_id[connection['to_nodeKey']],
-                    'props': [self.reference, connection['properties']],
+                    'src_id': hosts_id[connection.from_nodeKey],
+                    'dst_id': ips_id[connection.to_nodeKey],
+                    'props': [self.reference, connection.properties],
                 })
             else:
-                logging.error(f'Unknown relationship type: {connection["relation_name"]}')
+                logging.error(f'Unknown relationship type: {connection.relation_name}')
         stop_ts = datetime.now().timestamp()
         logging.info(f'{stop_ts - start_ts:.2f}s elapsed')
 
