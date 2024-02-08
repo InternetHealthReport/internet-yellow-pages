@@ -6,6 +6,20 @@ Data inferred by IIJ's Internet Health Report, including:
 - country's AS dependency
 - prefixes' RPKI and IRR status
 
+#### Country's AS dependency
+The way to retrieve the country AS dependency values shown on IHR website (e.g. https://ihr.iijlab.net/ihr/en-us/countries/JP) is as follow.
+For eyeball ranking nodes get `hege` and `weight` values from the corresponding RANK relationship and then:
+- Population Total = 100*`hege`
+- Population Direct = `weight`
+- Population Indirect = 100*`hege`-`weight`
+
+For AS ranking nodes get `hege` values from the corresponding RANK relationship and then:
+- AS Total = 100*`hege`
+
+The values are not exactly the same as the ones shown on the IHR website because the IHR website averages results over three days.
+
+
+
 ## Graph representation
 
 ### AS inter-dependency - `local_hegemony.py`
