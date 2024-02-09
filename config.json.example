@@ -40,7 +40,6 @@
 
     "iyp": {
         "crawlers": [
-            "iyp.crawlers.manrs.members",
             "iyp.crawlers.ripe.as_names",
             "iyp.crawlers.bgptools.as_names",
             "iyp.crawlers.apnic.eyeball",
