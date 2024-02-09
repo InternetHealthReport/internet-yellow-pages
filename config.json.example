@@ -57,7 +57,7 @@
             "iyp.crawlers.ihr.rov",
             "iyp.crawlers.bgptools.tags",
             "iyp.crawlers.bgptools.anycast_prefixes",
-            "iyp.crawlers.rovista.validating_rov",
+            "iyp.crawlers.virginiatech.rovista",
             "iyp.crawlers.stanford.asdb",
             "iyp.crawlers.peeringdb.org",
             "iyp.crawlers.peeringdb.fac",

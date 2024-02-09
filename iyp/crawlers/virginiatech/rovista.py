@@ -8,8 +8,8 @@ import requests
 from iyp import BaseCrawler, RequestStatusError
 
 URL = 'https://api.rovista.netsecurelab.org/rovista/api/overview'
-ORG = 'RoVista'
-NAME = 'rovista.validating_rov'
+ORG = 'Virginia Tech'
+NAME = 'virginiatech.rovista'
 
 
 class Crawler(BaseCrawler):
