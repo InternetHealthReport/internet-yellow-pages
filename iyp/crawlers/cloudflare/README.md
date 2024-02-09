@@ -15,7 +15,7 @@ provide various datasets, including:
   that is in the top 10,000 of *any* ranking included in IYP, fetch the top 100 countries with the
   most DNS queries.
 - [Top 100 ASes querying each of the 10,000 highest ranked domain
-  names](https://developers.cloudflare.com/api/operations/radar_get__top_ases): Same as above, but
+  names](https://developers.cloudflare.com/api/operations/radar-get-dns-top-ases): Same as above, but
   fetch AS numbers instead.
 
 All rankings are based on one week of data.
