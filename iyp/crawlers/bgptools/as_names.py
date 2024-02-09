@@ -39,7 +39,7 @@ class Crawler(BaseCrawler):
                 continue
 
             asn, _, name = line.partition(',')
-            name = name.rpartition(',')[0]
+            name = name.rpartition(',')[0].strip('"')
             asn = int(asn[2:])
             asns.add(asn)
             names.add(name)
