@@ -5,9 +5,9 @@ import sys
 
 from iyp.crawlers.bgpkit import AS2RelCrawler
 
-URL = 'https://data.bgpkit.com/as2rel/as2rel-v4-latest.json.bz2'
+URL = 'https://data.bgpkit.com/as2rel/as2rel-v6-latest.json.bz2'
 ORG = 'BGPKIT'
-NAME = 'bgpkit.as2relv6'
+NAME = 'bgpkit.as2rel_v6'
 
 AF = 6
 
