@@ -17,6 +17,9 @@ NAME = 'bgpkit.peerstats'
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://data.bgpkit.com/peer-stats/README.md'
 
     def run(self):
         """Fetch peer stats for each collector."""
@@ -49,6 +52,7 @@ class Crawler(BaseCrawler):
             prev_day -= timedelta(days=1)
             logging.warning("Today's data not yet available!")
 
+        self.reference['reference_time_modification'] = self.now
         for collector in collectors:
             url = URL.format(collector=collector, year=self.now.year,
                              month=self.now.month, day=self.now.day,

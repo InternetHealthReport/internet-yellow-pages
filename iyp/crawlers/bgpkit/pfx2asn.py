@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 import requests
 
@@ -22,7 +23,19 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL, stream=True)
         if req.status_code != 200:
-            raise RequestStatusError('Error while fetching pfx2as relationships')
+            raise RequestStatusError(f'Error while fetching pfx2as relationships: {req.status_code}')
+
+        try:
+            last_modified_str = req.headers['Last-Modified']
+            # All HTTP dates are in UTC:
+            # https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1
+            last_modified = datetime.strptime(last_modified_str,
+                                              '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+            self.reference['reference_time_modification'] = last_modified
+        except KeyError:
+            logging.warning('No Last-Modified header; will not set modification time.')
+        except ValueError as e:
+            logging.error(f'Failed to parse Last-Modified header "{last_modified_str}": {e}')
 
         entries = []
         asns = set()
@@ -35,7 +48,7 @@ class Crawler(BaseCrawler):
 
         req.close()
 
-        logging.info('Pushing nodes to neo4j...\n')
+        logging.info('Pushing nodes to neo4j...')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
         self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
@@ -48,7 +61,7 @@ class Crawler(BaseCrawler):
 
             links.append({'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, entry]})  # Set AS name
 
-        logging.info('Pushing links to neo4j...\n')
+        logging.info('Pushing links to neo4j...')
         # Push all links to IYP
         self.iyp.batch_add_links('ORIGINATE', links)
 
