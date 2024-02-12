@@ -8,6 +8,7 @@ from shutil import rmtree
 from typing import Optional
 
 import requests
+from github import Github
 from neo4j import GraphDatabase
 
 BATCH_SIZE = 50000
@@ -77,6 +78,17 @@ def dict2str(d, eq=':', pfx=''):
             data.append(f'{pfx + key}{eq} {value}')
 
     return '{' + ','.join(data) + '}'
+
+
+def get_commit_datetime(repo, file_path):
+    """Get the datetime of the latest commit modifying a file in a GitHub repository.
+
+    repo: The name of the repository in org/repo format, e.g.,
+    "InternetHealthReport/internet-yellow-pages"
+    file_path: The path to the file relative to the repository root, e.g.,
+    "iyp/__init__.py"
+    """
+    return Github().get_repo(repo).get_commits(path=file_path)[0].commit.committer.date
 
 
 class RequestStatusError(requests.HTTPError):
