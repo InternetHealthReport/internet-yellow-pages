@@ -65,7 +65,7 @@ class Crawler(BaseCrawler):
                 'BGPCollector',
                 {'name': stats['collector'], 'project': stats['project']}
             )
-            self.reference['reference_url'] = url
+            self.reference['reference_url_data'] = url
 
             asns = set()
 

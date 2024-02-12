@@ -37,7 +37,7 @@ class Crawler(BaseCrawler):
             'Content-Type': 'application/json'
         }
 
-        req = requests.get(self.reference['reference_url'], headers=headers)
+        req = requests.get(self.reference['reference_url_data'], headers=headers)
         if req.status_code != 200:
             print(f'Cannot download data {req.status_code}: {req.text}')
             raise RequestStatusError('Error while fetching data file')

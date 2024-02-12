@@ -51,13 +51,14 @@ class Crawler(BaseCrawler):
         ipv6_prefixes_filename = os.path.join(tmpdir, 'anycast_ipv6_prefixes.txt')
 
         # Fetch data and push to IYP.
-        self.reference['reference_url'] = ipv4_prefixes_url  # Overriding the reference_url according to prefixes
+        # Overriding the reference_url_data according to prefixes
+        self.reference['reference_url_data'] = ipv4_prefixes_url
         ipv4_prefixes_response = fetch_dataset(ipv4_prefixes_url)
         logging.info('IPv4 prefixes fetched successfully.')
         self.update(ipv4_prefixes_response, ipv4_prefixes_filename)
         logging.info('IPv4 prefixes pushed to IYP.')
 
-        self.reference['reference_url'] = ipv6_prefixes_url
+        self.reference['reference_url_data'] = ipv6_prefixes_url
         ipv6_prefixes_response = fetch_dataset(ipv6_prefixes_url)
         logging.info('IPv6 prefixes fetched successfully.')
         self.update(ipv6_prefixes_response, ipv6_prefixes_filename)

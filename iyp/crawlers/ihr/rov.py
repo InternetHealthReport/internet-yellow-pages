@@ -62,9 +62,9 @@ class Crawler(BaseCrawler):
 
         self.reference = {
             'reference_org': ORG,
-            'reference_url': url,
+            'reference_url_data': url,
             'reference_name': NAME,
-            'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
+            'reference_time_fetch': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
         os.makedirs('tmp/', exist_ok=True)

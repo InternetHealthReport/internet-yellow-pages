@@ -21,7 +21,7 @@ class Crawler(BaseCrawler):
         """Fetch data and push to IYP."""
 
         # Fetch data
-        req = requests.get(self.reference['reference_url'])
+        req = requests.get(self.reference['reference_url_data'])
         if req.status_code != 200:
             logging.error('Cannot download data {req.status_code}: {req.text}')
             raise RequestStatusError('Error while fetching data file')

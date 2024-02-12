@@ -272,7 +272,7 @@ class DnsDependencyCrawler(BaseCrawler):
             current_date = datetime.now(tz=timezone.utc) - timedelta(weeks=lookback)
             year = current_date.strftime('%Y')
             week = current_date.strftime('%U')
-            base_url = f'{self.reference["reference_url"]}/year={year}/week={week}'
+            base_url = f'{self.reference["reference_url_data"]}/year={year}/week={week}'
             probe_url = f'{base_url}/connections.json.gz'
             if requests.head(probe_url).ok:
                 logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')

@@ -208,7 +208,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
             links = soup.find_all('a')
             collector_names = self.filter_route_collector_links(links)
             self.cache_handler.save_cached_object(collector_names_name, (self.collector_site_url, collector_names))
-        self.reference['reference_url'] = self.collector_site_url
+        self.reference['reference_url_data'] = self.collector_site_url
 
         # Get the date of the latest available dataset based on the
         # first collector in the list.

@@ -67,22 +67,22 @@ class Crawler(BaseCrawler):
         self.reference_ix = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL_PDB_IXS,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL_PDB_IXS,
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
         }
 
         self.reference_lan = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL_PDB_LANS,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL_PDB_LANS,
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
         }
 
         self.reference_netfac = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL_PDB_NETFAC,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL_PDB_NETFAC,
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
         }
 
         # keep track of added networks

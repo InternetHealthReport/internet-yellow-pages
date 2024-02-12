@@ -51,10 +51,10 @@ class HegemonyCrawler(BaseCrawler):
                 req = requests.head(url)
 
         self.reference = {
-            'reference_url': url,
+            'reference_url_data': url,
             'reference_org': self.organization,
             'reference_name': self.name,
-            'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
+            'reference_time_fetch': datetime.combine(today.date(), time.min, timezone.utc)
         }
 
         os.makedirs('tmp/', exist_ok=True)

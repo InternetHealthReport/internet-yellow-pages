@@ -548,9 +548,9 @@ class IYP(object):
         for i, (type, dst_node, prop) in enumerate(links):
 
             assert 'reference_org' in prop
-            assert 'reference_url' in prop
+            assert 'reference_url_data' in prop
             assert 'reference_name' in prop
-            assert 'reference_time' in prop
+            assert 'reference_time_fetch' in prop
 
             prop = format_properties(prop)
 
@@ -589,10 +589,12 @@ class BasePostProcess(object):
         """IYP and references initialization."""
 
         self.reference = {
-            'reference_org': 'Internet Yellow Pages',
-            'reference_url': 'https://iyp.iijlab.net',
             'reference_name': 'iyp',
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_org': 'Internet Yellow Pages',
+            'reference_url_data': 'https://iyp.iijlab.net',
+            'reference_url_info': str(),
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         # connection to IYP database
@@ -617,8 +619,10 @@ class BaseCrawler(object):
         self.reference = {
             'reference_name': name,
             'reference_org': organization,
-            'reference_url': url,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': url,
+            'reference_url_info': str(),
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         # connection to IYP database

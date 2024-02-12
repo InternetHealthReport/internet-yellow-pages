@@ -53,9 +53,9 @@ class Crawler(BaseCrawler):
             # Reference information for data pushed to the wikibase
             self.reference = {
                 'reference_org': ORG,
-                'reference_url': url,
+                'reference_url_data': url,
                 'reference_name': NAME,
-                'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+                'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
             req = requests.get(url, headers=self.headers)

@@ -217,7 +217,7 @@ class Crawler(BaseCrawler):
         for probe_measurement in valid_probe_measurements:
             probe_measurement_qid = probe_measurement_ids[probe_measurement['id']]
             probe_measurement_reference = self.reference.copy()
-            probe_measurement_reference['reference_url'] = probe_measurement_reference['reference_url'] + \
+            probe_measurement_reference['reference_url_data'] = probe_measurement_reference['reference_url_data'] + \
                 f'/{probe_measurement["id"]}'
 
             probe_measurement_asn = probe_measurement['target']['asn']

@@ -53,9 +53,9 @@ class Crawler(BaseCrawler):
             # Setup references
             self.reference = {
                 'reference_org': ORG,
-                'reference_url': URL,
+                'reference_url_data': URL,
                 'reference_name': NAME,
-                'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+                'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
             }
 
             # Setup rankings' node

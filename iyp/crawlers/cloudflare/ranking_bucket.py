@@ -92,7 +92,7 @@ class Crawler(BaseCrawler):
             dataset_title = f'Cloudflare {dataset["title"]}'
             logging.info(f'Processing dataset: {dataset_title}')
             print(f'Processing dataset: {dataset_title}')
-            self.reference['reference_url'] = dataset['url']
+            self.reference['reference_url_data'] = dataset['url']
             ranking_id = self.iyp.get_node('Ranking',
                                            {
                                                'name': dataset_title,

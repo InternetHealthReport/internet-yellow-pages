@@ -343,7 +343,7 @@ class Crawler(BaseCrawler):
             if ('details:route_changes' in flattened_neighbor
                     and isinstance(flattened_neighbor['details:route_changes'], flatdict.FlatDict)):
                 flattened_neighbor.pop('details:route_changes')
-            self.reference['reference_url'] = self.urls['neighbors'].format(rs=neighbor['routeserver_id'])
+            self.reference['reference_url_data'] = self.urls['neighbors'].format(rs=neighbor['routeserver_id'])
             member_of_rels.append({'src_id': member_asn,  # Translate to QID later.
                                    'dst_id': n.data['ixp_qid'],
                                    'props': [flattened_neighbor, self.reference.copy()]})
@@ -354,7 +354,8 @@ class Crawler(BaseCrawler):
         if self.fetch_routes:
             logging.info('Iterating routes.')
             for (routeserver_id, neighbor_id), routes in self.routes.items():
-                self.reference['reference_url'] = self.urls['routes'].format(rs=routeserver_id, neighbor=neighbor_id)
+                self.reference['reference_url_data'] = self.urls['routes'].format(rs=routeserver_id,
+                                                                                  neighbor=neighbor_id)
                 for route in routes:
                     prefix = ipaddress.ip_network(route['network']).compressed
                     origin_asn = route['bgp']['as_path'][-1]
