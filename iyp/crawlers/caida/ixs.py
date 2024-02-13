@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import sys
-from datetime import timezone
+from datetime import datetime, timezone
 
 import arrow
 import requests
@@ -44,6 +44,16 @@ class Crawler(BaseCrawler):
         self.reference['reference_url_info'] = 'https://publicdata.caida.org/datasets/ixps/README.txt'
         self.reference['reference_time_modification'] = date
 
+    def __set_modification_time_from_metadata_line(self, line):
+        try:
+            date_str = json.loads(line.lstrip('#'))['date']
+            date = datetime.strptime(date_str, '%Y.%m.%d %H:%M:%S').replace(tzinfo=timezone.utc)
+            self.reference['reference_time_modification'] = date
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logging.warning(f'Failed to get modification date from metadata line: {line.strip()}')
+            logging.warning(e)
+            logging.warning('Using date from filename.')
+
     def run(self):
         """Fetch the latest file and process lines one by one."""
 
@@ -62,6 +72,7 @@ class Crawler(BaseCrawler):
         # Find all possible values and create corresponding nodes
         for line in req.text.splitlines():
             if line.startswith('#'):
+                self.__set_modification_time_from_metadata_line(line)
                 continue
 
             ix = json.loads(line)
