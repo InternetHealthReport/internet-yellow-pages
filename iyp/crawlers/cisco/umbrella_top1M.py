@@ -3,6 +3,7 @@ import io
 import logging
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from zipfile import ZipFile
 
 import requests
@@ -17,6 +18,33 @@ NAME = 'cisco.umbrella_top1M'
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://s3-us-west-1.amazonaws.com/umbrella-static/index.html'
+
+    def __set_modification_time(self):
+        """Set the modification time by looking for the last available historical file.
+        The current (non-historical) file is created on the next day.
+
+        For example, if a file for 2024-02-13 is available, it means the current file
+        was created on 2024-02-14.
+        """
+        hist_url = 'http://s3-us-west-1.amazonaws.com/umbrella-static/top-1m-%Y-%m-%d.csv.zip'
+        date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        for attempt in range(7):
+            r = requests.head(date.strftime(hist_url))
+            if r.ok:
+                break
+            date -= timedelta(days=1)
+        else:
+            logging.warning(f'Failed to find historical list within search interval (>{date}); '
+                            'Will not set modification time.')
+            return
+
+        # date now points to the last available historical file , which means the
+        # current file is the day after this date.
+        self.reference['reference_time_modification'] = date + timedelta(days=1)
+        logging.info(self.reference)
 
     def run(self):
         """Fetch Umbrella top 1M and push to IYP."""
@@ -26,7 +54,9 @@ class Crawler(BaseCrawler):
         logging.info('Downloading latest list...')
         req = requests.get(URL)
         if req.status_code != 200:
-            raise RequestStatusError('Error while fetching Cisco Umbrella Top 1M csv file')
+            raise RequestStatusError(f'Error while fetching Cisco Umbrella Top 1M csv file: {req.status_code}')
+
+        self.__set_modification_time()
 
         links = []
         # open zip file and read top list
