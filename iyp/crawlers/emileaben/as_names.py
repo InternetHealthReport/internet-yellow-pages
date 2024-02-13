@@ -6,7 +6,7 @@ import tempfile
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler, RequestStatusError, get_commit_datetime
 
 # Organization name and URL to data
 ORG = 'emileaben'
@@ -17,6 +17,10 @@ NAME = 'emileaben.as_names'  # should reflect the directory and name of this fil
 class Crawler(BaseCrawler):
     # Base Crawler provides access to IYP via self.iyp
     # and setup a dictionary with the org/url/today's date in self.reference
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://github.com/emileaben/asnames'
+        self.reference['reference_time_modification'] = get_commit_datetime('emileaben/asnames', 'asnames.csv')
 
     def run(self):
         # Create a temporary directory
