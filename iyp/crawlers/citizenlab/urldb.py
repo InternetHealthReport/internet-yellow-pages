@@ -23,6 +23,9 @@ def generate_url(suffix):
 class Crawler(BaseCrawler):
     # Base Crawler provides access to IYP via self.iyp
     # and set up a dictionary with the org/url/today's date in self.reference
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://github.com/citizenlab/test-lists'
 
     def run(self):
         # Fetch country codes to generate urls
