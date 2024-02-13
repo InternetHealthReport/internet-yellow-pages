@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 import requests
 
@@ -24,6 +25,9 @@ class Crawler(BaseCrawler):
     #
     # Cloudflare ranks second and third level domain names (not host names).
     # See https://blog.cloudflare.com/radar-domain-rankings/
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/'  # noqa: E501
 
     def run(self):
         """Fetch data and push to IYP."""
@@ -40,10 +44,19 @@ class Crawler(BaseCrawler):
         req = requests.get(self.reference['reference_url_data'], headers=headers)
         if req.status_code != 200:
             print(f'Cannot download data {req.status_code}: {req.text}')
-            raise RequestStatusError('Error while fetching data file')
+            raise RequestStatusError(f'Error while fetching data file: {req.status_code}')
+
+        results = req.json()['result']
+
+        try:
+            date_str = results['meta']['dateRange'][0]['endTime']
+            date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+            self.reference['reference_time_modification'] = date
+        except (KeyError, ValueError, TypeError) as e:
+            logging.warning(f'Failed to get modification time: {e}')
 
         # Process line one after the other
-        for i, _ in enumerate(map(self.update, req.json()['result']['top'])):
+        for i, _ in enumerate(map(self.update, results['top'])):
             sys.stderr.write(f'\rProcessed {i} lines')
         sys.stderr.write('\n')
 
