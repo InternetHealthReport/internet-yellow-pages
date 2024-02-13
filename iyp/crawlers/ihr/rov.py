@@ -3,7 +3,7 @@ import csv
 import logging
 import os
 import sys
-from datetime import datetime, time, timezone
+from datetime import timezone
 
 import arrow
 import lz4.frame
@@ -45,6 +45,9 @@ class lz4Csv:
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://ihr-archive.iijlab.net/ihr/rov/README.txt'
 
     def run(self):
         """Fetch data from file and push to IYP."""
@@ -60,12 +63,12 @@ class Crawler(BaseCrawler):
                 today = today.shift(days=-1)
                 url = URL.format(year=today.year, month=today.month, day=today.day)
 
-        self.reference = {
-            'reference_org': ORG,
-            'reference_url_data': url,
-            'reference_name': NAME,
-            'reference_time_fetch': datetime.combine(today.date(), time.min, timezone.utc)
-        }
+        self.reference['reference_url_data'] = url
+        self.reference['reference_time_modification'] = today.datetime.replace(hour=0,
+                                                                               minute=0,
+                                                                               second=0,
+                                                                               microsecond=0,
+                                                                               tzinfo=timezone.utc)
 
         os.makedirs('tmp/', exist_ok=True)
         os.system(f'wget {url} -P tmp/')
@@ -73,7 +76,7 @@ class Crawler(BaseCrawler):
         local_filename = 'tmp/' + url.rpartition('/')[2]
         self.csv = lz4Csv(local_filename)
 
-        logging.warning('Getting node IDs from neo4j...\n')
+        logging.info('Getting node IDs from neo4j...')
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
         prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix')
         tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label')
@@ -84,7 +87,7 @@ class Crawler(BaseCrawler):
         dep_links = []
         country_links = []
 
-        logging.warning('Computing links...\n')
+        logging.info('Computing links...')
         for line in csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
             # header
             # id, timebin, prefix, hege, af, visibility, rpki_status, irr_status,
@@ -158,7 +161,7 @@ class Crawler(BaseCrawler):
         self.csv.close()
 
         # Push links to IYP
-        logging.warning('Pushing links to neo4j...\n')
+        logging.info('Pushing links to neo4j...')
         self.iyp.batch_add_links('ORIGINATE', orig_links)
         self.iyp.batch_add_links('CATEGORIZED', tag_links)
         self.iyp.batch_add_links('DEPENDS_ON', dep_links)

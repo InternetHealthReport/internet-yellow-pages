@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, time, timezone
+from datetime import datetime, timezone
 
 import arrow
 import iso3166
@@ -37,6 +37,7 @@ class Crawler(BaseCrawler):
         self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
 
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://ihr.iijlab.net/ihr/en-us/documentation#Country_s_network_dependency'  # noqa: E501
 
     def run(self):
         """Fetch data from API and push to IYP."""
@@ -49,14 +50,8 @@ class Crawler(BaseCrawler):
                 raise RequestStatusError('Error while fetching data for ' + cc)
             data = json.loads(req.text)
             ranking = data['results']
-
-            # Setup references
-            self.reference = {
-                'reference_org': ORG,
-                'reference_url_data': URL,
-                'reference_name': NAME,
-                'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
-            }
+            if not ranking:
+                continue
 
             # Setup rankings' node
             country_qid = self.iyp.get_node('Country',
@@ -65,15 +60,22 @@ class Crawler(BaseCrawler):
                                             }
                                             )
 
-            countryrank_statements = []
-            if country_qid is not None:
-                countryrank_statements = [('COUNTRY', country_qid, self.reference)]
-
             # Find the latest timebin in the data
             last_timebin = '1970-01-01'
             for r in ranking:
                 if arrow.get(r['timebin']) > arrow.get(last_timebin):
                     last_timebin = r['timebin']
+            self.reference['reference_url_data'] = self.url + f'&timebin={last_timebin}'
+            self.reference['reference_time_modification'] = None
+            try:
+                date = datetime.strptime(last_timebin, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+                self.reference['reference_time_modification'] = date
+            except ValueError as e:
+                logging.warning(f'Failed to get modification time: {e}')
+
+            countryrank_statements = []
+            if country_qid is not None:
+                countryrank_statements = [('COUNTRY', country_qid, self.reference.copy())]
 
             # Make ranking and push data
             links = []
@@ -106,7 +108,7 @@ class Crawler(BaseCrawler):
                     links.append({
                         'src_id': self.asn_id[asn['asn']],
                         'dst_id': self.countryrank_qid,
-                        'props': [self.reference, asn]
+                        'props': [self.reference.copy(), asn]
                     })
 
             # Push links to IYP
