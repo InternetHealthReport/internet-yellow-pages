@@ -91,6 +91,23 @@ def get_commit_datetime(repo, file_path):
     return Github().get_repo(repo).get_commits(path=file_path)[0].commit.committer.date
 
 
+def set_modification_time_from_last_modified_header(reference, response):
+    """Set the reference_time_modification field of the specified reference dict to the
+    datetime parsed from the Last-Modified header of the specified response if
+    possible."""
+    try:
+        last_modified_str = response.headers['Last-Modified']
+        # All HTTP dates are in UTC:
+        # https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1
+        last_modified = datetime.strptime(last_modified_str,
+                                          '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+        reference['reference_time_modification'] = last_modified
+    except KeyError:
+        logging.warning('No Last-Modified header; will not set modification time.')
+    except ValueError as e:
+        logging.error(f'Failed to parse Last-Modified header "{last_modified_str}": {e}')
+
+
 class RequestStatusError(requests.HTTPError):
     def __init__(self, message):
         self.message = message
