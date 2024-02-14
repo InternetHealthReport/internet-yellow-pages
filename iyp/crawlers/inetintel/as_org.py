@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 from collections import defaultdict
+from datetime import datetime, timezone
 
 import pandas as pd
 import requests
@@ -40,6 +41,21 @@ NAME = 'inetintel.as_org'  # should reflect the directory and name of this file
 class Crawler(BaseCrawler):
     # Base Crawler provides access to IYP via self.iyp
     # and set up a dictionary with the org/url/today's date in self.reference
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping'
+        self.__get_modification_time_from_url()
+
+    def __get_modification_time_from_url(self):
+        expected_suffix = '.json'
+        try:
+            if not URL.endswith(expected_suffix):
+                raise ValueError(f'Expected "{expected_suffix}" file for data URL')
+            _, date_str = URL[:-len(expected_suffix)].rsplit('.', maxsplit=1)
+            date = datetime.strptime(date_str, '%Y-%m').replace(tzinfo=timezone.utc)
+            self.reference['reference_time_modification'] = date
+        except ValueError as e:
+            logging.warning(f'Failed to set modification time: {e}')
 
     def run(self):
         """Fetch data and push to IYP."""
