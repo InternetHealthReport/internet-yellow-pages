@@ -5,7 +5,8 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import (BaseCrawler, RequestStatusError,
+                 set_modification_time_from_last_modified_header)
 
 URL = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 ORG = 'RIPE NCC'
@@ -19,7 +20,9 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL)
         if req.status_code != 200:
-            raise RequestStatusError('Error while fetching AS names')
+            raise RequestStatusError(f'Error while fetching AS names: {req.status_code}')
+
+        set_modification_time_from_last_modified_header(self.reference, req)
 
         lines = []
         asns = set()

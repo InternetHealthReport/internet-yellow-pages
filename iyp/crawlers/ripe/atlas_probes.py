@@ -24,6 +24,9 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         self.__initialize_session()
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://atlas.ripe.net/docs/apis/rest-api-manual/probes/'
+        # Atlas API is real-time, i.e., we can use the same timestamp.
+        self.reference['reference_time_modification'] = self.reference['reference_time_fetch']
 
     def __initialize_session(self) -> None:
         self.session = Session()
