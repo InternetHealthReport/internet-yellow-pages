@@ -15,7 +15,8 @@ from requests.exceptions import ChunkedEncodingError
 from requests_futures.sessions import FuturesSession
 from urllib3.util.retry import Retry
 
-from iyp import AddressValueError, BaseCrawler, CacheHandler
+from iyp import (AddressValueError, BaseCrawler, CacheHandler,
+                 DataNotAvailableError)
 from iyp.crawlers.pch.show_bgp_parser import ShowBGPParser
 
 PARALLEL_DOWNLOADS = 8
@@ -61,6 +62,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         self.collector_site_url = str()
         self.__initialize_session()
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://www.pch.net/resources/Routing_Data/'
 
     def __initialize_session(self) -> None:
         self.session = FuturesSession(max_workers=PARALLEL_DOWNLOADS)
@@ -120,16 +122,14 @@ class RoutingSnapshotCrawler(BaseCrawler):
         lookback = today - self.MAX_LOOKBACK
         if lookback.month == curr_month:
             logging.error('Failed to find current data.')
-            print('Failed to find current data.', file=sys.stderr)
-            return str()
+            raise DataNotAvailableError('Failed to find current data.')
         self.collector_site_url = self.url + today.strftime('%Y/%m/')
         resp: Response = self.session.get(self.collector_site_url).result()
         if resp.ok:
             return resp.text
         logging.warning(f'Failed to retrieve collector site from: {self.collector_site_url}')
         logging.error('Failed to find current data.')
-        print('Failed to find current data.', file=sys.stderr)
-        return str()
+        raise DataNotAvailableError('Failed to find current data.')
 
     @staticmethod
     def filter_route_collector_links(links: ResultSet) -> list:
@@ -175,10 +175,9 @@ class RoutingSnapshotCrawler(BaseCrawler):
                 return curr_date
             curr_date -= timedelta(days=1)
         logging.error('Failed to find current data.')
-        print('Failed to find current data.', file=sys.stderr)
-        return None
+        raise DataNotAvailableError('Failed to find current data.')
 
-    def fetch(self) -> bool:
+    def fetch(self) -> None:
         """Fetch and cache all data.
 
         First get a list of collector names and their associated files. Then fetch the
@@ -202,8 +201,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
             self.collector_site_url, collector_names = self.cache_handler.load_cached_object(collector_names_name)
         else:
             collector_site = self.fetch_collector_site()
-            if not collector_site:
-                return True
             soup = BeautifulSoup(collector_site, features='html.parser')
             links = soup.find_all('a')
             collector_names = self.filter_route_collector_links(links)
@@ -218,8 +215,10 @@ class RoutingSnapshotCrawler(BaseCrawler):
         # files (one per collector) if the data for the current date
         # is not yet available for all collectors.
         latest_available_date = self.probe_latest_set(collector_names[0])
-        if latest_available_date is None:
-            return True
+        self.reference['reference_time_modification'] = latest_available_date.replace(hour=0,
+                                                                                      minute=0,
+                                                                                      second=0,
+                                                                                      microsecond=0)
         curr_date = datetime.now(tz=timezone.utc)
         max_lookback = curr_date - self.MAX_LOOKBACK
 
@@ -270,14 +269,11 @@ class RoutingSnapshotCrawler(BaseCrawler):
                 print(f'Failed to find current data for {len(failed_fetches)} collectors: {failed_fetches}',
                       file=sys.stderr)
 
-        return False
-
     def run(self) -> None:
         """Fetch data from PCH, parse the files, and push nodes and relationships to the
         database."""
         # Pre-fetch all data.
-        if self.fetch():
-            return
+        self.fetch()
 
         # Parse files in parallel.
         logging.info(f'Parsing {len(self.collector_files)} collector files.')
