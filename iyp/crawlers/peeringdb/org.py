@@ -10,7 +10,8 @@ import iso3166
 import requests_cache
 
 from iyp import BaseCrawler
-from iyp.crawlers.peeringdb.ix import handle_social_media
+from iyp.crawlers.peeringdb.ix import (handle_social_media,
+                                       set_reference_time_from_metadata)
 
 ORG = 'PeeringDB'
 
@@ -41,6 +42,7 @@ class Crawler(BaseCrawler):
         self.requests = requests_cache.CachedSession(os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION)
 
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20org'
 
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP."""
@@ -50,7 +52,9 @@ class Crawler(BaseCrawler):
             logging.error('Error while fetching peeringDB data')
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
 
-        organizations = json.loads(req.text)['data']
+        result = req.json()
+        set_reference_time_from_metadata(self.reference, result)
+        organizations = result['data']
 
         # compute nodes
         orgs = set()
