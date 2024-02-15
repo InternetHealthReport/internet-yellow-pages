@@ -3,7 +3,7 @@ import logging
 import os
 from collections import defaultdict
 from concurrent.futures import as_completed
-from datetime import datetime, timezone
+from datetime import datetime
 from json import JSONDecodeError
 from typing import Iterable, Tuple
 
@@ -213,16 +213,22 @@ class Crawler(BaseCrawler):
                     # valid ISO format...
                     try:
                         pre, suf = cached_at_str.rsplit('.', maxsplit=1)
-                        if not suf or not suf.endswith('Z'):
-                            raise ValueError(f'Fractional seconds missing or timestamp not ending with "Z" (not UTC): '
-                                             f'{cached_at_str}')
-                        suf = suf[:-1]  # Strip "Z".
-                        if not suf.isdigit():
+                        if suf.endswith('Z'):
+                            # UTC
+                            frac_seconds = suf[:-1]
+                            tz_suffix = '+00:00'
+                        elif '+' in suf:
+                            # Hopefully a timezone identifier of form +HH:MM
+                            frac_seconds, tz_suffix = suf.split('+')
+                            tz_suffix = '+' + tz_suffix
+                        else:
+                            raise ValueError(f'Failed to get timezone from timestamp :{cached_at_str}')
+                        if not frac_seconds.isdigit():
                             raise ValueError(f'Fractional seconds are not digits: {cached_at_str}')
                         # Reduce to six digits (ms).
-                        suf = suf[:6]
-                        cached_at_str = f'{pre}.{suf}'
-                        cached_at = datetime.fromisoformat(cached_at_str).replace(tzinfo=timezone.utc)
+                        frac_seconds = frac_seconds[:6]
+                        cached_at_str = f'{pre}.{frac_seconds}{tz_suffix}'
+                        cached_at = datetime.fromisoformat(cached_at_str)
                     except ValueError as e:
                         logging.warning(f'Failed to get cached_at timestamp for routeserver "{routeserver_id}": {e}')
                     if cached_at:
