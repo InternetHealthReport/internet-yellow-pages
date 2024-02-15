@@ -273,7 +273,7 @@ class DnsDependencyCrawler(BaseCrawler):
             year = current_date.strftime('%Y')
             week = current_date.strftime('%U')
             base_url = f'{self.reference["reference_url"]}/year={year}/week={week}'
-            probe_url = f'{base_url}/domain_nodes.json.gz'
+            probe_url = f'{base_url}/connections.json.gz'
             if requests.head(probe_url).ok:
                 logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')
                 break
@@ -281,19 +281,11 @@ class DnsDependencyCrawler(BaseCrawler):
             logging.error('Failed to find data within the specified lookback interval.')
             raise RequestStatusError('Failed to find data within the specified lookback interval.')
 
-        logging.info('Reading domain names')
-        domains = pd.read_json(f'{base_url}/domain_nodes.json.gz', lines=True)
-        logging.info('Reading host names')
-        hosts = pd.read_json(f'{base_url}/host_nodes.json.gz', lines=True)
-        logging.info('Reading IPs')
-        ips = pd.read_json(f'{base_url}/ip_nodes.json.gz', lines=True)
         logging.info('Reading connections')
         connections = pd.read_json(f'{base_url}/connections.json.gz', lines=True)
 
         logging.info('Stripping root "." and normalizing IPs')
         # Remove root "." from names that are not the root.
-        domains['name'] = domains['name'].map(self.remove_root)
-        hosts['name'] = hosts['name'].map(self.remove_root)
         # Currently there are only DOMAIN and HOSTNAME entries in from_nodeType, but
         # maybe that changes in the future.
         connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'] = \
@@ -301,16 +293,21 @@ class DnsDependencyCrawler(BaseCrawler):
         connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'] = \
             connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'].map(self.remove_root)
         # Normalize IPv6 addresses.
-        ips['address'] = ips['address'].map(self.normalize_ipv6)
         connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'] = \
             connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'].map(self.normalize_ipv6)
         connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'] = \
             connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'].map(self.normalize_ipv6)
 
         # Pandas' unique is faster than plain set.
-        unique_domain_names = set(domains['name'].unique())
-        unique_host_names = set(hosts['name'].unique())
-        unique_ips = set(ips['address'].unique())
+        unique_domain_names = set()
+        unique_host_names = set()
+        unique_ips = set()
+        logging.info('Getting unique nodes')
+        for node_type, node_key in [('from_nodeType', 'from_nodeKey'), ('to_nodeType', 'to_nodeKey')]:
+            unique_domain_names.update(connections[connections[node_type] == 'DOMAIN'][node_key].unique())
+            unique_host_names.update(connections[connections[node_type] == 'HOSTNAME'][node_key].unique())
+            unique_ips.update(connections[connections[node_type] == 'IP'][node_key].unique())
+
         logging.info(f'Pushing/getting {len(unique_domain_names)} DomainName {len(unique_host_names)} HostName '
                      f'{len(unique_ips)} IP nodes...')
         domains_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', unique_domain_names)
@@ -325,7 +322,6 @@ class DnsDependencyCrawler(BaseCrawler):
         unique_relationships = set()
 
         logging.info('Computing relationships...')
-        start_ts = datetime.now().timestamp()
         for connection in connections.itertuples():
             relationship_tuple = (connection.relation_name,
                                   connection.from_nodeType,
@@ -368,8 +364,6 @@ class DnsDependencyCrawler(BaseCrawler):
                 })
             else:
                 logging.error(f'Unknown relationship type: {connection.relation_name}')
-        stop_ts = datetime.now().timestamp()
-        logging.info(f'{stop_ts - start_ts:.2f}s elapsed')
 
         # Push all links to IYP
         logging.info(f'Pushing {len(links_parent)} PARENT {len(links_part_of)} PART_OF {len(links_alias_of)} ALIAS_OF '
