@@ -55,34 +55,34 @@ class Crawler(BaseCrawler):
             asn = int(line[0][2:])
             cats = line[1:]
             for i, category in enumerate(cats):
-                if category:
+                if not category:
+                    continue
 
-                    # Get layer 1 entry
-                    if i % 2 == 0:
-                        layer = 1
-                        categories.add(category)
-                        asns.add(asn)
-                        lines.add((asn, layer, category))
+                # Get layer 1 entry
+                if i % 2 == 0:
+                    layer = 1
+                    categories.add(category)
+                    asns.add(asn)
+                    lines.add((asn, layer, category))
 
-                    # Get layer 2 entries
-                    else:
-                        parent_category = cats[i - 1]
-                        if parent_category:
-                            asns.add(asn)
+                # Get layer 2 entry
+                else:
+                    parent_category = cats[i - 1]
+                    if not parent_category:
+                        continue
 
-                            # Remove 'Other' subcategories
-                            # Only store their parent category
-                            if category == 'Other' or category == 'other':
-                                layer = 1
-                                categories.add(parent_category)
-                                lines.add((asn, layer, parent_category))
+                    # Remove 'Other' subcategories
+                    # Only store their parent category
+                    if category == 'Other' or category == 'other':
+                        continue
 
-                            # Handle PART_OF layer hierarchy
-                            else:
-                                layer = 2
-                                part_of_lines.add((category, parent_category))
-                                categories.add(category)
-                                lines.add((asn, layer, category))
+                    # Handle PART_OF layer hierarchy
+                    part_of_lines.add((category, parent_category))
+
+                    layer = 2
+                    categories.add(category)
+                    asns.add(asn)
+                    lines.add((asn, layer, category))
 
         # get ASNs and names IDs
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
@@ -107,8 +107,8 @@ class Crawler(BaseCrawler):
             asn_qid = asn_id[asn]
             category_qid = category_id[category]
 
-            links.append({'src_id': asn_qid, 'dst_id': category_qid, 'props': [
-                         self.reference, {'layer': layer}]})  # Set AS category
+            links.append({'src_id': asn_qid, 'dst_id': category_qid,
+                          'props': [self.reference, {'layer': layer}]})  # Set AS category
 
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
