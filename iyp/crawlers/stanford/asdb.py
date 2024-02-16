@@ -39,11 +39,12 @@ class Crawler(BaseCrawler):
         if req.status_code != 200:
             raise RequestStatusError('Error while fetching ASdb')
 
-        lines = []
+        lines = set()
         asns = set()
         categories = set()
 
-        # Collect all ASNs and names
+        # Collect all ASNs, categories, layers, and PART_OF layer hierarchy
+        part_of_lines = set()
         for line in csv.reader(req.text.splitlines(), quotechar='"', delimiter=',', skipinitialspace=True):
             if not line:
                 continue
@@ -53,25 +54,61 @@ class Crawler(BaseCrawler):
 
             asn = int(line[0][2:])
             cats = line[1:]
-            for category in cats:
-                if category:
-                    asns.add(asn)
-                    categories.add(category)
+            for i, category in enumerate(cats):
+                if not category:
+                    continue
 
-                    lines.append([asn, category])
+                # Get layer 1 entry
+                if i % 2 == 0:
+                    layer = 1
+                    categories.add(category)
+                    asns.add(asn)
+                    lines.add((asn, layer, category))
+
+                # Get layer 2 entry
+                else:
+                    parent_category = cats[i - 1]
+                    if not parent_category:
+                        continue
+
+                    # Remove 'Other' subcategories
+                    # Only store their parent category
+                    if category == 'Other' or category == 'other':
+                        continue
+
+                    # Handle PART_OF layer hierarchy
+                    part_of_lines.add((category, parent_category))
+
+                    layer = 2
+                    categories.add(category)
+                    asns.add(asn)
+                    lines.add((asn, layer, category))
 
         # get ASNs and names IDs
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
         category_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', categories)
 
+        # Compute PART_OF links
+        part_of_links = []
+        for (subcat, cat) in part_of_lines:
+
+            subcat_qid = category_id[subcat]
+            cat_qid = category_id[cat]
+
+            part_of_links.append({'src_id': subcat_qid, 'dst_id': cat_qid,
+                                  'props': [self.reference]})
+
+        self.iyp.batch_add_links('PART_OF', part_of_links)
+
         # Compute links
         links = []
-        for (asn, category) in lines:
+        for (asn, layer, category) in lines:
 
             asn_qid = asn_id[asn]
             category_qid = category_id[category]
 
-            links.append({'src_id': asn_qid, 'dst_id': category_qid, 'props': [self.reference]})  # Set AS category
+            links.append({'src_id': asn_qid, 'dst_id': category_qid,
+                          'props': [self.reference, {'layer': layer}]})  # Set AS category
 
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
