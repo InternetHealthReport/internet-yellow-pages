@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 import flatdict
 import requests
@@ -41,6 +42,12 @@ class Crawler(BaseCrawler):
 
         # Initialize IYP connection
         super().__init__(organization, url, name)
+
+        # Not super elegant.
+        if name == 'cloudflare.dns_top_ases':
+            self.reference['reference_url_info'] = 'https://developers.cloudflare.com/api/operations/radar-get-dns-top-ases'  # noqa: E501
+        elif name == 'cloudflare.dns_top_locations':
+            self.reference['reference_url_info'] = 'https://developers.cloudflare.com/radar/investigate/dns/#top-locations'  # noqa: E501
 
         # Fetch domain names registered in IYP
         existing_dn = self.iyp.tx.run(
@@ -117,7 +124,17 @@ class Crawler(BaseCrawler):
         for i, file in enumerate(files):
             with open(file, 'rb') as fp:
                 # Process line one after the other
-                for domain_top in json.load(fp)['result'].items():
+                results = json.load(fp)['result']
+                if not self.reference['reference_time_modification']:
+                    # Get the reference time from the first file.
+                    try:
+                        date_str = results['meta']['dateRange'][0]['endTime']
+                        date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+                        self.reference['reference_time_modification'] = date
+                    except (KeyError, ValueError, TypeError) as e:
+                        logging.warning(f'Failed to get modification time: {e}')
+
+                for domain_top in results.items():
                     self.compute_link(domain_top)
 
             if i % 100 == 0:

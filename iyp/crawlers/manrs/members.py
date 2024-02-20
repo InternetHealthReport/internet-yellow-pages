@@ -61,8 +61,8 @@ class Crawler(BaseCrawler):
         self.reference = {
             'reference_name': NAME,
             'reference_org': ORG,
-            'reference_url': URL,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL,
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
         }
 
     def run(self):

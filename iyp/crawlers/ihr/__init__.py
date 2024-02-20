@@ -1,6 +1,6 @@
 import csv
 import os
-from datetime import datetime, time, timezone
+from datetime import timezone
 
 import arrow
 import lz4.frame
@@ -34,6 +34,7 @@ class HegemonyCrawler(BaseCrawler):
     def __init__(self, organization, url, name, af):
         self.af = af
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://ihr.iijlab.net/ihr/en-us/documentation#AS_dependency'
 
     def run(self):
         """Fetch data from file and push to IYP."""
@@ -50,12 +51,12 @@ class HegemonyCrawler(BaseCrawler):
                 url = self.url.format(year=today.year, month=today.month, day=today.day)
                 req = requests.head(url)
 
-        self.reference = {
-            'reference_url': url,
-            'reference_org': self.organization,
-            'reference_name': self.name,
-            'reference_time': datetime.combine(today.date(), time.min, timezone.utc)
-        }
+        self.reference['reference_url_data'] = url
+        self.reference['reference_time_modification'] = today.datetime.replace(hour=0,
+                                                                               minute=0,
+                                                                               second=0,
+                                                                               microsecond=0,
+                                                                               tzinfo=timezone.utc)
 
         os.makedirs('tmp/', exist_ok=True)
         os.system(f'wget {url} -P tmp/')

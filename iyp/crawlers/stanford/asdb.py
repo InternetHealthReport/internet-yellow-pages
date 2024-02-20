@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import bs4
 import requests
@@ -32,6 +32,19 @@ NAME = 'stanford.asdb'
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://asdb.stanford.edu/'
+        self.__set_modification_time_from_url()
+
+    def __set_modification_time_from_url(self):
+        fmt = 'https://asdb.stanford.edu/data/%Y-%m_categorized_ases.csv'
+        try:
+            date = datetime.strptime(URL, fmt).replace(tzinfo=timezone.utc)
+            self.reference['reference_time_modification'] = date
+        except ValueError as e:
+            logging.warning(f'Failed to set modification time: {e}')
+
     def run(self):
         """Fetch the ASdb file and push it to IYP."""
 

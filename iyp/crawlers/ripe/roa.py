@@ -4,7 +4,7 @@ import lzma
 import os
 import sys
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 
 import requests
@@ -23,7 +23,7 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialize IYP and statements for pushed data."""
 
-        now = datetime.utcnow()
+        now = datetime.now(tz=timezone.utc)
         self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
 
         # Check if today's data is available
@@ -36,6 +36,8 @@ class Crawler(BaseCrawler):
             logging.warning("Using yesterday's data: " + self.date_path)
 
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://rpki-study.github.io/rpki-archive/'
+        self.reference['reference_time_modification'] = now.replace(hour=0, minute=0, second=0)
 
     def run(self):
         """Fetch data from RIPE and push to IYP."""

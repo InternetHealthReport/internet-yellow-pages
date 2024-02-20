@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -12,7 +13,7 @@ from iyp import BaseCrawler, JSONDecodeError, RequestStatusError
 # Organization name and URL to data
 ORG = 'Cloudflare'
 URL_DATASETS = 'https://api.cloudflare.com/client/v4/radar/datasets?limit=10&offset=0&datasetType=RANKING_BUCKET&format=json'  # noqa: E501
-URL = ''
+URL = 'https://api.cloudflare.com/client/v4/radar/datasets'
 URL_DL = 'https://api.cloudflare.com/client/v4/radar/datasets/download'
 NAME = 'cloudflare.ranking_bucket'
 
@@ -27,6 +28,9 @@ class Crawler(BaseCrawler):
     #
     # Cloudflare ranks second and third level domain names (not host names).
     # See https://blog.cloudflare.com/radar-domain-rankings/
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/'  # noqa: E501
 
     def run(self):
         """Fetch data and push to IYP."""
@@ -61,6 +65,16 @@ class Crawler(BaseCrawler):
         datasets = list()
         all_domains = set()
         for dataset in datasets_json['result']['datasets']:
+            if not self.reference['reference_time_modification']:
+                # Get modification time from first dataset. Should be the same for all
+                # datasets.
+                try:
+                    date_str = dataset['meta']['targetDateEnd']
+                    date = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                    self.reference['reference_time_modification'] = date
+                except (KeyError, ValueError, TypeError) as e:
+                    logging.warning(f'Failed to get modification time: {e}')
+
             # Get the dataset URL
             req = req_session.post(URL_DL, json={'datasetId': dataset['id']})
             if req.status_code != 200:
@@ -92,7 +106,6 @@ class Crawler(BaseCrawler):
             dataset_title = f'Cloudflare {dataset["title"]}'
             logging.info(f'Processing dataset: {dataset_title}')
             print(f'Processing dataset: {dataset_title}')
-            self.reference['reference_url'] = dataset['url']
             ranking_id = self.iyp.get_node('Ranking',
                                            {
                                                'name': dataset_title,

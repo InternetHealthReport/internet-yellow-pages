@@ -3,15 +3,16 @@ import json
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import (BaseCrawler, RequestStatusError,
+                 set_modification_time_from_last_modified_header)
 
 
 class AS2RelCrawler(BaseCrawler):
     def __init__(self, organization, url, name, af):
         """Initialization: set the address family attribute (af)"""
-
-        self.af = af
         super().__init__(organization, url, name)
+        self.af = af
+        self.reference['reference_url_info'] = 'https://data.bgpkit.com/as2rel/README.txt'
 
     def run(self):
         """Fetch the AS relationship file from BGPKIT website and process lines one by
@@ -19,7 +20,9 @@ class AS2RelCrawler(BaseCrawler):
 
         req = requests.get(self.url, stream=True)
         if req.status_code != 200:
-            raise RequestStatusError('Error while fetching AS relationships')
+            raise RequestStatusError(f'Error while fetching AS relationships: {req.status_code}')
+
+        set_modification_time_from_last_modified_header(self.reference, req)
 
         rels = []
         asns = set()

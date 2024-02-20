@@ -4,6 +4,7 @@ import math
 import os
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone
 
 import requests
 
@@ -18,6 +19,9 @@ NAME = 'nro.delegated_stats'
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt'
 
     def run(self):
         """Fetch the delegated stat file from RIPE website and process lines one by
@@ -43,8 +47,15 @@ class Crawler(BaseCrawler):
             if line.strip().startswith('#'):
                 continue
 
-            # skip version and summary lines
             fields_value = line.split('|')
+            # get modification time from version line
+            if len(fields_value) == 7 and fields_value[0].isdigit():
+                try:
+                    date = datetime.strptime(fields_value[5], '%Y%m%d').replace(tzinfo=timezone.utc)
+                    self.reference['reference_time_modification'] = date
+                except ValueError as e:
+                    logging.warning(f'Failed to set modification time: {e}')
+            # skip summary lines
             if len(fields_value) < 8:
                 continue
 
@@ -65,7 +76,7 @@ class Crawler(BaseCrawler):
                 prefixes.add(prefix)
 
         # Create all nodes
-        logging.warning('Pushing nodes to neo4j...\n')
+        logging.warning('Pushing nodes to neo4j...')
         opaqueid_id = self.iyp.batch_get_nodes_by_single_prop('OpaqueID', 'id', opaqueids)
         prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
@@ -120,7 +131,7 @@ class Crawler(BaseCrawler):
                 status_links[rec['status'].upper()].append(
                     {'src_id': prefix_qid, 'dst_id': opaqueid_qid, 'props': [reference]})
 
-        logging.warning('Pusing links to neo4j...\n')
+        logging.warning('Pushing links to neo4j...')
         # Push all links to IYP
         self.iyp.batch_add_links('COUNTRY', country_links)
         for label, links in status_links.items():

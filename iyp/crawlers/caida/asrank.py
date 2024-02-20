@@ -16,6 +16,9 @@ NAME = 'caida.asrank'
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://asrank.caida.org/'
 
     def run(self):
         """Fetch networks information from ASRank and push to IYP."""

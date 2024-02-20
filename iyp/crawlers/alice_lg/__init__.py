@@ -1,7 +1,6 @@
 import ipaddress
 import logging
 import os
-import sys
 from collections import defaultdict
 from concurrent.futures import as_completed
 from datetime import datetime
@@ -84,6 +83,10 @@ class Crawler(BaseCrawler):
 
         # URLs to the API
         url = url.rstrip('/')
+        if url.endswith('/api/v1'):
+            self.reference['reference_url_info'] = url[:-len('/api/v1')]
+        else:
+            logging.warning(f'Data URL does not end with "/api/v1", will not set info URL: {url}')
         self.urls = {
             'routeservers': f'{url}/routeservers',
             'neighbors': url + '/routeservers/{rs}/neighbors',
@@ -97,6 +100,8 @@ class Crawler(BaseCrawler):
         # List of neighbor dicts. Each dict contains information about the route server,
         # so we do not keep track of that separately.
         self.neighbors = list()
+        # Dict mapping routeserver_id to the cache time of that server.
+        self.routeserver_cached_at = dict()
         # Dict mapping (routeserver_id, neighbor_id) tuple to a list of route dicts.
         self.routes = dict()
         # If routes should be fetched or not.
@@ -123,8 +128,6 @@ class Crawler(BaseCrawler):
         try:
             resp.data = resp.json()
         except JSONDecodeError as e:
-            print(f'Failed to retrieve data for {resp.url}', file=sys.stderr)
-            print(f'Error while reading json data: {e}', file=sys.stderr)
             logging.error(f'Error while reading json data: {e}')
             logging.error(resp.status_code)
             logging.error(resp.headers)
@@ -160,8 +163,6 @@ class Crawler(BaseCrawler):
             except Exception as e:
                 logging.error(f'Failed to retrieve data for {future}')
                 logging.error(e)
-                print(f'Failed to retrieve data for {future}', file=sys.stderr)
-                print(e, file=sys.stderr)
                 return False, dict(), None
 
     def fetch_url(self, url: str) -> Tuple[bool, dict]:
@@ -177,7 +178,6 @@ class Crawler(BaseCrawler):
             logging.info('Using cached route server information.')
             self.routeservers = self.cache_handler.load_cached_object(routeserver_object_name)
         else:
-            print(f'Fetching route servers from {self.urls["routeservers"]}')
             logging.info(f'Fetching route servers from {self.urls["routeservers"]}')
             is_ok, routeservers_root = self.fetch_url(self.urls['routeservers'])
             if not is_ok:
@@ -190,17 +190,49 @@ class Crawler(BaseCrawler):
         neighbor_object_name = 'neighbors'
         if self.cache_handler.cached_object_exists(neighbor_object_name):
             logging.info('Using cached neighbor information.')
-            self.neighbors = self.cache_handler.load_cached_object(neighbor_object_name)
+            neighbor_object = self.cache_handler.load_cached_object(neighbor_object_name)
+            self.routeserver_cached_at = neighbor_object['routeserver_cached_at']
+            self.neighbors = neighbor_object['neighbors']
         else:
-            print(f'Fetching neighbor information from {len(self.routeservers)} route servers.')
             logging.info(f'Fetching neighbor information from {len(self.routeservers)} route servers.')
             neighbor_urls = [self.urls['neighbors'].format(rs=rs['id']) for rs in self.routeservers]
             failed_routeservers = list()
-            for is_ok, neighbor_list_root, routeserver_id in self.fetch_urls(neighbor_urls,
-                                                                             additional_data=self.routeservers):
+            for is_ok, neighbor_list_root, routeserver in self.fetch_urls(neighbor_urls,
+                                                                          additional_data=self.routeservers):
+                routeserver_id = routeserver['id']
                 if not is_ok:
                     failed_routeservers.append(routeserver_id)
                     continue
+                try:
+                    cached_at_str = neighbor_list_root['api']['cache_status']['cached_at']
+                except KeyError:
+                    cached_at_str = str()
+                if cached_at_str:
+                    cached_at = None
+                    # Alice-LG uses nanosecond-granularity timestamps, which are not
+                    # valid ISO format...
+                    try:
+                        pre, suf = cached_at_str.rsplit('.', maxsplit=1)
+                        if suf.endswith('Z'):
+                            # UTC
+                            frac_seconds = suf[:-1]
+                            tz_suffix = '+00:00'
+                        elif '+' in suf:
+                            # Hopefully a timezone identifier of form +HH:MM
+                            frac_seconds, tz_suffix = suf.split('+')
+                            tz_suffix = '+' + tz_suffix
+                        else:
+                            raise ValueError(f'Failed to get timezone from timestamp :{cached_at_str}')
+                        if not frac_seconds.isdigit():
+                            raise ValueError(f'Fractional seconds are not digits: {cached_at_str}')
+                        # Reduce to six digits (ms).
+                        frac_seconds = frac_seconds[:6]
+                        cached_at_str = f'{pre}.{frac_seconds}{tz_suffix}'
+                        cached_at = datetime.fromisoformat(cached_at_str)
+                    except ValueError as e:
+                        logging.warning(f'Failed to get cached_at timestamp for routeserver "{routeserver_id}": {e}')
+                    if cached_at:
+                        self.routeserver_cached_at[routeserver_id] = cached_at
                 # Spelling of neighbors/neighbours field is not consistent...
                 if 'neighbors' in neighbor_list_root:
                     neighbor_list = neighbor_list_root['neighbors']
@@ -208,10 +240,11 @@ class Crawler(BaseCrawler):
                     neighbor_list = neighbor_list_root['neighbours']
                 else:
                     logging.error(f'Missing "neighbors"/"neighbours" field in reply: {neighbor_list_root}')
-                    print(f'Missing "neighbors"/"neighbours" field in reply: {neighbor_list_root}', file=sys.stderr)
                     continue
                 self.neighbors += neighbor_list
-            self.cache_handler.save_cached_object(neighbor_object_name, self.neighbors)
+            neighbor_object = {'routeserver_cached_at': self.routeserver_cached_at,
+                               'neighbors': self.neighbors}
+            self.cache_handler.save_cached_object(neighbor_object_name, neighbor_object)
             if failed_routeservers:
                 logging.warning(f'Failed to get neighbor information for {len(failed_routeservers)} routeservers: '
                                 f'{failed_routeservers}')
@@ -343,7 +376,15 @@ class Crawler(BaseCrawler):
             if ('details:route_changes' in flattened_neighbor
                     and isinstance(flattened_neighbor['details:route_changes'], flatdict.FlatDict)):
                 flattened_neighbor.pop('details:route_changes')
-            self.reference['reference_url'] = self.urls['neighbors'].format(rs=neighbor['routeserver_id'])
+            routeserver_id = neighbor['routeserver_id']
+            self.reference['reference_url_data'] = self.urls['neighbors'].format(rs=routeserver_id)
+            if routeserver_id in self.routeserver_cached_at:
+                self.reference['reference_time_modification'] = self.routeserver_cached_at[routeserver_id]
+            else:
+                logging.info(f'No modification time for routeserver: {routeserver_id}')
+                # Set to None to not reuse value of previous loop iteration.
+                self.reference['reference_time_modification'] = None
+
             member_of_rels.append({'src_id': member_asn,  # Translate to QID later.
                                    'dst_id': n.data['ixp_qid'],
                                    'props': [flattened_neighbor, self.reference.copy()]})
@@ -354,7 +395,8 @@ class Crawler(BaseCrawler):
         if self.fetch_routes:
             logging.info('Iterating routes.')
             for (routeserver_id, neighbor_id), routes in self.routes.items():
-                self.reference['reference_url'] = self.urls['routes'].format(rs=routeserver_id, neighbor=neighbor_id)
+                self.reference['reference_url_data'] = self.urls['routes'].format(rs=routeserver_id,
+                                                                                  neighbor=neighbor_id)
                 for route in routes:
                     prefix = ipaddress.ip_network(route['network']).compressed
                     origin_asn = route['bgp']['as_path'][-1]

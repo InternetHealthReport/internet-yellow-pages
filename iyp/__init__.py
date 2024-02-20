@@ -8,6 +8,7 @@ from shutil import rmtree
 from typing import Optional
 
 import requests
+from github import Github
 from neo4j import GraphDatabase
 
 BATCH_SIZE = 50000
@@ -79,6 +80,34 @@ def dict2str(d, eq=':', pfx=''):
     return '{' + ','.join(data) + '}'
 
 
+def get_commit_datetime(repo, file_path):
+    """Get the datetime of the latest commit modifying a file in a GitHub repository.
+
+    repo: The name of the repository in org/repo format, e.g.,
+    "InternetHealthReport/internet-yellow-pages"
+    file_path: The path to the file relative to the repository root, e.g.,
+    "iyp/__init__.py"
+    """
+    return Github().get_repo(repo).get_commits(path=file_path)[0].commit.committer.date
+
+
+def set_modification_time_from_last_modified_header(reference, response):
+    """Set the reference_time_modification field of the specified reference dict to the
+    datetime parsed from the Last-Modified header of the specified response if
+    possible."""
+    try:
+        last_modified_str = response.headers['Last-Modified']
+        # All HTTP dates are in UTC:
+        # https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1
+        last_modified = datetime.strptime(last_modified_str,
+                                          '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+        reference['reference_time_modification'] = last_modified
+    except KeyError:
+        logging.warning('No Last-Modified header; will not set modification time.')
+    except ValueError as e:
+        logging.error(f'Failed to parse Last-Modified header "{last_modified_str}": {e}')
+
+
 class RequestStatusError(requests.HTTPError):
     def __init__(self, message):
         self.message = message
@@ -104,6 +133,12 @@ class ConnectionError(requests.exceptions.ConnectionError):
 
 
 class AddressValueError(ValueError):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+
+class DataNotAvailableError(Exception):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
@@ -548,9 +583,9 @@ class IYP(object):
         for i, (type, dst_node, prop) in enumerate(links):
 
             assert 'reference_org' in prop
-            assert 'reference_url' in prop
+            assert 'reference_url_data' in prop
             assert 'reference_name' in prop
-            assert 'reference_time' in prop
+            assert 'reference_time_fetch' in prop
 
             prop = format_properties(prop)
 
@@ -589,10 +624,12 @@ class BasePostProcess(object):
         """IYP and references initialization."""
 
         self.reference = {
-            'reference_org': 'Internet Yellow Pages',
-            'reference_url': 'https://iyp.iijlab.net',
             'reference_name': 'iyp',
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_org': 'Internet Yellow Pages',
+            'reference_url_data': 'https://iyp.iijlab.net',
+            'reference_url_info': str(),
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         # connection to IYP database
@@ -617,8 +654,10 @@ class BaseCrawler(object):
         self.reference = {
             'reference_name': name,
             'reference_org': organization,
-            'reference_url': url,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': url,
+            'reference_url_info': str(),
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         # connection to IYP database

@@ -1,7 +1,6 @@
 # Simple Python script to fetch domain name to IP address mappings from OpenINTEL data
 # OpenIntelCrawler is based on code from Mattijs Jonker <m.jonker@utwente.nl>
 
-import argparse
 import json
 import logging
 import os
@@ -15,7 +14,7 @@ import botocore
 import pandas as pd
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler, DataNotAvailableError
 
 TMP_DIR = './tmp'
 os.makedirs(TMP_DIR, exist_ok=True)
@@ -29,13 +28,11 @@ if os.path.exists('config.json'):
     OPENINTEL_ACCESS_KEY = config['openintel']['access_key']
     OPENINTEL_SECRET_KEY = config['openintel']['secret_key']
 
-
-def valid_date(s):
-    try:
-        return datetime.strptime(s, '%Y-%m-%d')
-    except ValueError:
-        msg = 'not a valid ISO 8601 date: {0!r}'.format(s)
-        raise argparse.ArgumentTypeError(msg)
+# We use the AWS interface to get data, but can not provide AWS URLs as data source, so
+# at least for the Tranco and Umbrella datasets we can point to the publicly available
+# archives.
+TRANCO_REFERENCE_URL_DATA_FMT = 'https://data.openintel.nl/data/tranco1m/%Y/openintel-tranco1m-%Y%m%d.tar'
+UMBRELLA_REFERENCE_URL_DATA_FMT = 'https://data.openintel.nl/data/umbrella1m/%Y/openintel-umbrella1m-%Y%m%d.tar'
 
 
 class OpenIntelCrawler(BaseCrawler):
@@ -45,6 +42,11 @@ class OpenIntelCrawler(BaseCrawler):
 
         self.dataset = dataset
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://www.openintel.nl/'
+        if dataset == 'tranco':
+            self.reference['reference_url_info'] = 'https://data.openintel.nl/data/tranco1m'
+        elif dataset == 'umbrella':
+            self.reference['reference_url_info'] = 'https://data.openintel.nl/data/umbrella1m'
 
     def get_parquet(self):
         """Fetch the forward DNS data, populate a data frame, and process lines one by
@@ -72,48 +74,40 @@ class OpenIntelCrawler(BaseCrawler):
         # OpenINTEL measurement data objects base prefix
         FDNS_WAREHOUSE_S3 = 'category=fdns/type=warehouse'
 
-        # check on the website if yesterday's data is available
-        yesterday = arrow.utcnow().shift(days=-1)
-        # FIXME Check at the proper place. Remove flake8 exception afterwards.
-        # flake8: noqa
-        # url = URL.format(year=yesterday.year, month=yesterday.month, day=yesterday.day)
-        # try:
-        #     req = requests.head(url)
+        # Get latest available data.
+        date = arrow.utcnow()
+        for lookback_days in range(6):
+            objects = list(WAREHOUSE_BUCKET.objects.filter(
+                # Build a partition path for the given source and date
+                Prefix=os.path.join(
+                    FDNS_WAREHOUSE_S3,
+                    'source={}'.format(self.dataset),
+                    'year={}'.format(date.year),
+                    'month={:02d}'.format(date.month),
+                    'day={:02d}'.format(date.day)
+                )).all())
+            if len(objects) > 0:
+                break
+            date = date.shift(days=-1)
+        else:
+            logging.error('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+        self.reference['reference_time_modification'] = \
+            date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        if self.dataset == 'tranco':
+            self.reference['reference_url_data'] = date.strftime(TRANCO_REFERENCE_URL_DATA_FMT)
+        elif self.dataset == 'umbrella':
+            self.reference['reference_url_data'] = date.strftime(UMBRELLA_REFERENCE_URL_DATA_FMT)
 
-        #     attempt = 3
-        #     while req.status_code != 200 and attempt > 0:
-        #         print(req.status_code)
-        #         attempt -= 1
-        #         yesterday = yesterday.shift(days=-1)
-        #         url = URL.format(year=yesterday.year, month=yesterday.month, day=yesterday.day)
-        #         req = requests.head(url)
-
-        # except requests.exceptions.ConnectionError:
-        #     logging.warning("Cannot reach OpenINTEL website, try yesterday's data")
-        #     yesterday = arrow.utcnow().shift(days=-1)
-        #     url = URL.format(year=yesterday.year, month=yesterday.month, day=yesterday.day)
-
-        logging.warning(f'Fetching data for {yesterday}')
-
-        # Start one day before ? # TODO remove this line?
-        yesterday = yesterday.shift(days=-1)
+        logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
         # Iterate objects in bucket with given (source, date)-partition prefix
-        for i_obj in WAREHOUSE_BUCKET.objects.filter(
-            # Build a partition path for the given source and date
-            Prefix=os.path.join(
-                FDNS_WAREHOUSE_S3,
-                'source={}'.format(self.dataset),
-                'year={}'.format(yesterday.year),
-                'month={:02d}'.format(yesterday.month),
-                'day={:02d}'.format(yesterday.day)
-            )
-        ):
+        for i_obj in objects:
 
             # Open a temporary file to download the Parquet object into
             with tempfile.NamedTemporaryFile(mode='w+b',
                                              dir=TMP_DIR,
-                                             prefix='{}.'.format(yesterday.date().isoformat()),
+                                             prefix='{}.'.format(date.date().isoformat()),
                                              suffix='.parquet',
                                              delete=True) as tempFile:
 
@@ -249,6 +243,7 @@ class DnsDependencyCrawler(BaseCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://dnsgraph.dacs.utwente.nl'
 
     @staticmethod
     def remove_root(name):
@@ -272,14 +267,21 @@ class DnsDependencyCrawler(BaseCrawler):
             current_date = datetime.now(tz=timezone.utc) - timedelta(weeks=lookback)
             year = current_date.strftime('%Y')
             week = current_date.strftime('%U')
-            base_url = f'{self.reference["reference_url"]}/year={year}/week={week}'
+            base_url = f'{self.reference["reference_url_data"]}/year={year}/week={week}'
             probe_url = f'{base_url}/connections.json.gz'
             if requests.head(probe_url).ok:
                 logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')
                 break
         else:
             logging.error('Failed to find data within the specified lookback interval.')
-            raise RequestStatusError('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+
+        # Shift to Monday and set to midnight.
+        mod_date = (current_date - timedelta(days=current_date.weekday())).replace(hour=0,
+                                                                                   minute=0,
+                                                                                   second=0,
+                                                                                   microsecond=0)
+        self.reference['reference_time_modification'] = mod_date
 
         logging.info('Reading connections')
         connections = pd.read_json(f'{base_url}/connections.json.gz', lines=True)
@@ -289,7 +291,7 @@ class DnsDependencyCrawler(BaseCrawler):
         # Currently there are only DOMAIN and HOSTNAME entries in from_nodeType, but
         # maybe that changes in the future.
         connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'] = \
-            connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'].map(self.remove_root)
+            connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'].map(self.remove_root)  # noqa: E501
         connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'] = \
             connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'].map(self.remove_root)
         # Normalize IPv6 addresses.

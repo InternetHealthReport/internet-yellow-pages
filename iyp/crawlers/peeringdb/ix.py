@@ -58,6 +58,15 @@ def handle_social_media(d: dict, website_set: set = None):
             d[f'social_media_{service}'] = identifier
 
 
+def set_reference_time_from_metadata(reference_dict, data):
+    try:
+        generated_timestamp = data['meta']['generated']
+        date = datetime.fromtimestamp(generated_timestamp, tz=timezone.utc)
+        reference_dict['reference_time_modification'] = date
+    except (KeyError, ValueError) as e:
+        logging.warning(f'Failed to set modification time: {e}')
+
+
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB IXPs to IYP."""
@@ -67,22 +76,28 @@ class Crawler(BaseCrawler):
         self.reference_ix = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL_PDB_IXS,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL_PDB_IXS,
+            'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20ix',
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         self.reference_lan = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL_PDB_LANS,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL_PDB_LANS,
+            'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20ixlan',
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         self.reference_netfac = {
             'reference_org': ORG,
             'reference_name': NAME,
-            'reference_url': URL_PDB_NETFAC,
-            'reference_time': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_url_data': URL_PDB_NETFAC,
+            'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20netfac',
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_modification': None
         }
 
         # keep track of added networks
@@ -110,7 +125,9 @@ class Crawler(BaseCrawler):
             logging.error(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
 
-        self.ixs = json.loads(req.text)['data']
+        result = req.json()
+        set_reference_time_from_metadata(self.reference_ix, result)
+        self.ixs = result['data']
 
         # Register IXPs
         logging.warning('Pushing IXP info...')
@@ -122,7 +139,9 @@ class Crawler(BaseCrawler):
             logging.error(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
 
-        ixlans = json.loads(req.text)['data']
+        result = req.json()
+        set_reference_time_from_metadata(self.reference_lan, result)
+        ixlans = result['data']
 
         # index ixlans by their id
         self.ixlans = {}
@@ -139,7 +158,9 @@ class Crawler(BaseCrawler):
             logging.error(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
             raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
 
-        self.netfacs = json.loads(req.text)['data']
+        result = req.json()
+        set_reference_time_from_metadata(self.reference_netfac, result)
+        self.netfacs = result['data']
         self.register_net_fac()
 
     def register_net_fac(self):

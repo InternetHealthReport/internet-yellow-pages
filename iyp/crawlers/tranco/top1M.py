@@ -7,7 +7,8 @@ from zipfile import ZipFile
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import (BaseCrawler, RequestStatusError,
+                 set_modification_time_from_last_modified_header)
 
 # URL to Tranco top 1M
 URL = 'https://tranco-list.eu/top-1m.csv.zip'
@@ -16,6 +17,19 @@ NAME = 'tranco.top1m'
 
 
 class Crawler(BaseCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
+        self.reference['reference_url_info'] = 'https://tranco-list.eu/methodology'
+
+    def __set_data_url(self):
+        """Set the data URL using the permanent ID of the current list, which stays
+        valid once the permalink is updated."""
+        try:
+            res = requests.get('https://tranco-list.eu/top-1m-id')
+            res.raise_for_status()
+            self.reference['reference_url_data'] = f'https://tranco-list.eu/download_daily/{res.text}'
+        except requests.HTTPError as e:
+            logging.warning(f'Failed to update data URL: {e}')
 
     def run(self):
         """Fetch Tranco top 1M and push to IYP."""
@@ -26,6 +40,9 @@ class Crawler(BaseCrawler):
         req = requests.get(URL)
         if req.status_code != 200:
             raise RequestStatusError('Error while fetching Tranco csv file')
+
+        set_modification_time_from_last_modified_header(self.reference, req)
+        self.__set_data_url()
 
         links = []
         domains = set()

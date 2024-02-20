@@ -7,7 +7,8 @@ import sys
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import (BaseCrawler, RequestStatusError,
+                 set_modification_time_from_last_modified_header)
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
 ORG = 'BGPKIT'
@@ -22,7 +23,9 @@ class Crawler(BaseCrawler):
 
         req = requests.get(URL, stream=True)
         if req.status_code != 200:
-            raise RequestStatusError('Error while fetching pfx2as relationships')
+            raise RequestStatusError(f'Error while fetching pfx2as relationships: {req.status_code}')
+
+        set_modification_time_from_last_modified_header(self.reference, req)
 
         entries = []
         asns = set()
@@ -35,7 +38,7 @@ class Crawler(BaseCrawler):
 
         req.close()
 
-        logging.info('Pushing nodes to neo4j...\n')
+        logging.info('Pushing nodes to neo4j...')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
         self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
@@ -48,7 +51,7 @@ class Crawler(BaseCrawler):
 
             links.append({'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, entry]})  # Set AS name
 
-        logging.info('Pushing links to neo4j...\n')
+        logging.info('Pushing links to neo4j...')
         # Push all links to IYP
         self.iyp.batch_add_links('ORIGINATE', links)
 
