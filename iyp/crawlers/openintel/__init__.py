@@ -239,7 +239,7 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_links('PART_OF', partof_links)
 
 
-class DnsDependencyCrawler(BaseCrawler):
+class DnsgraphCrawler(BaseCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
@@ -270,6 +270,7 @@ class DnsDependencyCrawler(BaseCrawler):
             base_url = f'{self.reference["reference_url_data"]}/year={year}/week={week}'
             probe_url = f'{base_url}/connections.json.gz'
             if requests.head(probe_url).ok:
+                logging.info(base_url)
                 logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')
                 break
         else:
