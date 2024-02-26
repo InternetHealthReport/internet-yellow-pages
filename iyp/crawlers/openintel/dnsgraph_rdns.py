@@ -3,14 +3,14 @@ import logging
 import os
 import sys
 
-from iyp.crawlers.openintel import DnsDependencyCrawler
+from iyp.crawlers.openintel import DnsgraphCrawler
 
-URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep/NL'
+URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep/RDNS'
 ORG = 'OpenINTEL'
-NAME = 'openintel.dns_dependency_nl'
+NAME = 'openintel.dnsgraph_rdns'
 
 
-class Crawler(DnsDependencyCrawler):
+class Crawler(DnsgraphCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
 
