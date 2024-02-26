@@ -144,6 +144,15 @@ Policy](https://www.peeringdb.com/aup).
 We use AS names, Atlas measurement information, and RPKI data from the [RIPE
 NCC](https://www.ripe.net/) and [RIPE Atlas](https://atlas.ripe.net/).
 
+## SimulaMet
+
+We use rDNS data from [RIR-data.org](https://rir-data.org/), a joint project of
+SimulaMet and the University of Twente.
+
+> Alfred Arouna, Ioana Livadariu, and Mattijs Jonker. "[Lowering the Barriers to Working
+> with Public RIR-Level Data.](https://dl.acm.org/doi/10.1145/3606464.3606473)"
+> Proceedings of the 2023 Workshop on Applied Networking Research (ANRW '23).
+
 ## Stanford
 
 We use the [Stanford ASdb dataset](https://asdb.stanford.edu/) provided by the [Stanford
