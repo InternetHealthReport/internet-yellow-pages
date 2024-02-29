@@ -170,7 +170,7 @@ class OpenIntelCrawler(BaseCrawler):
         domain_names = set(df[df.response_type == 'NS']['query_name'])
 
         # response values of NS records are name servers
-        name_servers = set(df[df.ns_address.notnull()]['ns_address'])
+        name_servers = set(df[(df.ns_address.notnull()) & (df.response_type == 'NS')]['ns_address'])
 
         # query_names for A and AAAA records are host names
         host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['query_name'])
@@ -186,12 +186,13 @@ class OpenIntelCrawler(BaseCrawler):
             ipv6_addresses.add(ip_normalized)
 
         # Get/create all nodes:
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domain_names)
-        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names)
-        ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', name_servers)
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domain_names, all=False)
+        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names, all=False)
+        ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', name_servers, all=False)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
-        ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']))
-        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses)
+        ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', set(
+            df[df.ip4_address.notnull()]['ip4_address']), all=False)
+        ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses, all=False)
 
         print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, {len(ip4_id)} IPv4, '
               f'{len(ip6_id)} IPv6')
