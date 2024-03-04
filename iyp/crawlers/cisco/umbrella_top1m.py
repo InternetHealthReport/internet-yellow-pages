@@ -14,7 +14,7 @@ from iyp import BaseCrawler, RequestStatusError
 # URL to umbrella top 1M
 URL = 'http://s3-us-west-1.amazonaws.com/umbrella-static/top-1m.csv.zip'
 ORG = 'Cisco'
-NAME = 'cisco.umbrella_top1M'
+NAME = 'cisco.umbrella_top1m'
 
 
 class Crawler(BaseCrawler):
