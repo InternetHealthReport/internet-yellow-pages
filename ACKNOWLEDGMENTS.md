@@ -192,3 +192,9 @@ NetSecLab group at Virginia Tech.
 > Weitong Li, Zhexiao Lin, Md. Ishtiaq Ashiq, Emile Aben, Romain Fontugne,
 > Amreesh Phokeer, and Taejoong Chung.
 > ACM Internet Measurement Conference (IMC), October 2023.
+
+## World Bank
+We use the country population indicator `SP.POP.TOTL.` from the 
+[Indicators API](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation)
+dataset provided by the
+[World Bank](https://www.worldbank.org/en/home).
