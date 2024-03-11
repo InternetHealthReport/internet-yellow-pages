@@ -40,10 +40,7 @@ class Crawler(BaseCrawler):
 
         # Get countries and population from World Bank
         lines = set()
-        for entry in json.loads(req.content)[1]:
-
-            if entry['indicator']['id'] != 'SP.POP.TOTL':
-                continue
+        for entry in content[1]:
 
             country = entry['country']['id']
             if country not in country_ids:

@@ -13,4 +13,4 @@ Connect `Country` to an `Estimate` node meaning that a country has an estimated 
 ```
 
 ## Dependence
-This crawler depends on crawlers setting the country codes.
+This crawler depends on crawlers creating Country nodes.
