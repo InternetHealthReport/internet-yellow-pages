@@ -1,17 +1,16 @@
 import argparse
-import csv
 import logging
 import os
 import sys
+from urllib.error import HTTPError
 
-import requests
+import pandas as pd
 
 from iyp import BaseCrawler, RequestStatusError
 
-# Organization name and URL to data
 ORG = 'Citizen Lab'
 URL = 'https://github.com/citizenlab/test-lists/blob/master/lists/'
-NAME = 'citizenlab.urldb'  # should reflect the directory and name of this file
+NAME = 'citizenlab.urldb'
 
 
 def generate_url(suffix):
@@ -21,68 +20,55 @@ def generate_url(suffix):
 
 
 class Crawler(BaseCrawler):
-    # Base Crawler provides access to IYP via self.iyp
-    # and set up a dictionary with the org/url/today's date in self.reference
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://github.com/citizenlab/test-lists'
 
     def run(self):
         # Fetch country codes to generate urls
-        req_for_country_codes = requests.get(generate_url('00-LEGEND-country_codes'))
-
-        if req_for_country_codes.status_code != 200:
-            logging.error('Cannot download data {req.status_code}: {req.text}')
+        try:
+            cc_df = pd.read_csv(generate_url('00-LEGEND-country_codes'), keep_default_na=False)
+        except Exception as e:
+            logging.error(f'Failed to fetch country codes: {e}')
             raise RequestStatusError('Error while fetching data file')
 
-        content = req_for_country_codes.content.decode('utf-8')
-        csv_data = csv.reader(content.splitlines(), delimiter=',')
+        country_codes = [e.lower() for e in cc_df['CountryCode']]
 
-        country_codes = []
-        for row in csv_data:
-            country_codes.append(row[0].lower())
-
-        # Iterate through country_codes, generate an url, download the csv file,
-        # extract the necessary information from the csv file,
-        # and push the data to IYP.
-        lines = []
+        # Iterate through country_codes, generate an url, download the csv file, extract
+        # the necessary information from the csv file, and push the data to IYP.
+        relationship_pairs = set()
         urls = set()
         categories = set()
 
         for code in country_codes:
-            url = generate_url(code)
-            req_with_respect_to_country_code = requests.get(url)
-            print('Processing {}'.format(code))
-
-            # Not necessarily every country code have a csv file.
-            # Skipping those don't have one.
-            if req_with_respect_to_country_code.status_code != 200:
-                print('Skipping {}'.format(code))
+            # Not all country codes have CSV files.
+            try:
+                df = pd.read_csv(generate_url(code))
+            except HTTPError as e:
+                # 404 is expected, everything else is not.
+                if e.getcode() != 404:
+                    logging.warning(f'Request for country code "{code}" failed with error: {e}')
+                    raise e
                 continue
 
-            decoded_response = req_with_respect_to_country_code.content.decode('utf-8')
-            rows = csv.reader(decoded_response.splitlines(), delimiter=',')
-            for row in rows:
-                url = row[0]
-                category = row[2]
+            for row in df.itertuples():
+                url = row.url
+                category = row.category_description
                 urls.add(url)
                 categories.add(category)
-                if [url, category] in lines:
-                    continue
-                lines.append([url, category])
+                relationship_pairs.add((url, category))
 
-        url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls)
-        category_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', categories)
+        url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls, all=False)
+        category_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', categories, all=False)
 
-        links = []
-        for (url, category) in lines:
+        links = list()
+        for (url, category) in relationship_pairs:
             url_qid = url_id[url]
             category_qid = category_id[category]
             links.append({'src_id': url_qid, 'dst_id': category_qid, 'props': [self.reference]})
 
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
-        print('Processed citizenlab/test-lists repo.')
 
 
 def main() -> None:
