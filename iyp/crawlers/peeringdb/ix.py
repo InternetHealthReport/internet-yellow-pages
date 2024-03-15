@@ -219,7 +219,8 @@ class Crawler(BaseCrawler):
                         net_names.add(network['name'])
                         net_asn.add(int(network['asn']))
                         net_extid.add(network['id'])
-                        net_website.add(network['website'])
+                        if network['website']:
+                            net_website.add(network['website'])
                         handle_social_media(network, net_website)
 
         # TODO add the type PEERING_LAN? may break the unique constraint
@@ -271,7 +272,6 @@ class Crawler(BaseCrawler):
 
                             netid_qid = self.netid_id[network['id']]
                             name_qid = self.name_id[network['name']]
-                            website_qid = self.website_id[network['website']]
 
                             if network['org_id'] in self.org_id:
                                 org_qid = self.org_id[network['org_id']]
@@ -280,10 +280,13 @@ class Crawler(BaseCrawler):
                             else:
                                 logging.error(f'Organization unknown org_id={network["org_id"]}')
 
+                            if network['website']:
+                                website_qid = self.website_id[network['website']]
+                                website_links.append({'src_id': network_qid, 'dst_id': website_qid,
+                                                      'props': [self.reference_lan, flat_net]})
+
                             name_links.append({'src_id': network_qid, 'dst_id': name_qid,
                                                'props': [self.reference_lan, flat_net]})
-                            website_links.append({'src_id': network_qid, 'dst_id': website_qid,
-                                                  'props': [self.reference_lan, flat_net]})
                             netid_links.append({'src_id': network_qid, 'dst_id': netid_qid,
                                                 'props': [self.reference_lan, flat_net]})
 
@@ -312,7 +315,8 @@ class Crawler(BaseCrawler):
         for ix in self.ixs:
             all_ixs_id.add(ix['id'])
             all_ixs_name.add(ix['name'])
-            all_ixs_website.add(ix['website'])
+            if ix['website']:
+                all_ixs_website.add(ix['website'])
             handle_social_media(ix, all_ixs_website)
 
         self.ixext_id = self.iyp.batch_get_nodes_by_single_prop(IXID_LABEL, 'id', all_ixs_id)
