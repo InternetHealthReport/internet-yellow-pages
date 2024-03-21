@@ -12,6 +12,7 @@ Below are examples queries that you can copy/paste in Neo4j browser:
 4. [Countries of IXPs where AS2497 is present](#countries-of-ixps-where-as2497-is-present)
 5. [Top domain names hosted by AS2497](#top-domain-names-hosted-by-as2497)
 6. [ASes hosting top domain names in Japan](#ases-hosting-top-domain-names-in-japan)
+7. [Topology for AS2501's dependencies](#topology-for-as2501s-dependencies)
 
 
 ### Names for AS2497
@@ -81,3 +82,15 @@ WHERE ra.rank < 20 AND rb.rank < 20 AND p.rel = 0
 RETURN a, p, b
 ```
 ![Top ASes connecting Iran](/documentation/assets/gallery/top20IranAS.svg)
+
+### Topology for AS2501's dependencies
+Select AS dependencies for AS2501 and find the shortest PEERS_WITH relationship to these ASes.
+```cypher
+MATCH (a:AS {asn:2501})-[h:DEPENDS_ON {af:4}]->(d:AS)
+WITH a, COLLECT(DISTINCT d) AS dependencies
+UNWIND dependencies as d
+MATCH p = allShortestPaths((a)-[:PEERS_WITH*]-(d))
+WHERE a.asn <> d.asn AND all(r IN relationships(p) WHERE r.af = 4) AND all(n IN nodes(p) WHERE n IN dependencies)
+RETURN p
+```
+![Dependencies for AS2501](/documentation/assets/gallery/as2501dependencies.svg)
