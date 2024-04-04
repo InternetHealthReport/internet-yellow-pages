@@ -20,14 +20,14 @@ Visit http://iyp.iijlab.net to try our online prototype. No password is required
 
 Visit the database dumps repository at:
 ```
-https://exp1.iijlab.net/wip/iyp/dumps/
+https://ihr-archive.iijlab.net/ihr/iyp/
 ```
 
 #### Specific Dump Format
 
 Dumps are organized by year, month, and day in this format:
 ```
-https://exp1.iijlab.net/wip/iyp/dumps/YYYY/MM/DD/iyp-YYYY-MM-DD.dump
+https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump
 ```
 
 Replace `YYYY`, `MM`, and `DD` in the URL with the desired date to access a specific database dump.
@@ -45,7 +45,7 @@ Replace `YYYY`, `MM`, and `DD` in the URL with the desired date to access a spec
 
    Use `curl` to download the database dump and save it in the `dumps/neo4j.dump` path:
    ```
-   curl https://exp1.iijlab.net/wip/iyp/dumps/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
+   curl https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
    ```
 
 Remember to replace `YYYY`, `MM`, and `DD` in the download command with the specific date you require.
