@@ -6,6 +6,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+from ipaddress import ip_network
 
 import requests
 
@@ -60,6 +61,12 @@ class Crawler(BaseCrawler):
 
                 # Skip header
                 if url == 'URI':
+                    continue
+
+                try:
+                    prefix = ip_network(prefix).compressed
+                except ValueError as e:
+                    logging.warning(f'Ignoring malformed prefix: "{prefix}": {e}')
                     continue
 
                 asn = int(asn.replace('AS', ''))

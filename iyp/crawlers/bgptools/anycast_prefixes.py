@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import tempfile
+from ipaddress import ip_network
 
 import requests
 
@@ -82,11 +83,15 @@ class Crawler(BaseCrawler):
 
         with open(filename, 'r') as file:
             for line in file:
-                line = line.strip()
-                prefixes.add(line)
-                lines.append(line)
+                try:
+                    prefix = ip_network(line.strip()).compressed
+                except ValueError as e:
+                    logging.warning(f'Ignoring malformed prefix: "{line.strip()}": {e}')
+                    continue
+                prefixes.add(prefix)
+                lines.append(prefix)
 
-            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
             tag_id = self.iyp.get_node('Tag', {'label': 'Anycast'})
 
             links = []

@@ -1,5 +1,6 @@
 import bz2
 import glob
+import ipaddress
 import logging
 import os
 import pickle
@@ -16,9 +17,8 @@ BATCH_SIZE = 50000
 prop_formatters = {
     # asn is stored as an int
     'asn': int,
-    # ipv6 is stored in lowercase
-    'ip': str.lower,
-    'prefix': str.lower,
+    'ip': lambda s: ipaddress.ip_address(s).compressed,
+    'prefix': lambda s: ipaddress.ip_network(s).compressed,
     # country code is kept in capital letter
     'country_code': lambda s: str.upper(str.strip(s))
 }

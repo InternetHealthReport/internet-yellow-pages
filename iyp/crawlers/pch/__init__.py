@@ -5,6 +5,7 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from ipaddress import ip_network
 from multiprocessing import Pool
 from typing import Iterable, Tuple
 
@@ -294,6 +295,11 @@ class RoutingSnapshotCrawler(BaseCrawler):
         raw_links = defaultdict(set)
         for collector_name, prefix_map in prefix_maps.items():
             for prefix, asn_set in prefix_map.items():
+                try:
+                    prefix = ip_network(prefix).compressed
+                except ValueError as e:
+                    logging.warning(f'Ignoring malformed prefix: "{prefix}": {e}')
+                    continue
                 ases.update(asn_set)
                 prefixes.add(prefix)
                 for asn in asn_set:
