@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+from ipaddress import ip_network
 
 import requests
 
@@ -32,7 +33,13 @@ class Crawler(BaseCrawler):
         prefixes = set()
 
         for entry in json.load(bz2.open(req.raw)):
-            prefixes.add(entry['prefix'])
+            try:
+                prefix = ip_network(entry['prefix']).compressed
+            except ValueError as e:
+                logging.warning(f'Ignoring malformed prefix: "{entry["prefix"]}": {e}')
+                continue
+            entry['prefix'] = prefix
+            prefixes.add(prefix)
             asns.add(entry['asn'])
             entries.append(entry)
 
@@ -49,7 +56,7 @@ class Crawler(BaseCrawler):
             asn_qid = self.asn_id[entry['asn']]
             prefix_qid = self.prefix_id[entry['prefix']]
 
-            links.append({'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, entry]})  # Set AS name
+            links.append({'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, entry]})
 
         logging.info('Pushing links to neo4j...')
         # Push all links to IYP

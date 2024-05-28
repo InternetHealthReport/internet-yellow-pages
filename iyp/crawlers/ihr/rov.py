@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from datetime import timezone
+from ipaddress import ip_network
 
 import arrow
 import lz4.frame
@@ -99,7 +100,12 @@ class Crawler(BaseCrawler):
             rec['visibility'] = float(rec['visibility'])
             rec['af'] = int(rec['af'])
 
-            prefix = rec['prefix']
+            try:
+                prefix = ip_network(rec['prefix']).compressed
+            except ValueError as e:
+                logging.warning(f'Ignoring malformed prefix: "{rec["prefix"]}": {e}')
+                continue
+
             if prefix not in prefix_id:
                 prefix_id[prefix] = self.iyp.get_node('Prefix', {'prefix': prefix})
 

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+from ipaddress import ip_network
 
 import pyspark.sql.functions as psf
 from pyspark import SparkConf
@@ -97,6 +98,8 @@ class Crawler(BaseCrawler):
         )
         # Remove trailing root "."
         rir_data_df['auth_ns'] = rir_data_df['auth_ns'].str[:-1]
+        # Normalize prefixes.
+        rir_data_df.loc[:, 'prefix'] = rir_data_df.loc[:, 'prefix'].map(lambda pfx: ip_network(pfx).compressed)
 
         logging.info('Reading NSes')
         # Get unique nameservers and remove trailing root "."

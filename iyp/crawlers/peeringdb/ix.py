@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from datetime import datetime, time, timedelta, timezone
+from ipaddress import ip_network
 
 import flatdict
 import requests_cache
@@ -213,7 +214,12 @@ class Crawler(BaseCrawler):
                     lan = self.ixlans[ixlan['id']]
 
                     for prefix in lan['ixpfx_set']:
-                        prefixes.add(prefix['prefix'])
+                        try:
+                            prefix = ip_network(prefix['prefix']).compressed
+                        except ValueError as e:
+                            logging.warning(f'Ignoring malformed prefix: "{prefix["prefix"]}": {e}')
+                            continue
+                        prefixes.add(prefix)
 
                     for network in lan['net_set']:
                         net_names.add(network['name'])
@@ -252,7 +258,11 @@ class Crawler(BaseCrawler):
                     lan = self.ixlans[ixlan['id']]
 
                     for prefix in lan['ixpfx_set']:
-                        prefix_qid = self.prefix_id[prefix['prefix']]
+                        try:
+                            prefix = ip_network(prefix['prefix']).compressed
+                        except ValueError:
+                            continue
+                        prefix_qid = self.prefix_id[prefix]
                         prefix_links.append({'src_id': prefix_qid, 'dst_id': ix_qid,
                                              'props': [self.reference_lan]})
 
