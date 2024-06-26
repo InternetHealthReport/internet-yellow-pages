@@ -57,9 +57,9 @@ RETURN iij, ix, cc
 Select domain names in top 50k rankings that resolves to an IP originated by
 AS2497.
 ```cypher
-MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(iij:AS {asn:2497})
-WHERE r.rank < 50000
-RETURN dn, ip, pfx, iij
+MATCH (:Ranking)-[r:RANK]-(dn:DomainName)-[:PART_OF]-(hn:HostName)-[:RESOLVES_TO]-(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(iij:AS {asn:2497})
+WHERE r.rank < 50000 AND dn.name = hn.name
+RETURN hn, ip, pfx, iij
 ```
 ![Top domain names hosted by AS2497](/documentation/assets/gallery/as2497domainNames.svg)
 
@@ -68,9 +68,9 @@ RETURN dn, ip, pfx, iij
 From the top 10k domain names select domain names that ends with '.jp', the
 corresponding IP, prefix, and ASN.
 ```cypher
-MATCH (:Ranking)-[r:RANK]-(dn:DomainName)--(ip:IP)--(pfx:Prefix)-[:ORIGINATE]-(net:AS)
-WHERE dn.name ENDS WITH '.jp' AND r.rank<10000
-RETURN dn, ip, pfx, net
+MATCH (:Ranking)-[r:RANK]-(dn:DomainName)-[:PART_OF]-(hn:HostName)-[rt:RESOLVES_TO]-(ip:IP)-[po:PART_OF]-(pfx:Prefix)-[o:ORIGINATE]-(net:AS)
+WHERE dn.name ENDS WITH '.jp' AND r.rank<10000 AND dn.name = hn.name
+RETURN hn, ip, pfx, net, rt, po, o
 ```
 ![ASes hosting top domain names in Japan](/documentation/assets/gallery/top10kJapanAS.svg)
 
