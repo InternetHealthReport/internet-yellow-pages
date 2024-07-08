@@ -2,7 +2,7 @@ version: '3.9'
 services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.16.0
-    profiles: ["local", "public"]
+    profiles: ["local", "public_tls", "public_notls"]
     container_name: iyp_loader
     tty: true
     stdin_open: true
@@ -28,9 +28,9 @@ services:
       iyp_loader:
         condition: service_completed_successfully
 
-  iyp_readonly:
+  iyp_readonly_tls:
     image: neo4j:5.16.0
-    profiles: ["public"]
+    profiles: ["public_tls"]
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -39,7 +39,25 @@ services:
     volumes:
       - ./data:/data
       - ./public/certificates:/ssl
-      - ./public/conf:/conf
+      - ./public/conf_tls:/conf
+      - ./public/logs:/logs
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    depends_on:
+      iyp_loader:
+        condition: service_completed_successfully
+
+  iyp_readonly_notls:
+    image: neo4j:5.16.0
+    profiles: ["public_notls"]
+    container_name: iyp
+    restart: unless-stopped
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./data:/data
+      - ./public/conf_notls:/conf
       - ./public/logs:/logs
     environment:
       - NEO4J_AUTH=neo4j/password
