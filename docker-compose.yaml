@@ -1,7 +1,6 @@
-version: '3.9'
 services:
   iyp_loader:
-    image: neo4j/neo4j-admin:5.16.0
+    image: neo4j/neo4j-admin:5.21.2
     profiles: ["local", "public_tls", "public_notls"]
     container_name: iyp_loader
     tty: true
@@ -13,7 +12,7 @@ services:
     command: neo4j-admin database load neo4j --from-path=/dumps --verbose
 
   iyp:
-    image: neo4j:5.16.0
+    image: neo4j:5.21.2
     profiles: ["local"]
     container_name: iyp
     restart: unless-stopped
@@ -29,7 +28,7 @@ services:
         condition: service_completed_successfully
 
   iyp_readonly_tls:
-    image: neo4j:5.16.0
+    image: neo4j:5.21.2
     profiles: ["public_tls"]
     container_name: iyp
     restart: unless-stopped
@@ -48,7 +47,7 @@ services:
         condition: service_completed_successfully
 
   iyp_readonly_notls:
-    image: neo4j:5.16.0
+    image: neo4j:5.21.2
     profiles: ["public_notls"]
     container_name: iyp
     restart: unless-stopped

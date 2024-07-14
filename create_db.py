@@ -11,7 +11,7 @@ import docker
 
 from send_email import send_email
 
-NEO4J_VERSION = '5.16.0'
+NEO4J_VERSION = '5.21.2'
 
 today = arrow.utcnow()
 date = f'{today.year}-{today.month:02d}-{today.day:02d}'
