@@ -94,3 +94,9 @@ WHERE a.asn <> d.asn AND all(r IN relationships(p) WHERE r.af = 4) AND all(n IN 
 RETURN p
 ```
 ![Dependencies for AS2501](/documentation/assets/gallery/as2501dependencies.svg)
+
+### List of IPs for RIPE RIS full feeds
+
+```cypher
+MATCH (n:BGPCollector)-[p:PEERS_WITH]-(a:AS) WHERE n.project = 'riperis' AND p.num_v4_pfxs > 800000 RETURN n.name, COUNT(DISTINCT p.ip) AS nb_full, COLLECT(DISTINCT p.ip) AS ips_full
+```
