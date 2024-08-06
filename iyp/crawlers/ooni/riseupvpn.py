@@ -119,7 +119,7 @@ class Crawler(BaseCrawler):
                         "total_count", 0
                     )
 
-                    for category in ["working"]:
+                    for category in ["working", "not_working"]:
                         props[f"percentage_{category}"] = percentages.get(category, 0)
                         props[f"count_{category}"] = counts.get(category, 0)
                     props["total_count"] = total_count
