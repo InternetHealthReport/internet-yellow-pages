@@ -1,30 +1,30 @@
 import argparse
+import ipaddress
+import json
 import logging
 import os
 import sys
 import tempfile
-import json
-import ipaddress
 from collections import defaultdict
-
-from .utils import grabber
 
 from iyp import BaseCrawler
 
-ORG = "OONI"
-URL = "s3://ooni-data-eu-fra/raw/"
-NAME = "ooni.signal"
+from .utils import grabber
 
-label = "OONI Signal Test"
+ORG = 'OONI'
+URL = 's3://ooni-data-eu-fra/raw/'
+NAME = 'ooni.signal'
+
+label = 'OONI Signal Test'
 
 
 class Crawler(BaseCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.repo = "ooni-data-eu-fra"
-        self.reference["reference_url_info"] = "https://ooni.org/post/mining-ooni-data"
-        self.unique_links = {"COUNTRY": set(), "CENSORED": set()}
+        self.repo = 'ooni-data-eu-fra'
+        self.reference['reference_url_info'] = 'https://ooni.org/post/mining-ooni-data'
+        self.unique_links = {'COUNTRY': set(), 'CENSORED': set()}
 
     def run(self):
         """Fetch data and push to IYP."""
@@ -39,45 +39,46 @@ class Crawler(BaseCrawler):
         tmpdir = tempfile.mkdtemp()
 
         # Fetch data
-        grabber.download_and_extract(self.repo, tmpdir, "signal")
-        logging.info("Successfully downloaded and extracted all files")
-        # Now that we have downloaded the jsonl files for the test we want, we can extract the data we want
-        testdir = os.path.join(tmpdir, "signal")
+        grabber.download_and_extract(self.repo, tmpdir, 'signal')
+        logging.info('Successfully downloaded and extracted all files')
+        # Now that we have downloaded the jsonl files for the test we want, we can
+        # extract the data we want
+        testdir = os.path.join(tmpdir, 'signal')
         for file_name in os.listdir(testdir):
             file_path = os.path.join(testdir, file_name)
-            if os.path.isfile(file_path) and file_path.endswith(".jsonl"):
-                with open(file_path, "r") as file:
+            if os.path.isfile(file_path) and file_path.endswith('.jsonl'):
+                with open(file_path, 'r') as file:
                     for i, line in enumerate(file):
                         data = json.loads(line)
                         self.process_one_line(data)
-                        logging.info(f"\rProcessed {i+1} lines")
-        logging.info("\nProcessed lines, now calculating percentages\n")
+                        logging.info(f'\rProcessed {i+1} lines')
+        logging.info('\nProcessed lines, now calculating percentages\n')
         self.calculate_percentages()
-        logging.info("\nCalculated percentages, now adding entries to IYP\n")
+        logging.info('\nCalculated percentages, now adding entries to IYP\n')
         self.batch_add_to_iyp()
-        logging.info("\nSuccessfully added all entries to IYP\n")
+        logging.info('\nSuccessfully added all entries to IYP\n')
 
     # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
         """Add the entry to IYP if it's not already there and update its properties."""
 
         probe_asn = (
-            int(one_line.get("probe_asn")[2:])
-            if one_line.get("probe_asn") and one_line.get("probe_asn").startswith("AS")
+            int(one_line.get('probe_asn')[2:])
+            if one_line.get('probe_asn') and one_line.get('probe_asn').startswith('AS')
             else None
         )
         # Add the DNS resolver to the set, unless it's not a valid IP address
         try:
             self.all_dns_resolvers.add(
-                ipaddress.ip_address(one_line.get("resolver_ip"))
+                ipaddress.ip_address(one_line.get('resolver_ip'))
             )
         except ValueError:
             pass
-        probe_cc = one_line.get("probe_cc")
-        result = one_line.get("test_keys", {}).get("signal_backend_status", "").lower()
+        probe_cc = one_line.get('probe_cc')
+        result = one_line.get('test_keys', {}).get('signal_backend_status', '').lower()
 
         # Normalize result to be either "OK" or "Failure"
-        result = "OK" if result == "ok" else "Failure"
+        result = 'OK' if result == 'ok' else 'Failure'
 
         # Append the results to the list
         self.all_asns.add(probe_asn)
@@ -87,17 +88,17 @@ class Crawler(BaseCrawler):
     def batch_add_to_iyp(self):
         # First, add the nodes and store their IDs directly as returned dictionaries
         self.node_ids = {
-            "asn": self.iyp.batch_get_nodes_by_single_prop("AS", "asn", self.all_asns),
-            "country": self.iyp.batch_get_nodes_by_single_prop(
-                "Country", "country_code", self.all_countries
+            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns),
+            'country': self.iyp.batch_get_nodes_by_single_prop(
+                'Country', 'country_code', self.all_countries
             ),
-            "dns_resolver": self.iyp.batch_get_nodes_by_single_prop(
-                "IP", "ip", self.all_dns_resolvers, all=False
+            'dns_resolver': self.iyp.batch_get_nodes_by_single_prop(
+                'IP', 'ip', self.all_dns_resolvers, all=False
             ),
         }
 
         signal_id = self.iyp.batch_get_nodes_by_single_prop(
-            "Tag", "label", {label}
+            'Tag', 'label', {label}
         ).get(label)
 
         country_links = []
@@ -108,61 +109,61 @@ class Crawler(BaseCrawler):
 
         # Ensure all IDs are present and process results
         for asn, country, result in self.all_results:
-            asn_id = self.node_ids["asn"].get(asn)
-            country_id = self.node_ids["country"].get(country)
+            asn_id = self.node_ids['asn'].get(asn)
+            country_id = self.node_ids['country'].get(country)
 
             if asn_id and country_id:
                 props = self.reference.copy()
                 if (asn, country) in self.all_percentages:
                     percentages = self.all_percentages[(asn, country)].get(
-                        "percentages", {}
+                        'percentages', {}
                     )
                     counts = self.all_percentages[(asn, country)].get(
-                        "category_counts", {}
+                        'category_counts', {}
                     )
                     total_count = self.all_percentages[(asn, country)].get(
-                        "total_count", 0
+                        'total_count', 0
                     )
 
-                    for category in ["OK", "Failure"]:
-                        props[f"percentage_{category}"] = percentages.get(category, 0)
-                        props[f"count_{category}"] = counts.get(category, 0)
-                    props["total_count"] = total_count
+                    for category in ['OK', 'Failure']:
+                        props[f'percentage_{category}'] = percentages.get(category, 0)
+                        props[f'count_{category}'] = counts.get(category, 0)
+                    props['total_count'] = total_count
 
                 # Accumulate properties
                 link_properties[(asn_id, signal_id)] = props
 
-                if (asn_id, country_id) not in self.unique_links["COUNTRY"]:
-                    self.unique_links["COUNTRY"].add((asn_id, country_id))
+                if (asn_id, country_id) not in self.unique_links['COUNTRY']:
+                    self.unique_links['COUNTRY'].add((asn_id, country_id))
                     country_links.append(
                         {
-                            "src_id": asn_id,
-                            "dst_id": country_id,
-                            "props": [self.reference],
+                            'src_id': asn_id,
+                            'dst_id': country_id,
+                            'props': [self.reference],
                         }
                     )
 
         for (asn_id, signal_id), props in link_properties.items():
-            if (asn_id, signal_id) not in self.unique_links["CENSORED"]:
-                self.unique_links["CENSORED"].add((asn_id, signal_id))
+            if (asn_id, signal_id) not in self.unique_links['CENSORED']:
+                self.unique_links['CENSORED'].add((asn_id, signal_id))
                 censored_links.append(
-                    {"src_id": asn_id, "dst_id": signal_id, "props": [props]}
+                    {'src_id': asn_id, 'dst_id': signal_id, 'props': [props]}
                 )
 
         # Batch add the links (this is faster than adding them one by one)
-        self.iyp.batch_add_links("CENSORED", censored_links)
-        self.iyp.batch_add_links("COUNTRY", country_links)
+        self.iyp.batch_add_links('CENSORED', censored_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
 
         # Batch add node labels
         self.iyp.batch_add_node_label(
-            list(self.node_ids["dns_resolver"].values()), "Resolver"
+            list(self.node_ids['dns_resolver'].values()), 'Resolver'
         )
 
     def calculate_percentages(self):
         target_dict = defaultdict(lambda: defaultdict(int))
 
         # Initialize counts for all categories
-        categories = ["OK", "Failure"]
+        categories = ['OK', 'Failure']
 
         # Populate the target_dict with counts
         for entry in self.all_results:
@@ -184,28 +185,28 @@ class Crawler(BaseCrawler):
             }
 
             result_dict = {
-                "total_count": total_count,
-                "category_counts": dict(counts),
-                "percentages": percentages,
+                'total_count': total_count,
+                'category_counts': dict(counts),
+                'percentages': percentages,
             }
             self.all_percentages[(asn, country)] = result_dict
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--unit-test", action="store_true")
+    parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
 
-    scriptname = os.path.basename(sys.argv[0]).replace("/", "_")[0:-3]
-    FORMAT = "%(asctime)s %(levelname)s %(message)s"
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename="log/" + scriptname + ".log",
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S",
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -213,9 +214,9 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
     sys.exit(0)

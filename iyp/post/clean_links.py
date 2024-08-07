@@ -8,22 +8,23 @@ from iyp import BasePostProcess
 
 class PostProcess(BasePostProcess):
     def get_links_of_type(self, link_type, prop_dict=None):
-        """
-        Returns a list of all links of a given type with optional properties, including the source and destination nodes.
+        """Returns a list of all links of a given type with optional properties,
+        including the source and destination nodes.
 
         Parameters:
         - link_type: The type of links to return.
         - prop_dict: Optional dictionary of properties to return.
 
         Returns:
-        - List of links with the specified type and properties, including source and destination nodes.
+        - List of links with the specified type and properties, including source and
+        destination nodes.
         """
         prop_conditions = (
-            " AND ".join([f"r.{k} = '{v}'" for k, v in prop_dict.items()])
+            ' AND '.join([f"r.{k} = '{v}'" for k, v in prop_dict.items()])
             if prop_dict
-            else "TRUE"
+            else 'TRUE'
         )
-        prop_str = ", ".join([f"r.{k}" for k in prop_dict.keys()]) if prop_dict else "*"
+        prop_str = ', '.join([f'r.{k}' for k in prop_dict.keys()]) if prop_dict else '*'
 
         query = f"""
         MATCH (src)-[r:{link_type}]->(dst)
@@ -37,8 +38,7 @@ class PostProcess(BasePostProcess):
             return None
 
     def delete_links(self, link_ids):
-        """
-        Deletes all links in the given list.
+        """Deletes all links in the given list.
 
         Parameters:
         - link_ids: List of link IDs to delete.
@@ -58,12 +58,13 @@ class PostProcess(BasePostProcess):
         links = self.get_links_of_type(link_type, prop_dict)
         link_dict = {}
         for link in links:
-            key = (link["src_id"], link["dst_id"])
+            key = (link['src_id'], link['dst_id'])
             if key not in link_dict:
                 link_dict[key] = []
-            link_dict[key].append(link["link_id"])
+            link_dict[key].append(link['link_id'])
 
-        # Create the new list of link IDs excluding the first one for each (src_id, dst_id) pair
+        # Create the new list of link IDs excluding the first one for each (src_id,
+        # dst_id) pair
         filtered_link_ids = []
         for key, link_ids in link_dict.items():
             if len(link_ids) > 1:
@@ -73,26 +74,26 @@ class PostProcess(BasePostProcess):
 
     def run(self):
         # Clean links of all types with the reference_org 'OONI'
-        link_types = ["COUNTRY", "CENSORED", "RESOLVES_TO", "PART_OF", "CATEGORIZED"]
+        link_types = ['COUNTRY', 'CENSORED', 'RESOLVES_TO', 'PART_OF', 'CATEGORIZED']
         for link_type in link_types:
-            self.clean_links_of_type(link_type, {"reference_org": "OONI"})
+            self.clean_links_of_type(link_type, {'reference_org': 'OONI'})
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--unit-test", action="store_true")
+    parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
 
-    scriptname = os.path.basename(sys.argv[0]).replace("/", "_")[0:-3]
-    FORMAT = "%(asctime)s %(levelname)s %(message)s"
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename="log/" + scriptname + ".log",
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S",
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     post = PostProcess()
     if args.unit_test:
@@ -100,9 +101,9 @@ def main() -> None:
     else:
         post.run()
         post.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
     sys.exit(0)

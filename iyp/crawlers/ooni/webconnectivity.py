@@ -1,34 +1,35 @@
 import argparse
+import ipaddress
+import json
 import logging
 import os
 import sys
 import tempfile
-import json
-import tldextract
-import ipaddress
 from collections import defaultdict
 from urllib.parse import urlparse
 
-from .utils import grabber
+import tldextract
 
 from iyp import BaseCrawler
 
-ORG = "OONI"
-URL = "s3://ooni-data-eu-fra/raw/"
-NAME = "ooni.webconnectivity"
+from .utils import grabber
+
+ORG = 'OONI'
+URL = 's3://ooni-data-eu-fra/raw/'
+NAME = 'ooni.webconnectivity'
 
 
 class Crawler(BaseCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.repo = "ooni-data-eu-fra"
-        self.reference["reference_url_info"] = "https://ooni.org/post/mining-ooni-data"
+        self.repo = 'ooni-data-eu-fra'
+        self.reference['reference_url_info'] = 'https://ooni.org/post/mining-ooni-data'
         self.unique_links = {
-            "COUNTRY": set(),
-            "CENSORED": set(),
-            "RESOLVES_TO": set(),
-            "PART_OF": set(),
+            'COUNTRY': set(),
+            'CENSORED': set(),
+            'RESOLVES_TO': set(),
+            'PART_OF': set(),
         }
 
     def run(self):
@@ -46,62 +47,63 @@ class Crawler(BaseCrawler):
         tmpdir = tempfile.mkdtemp()
 
         # Fetch data
-        grabber.download_and_extract(self.repo, tmpdir, "webconnectivity")
-        logging.info("Successfully downloaded and extracted all files")
-        # Now that we have downloaded the jsonl files for the test we want, we can extract the data we want
-        testdir = os.path.join(tmpdir, "webconnectivity")
+        grabber.download_and_extract(self.repo, tmpdir, 'webconnectivity')
+        logging.info('Successfully downloaded and extracted all files')
+        # Now that we have downloaded the jsonl files for the test we want, we can
+        # extract the data we want
+        testdir = os.path.join(tmpdir, 'webconnectivity')
         for file_name in os.listdir(testdir):
             file_path = os.path.join(testdir, file_name)
-            if os.path.isfile(file_path) and file_path.endswith(".jsonl"):
-                with open(file_path, "r") as file:
+            if os.path.isfile(file_path) and file_path.endswith('.jsonl'):
+                with open(file_path, 'r') as file:
                     for i, line in enumerate(file):
                         data = json.loads(line)
                         self.process_one_line(data)
-                        logging.info(f"\rProcessed {i+1} lines")
-        logging.info("\nProcessed lines, now calculating percentages\n")
+                        logging.info(f'\rProcessed {i+1} lines')
+        logging.info('\nProcessed lines, now calculating percentages\n')
         self.calculate_percentages()
-        logging.info("\nCalculated percentages, now adding entries to IYP\n")
+        logging.info('\nCalculated percentages, now adding entries to IYP\n')
         self.batch_add_to_iyp()
-        logging.info("\nSuccessfully added all entries to IYP\n")
+        logging.info('\nSuccessfully added all entries to IYP\n')
 
     # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
         """Add the entry to IYP if it's not already there and update its properties."""
 
-        ips = {"ipv4": [], "ipv6": []}
+        ips = {'ipv4': [], 'ipv6': []}
 
         probe_asn = (
-            int(one_line.get("probe_asn")[2:])
-            if one_line.get("probe_asn") and one_line.get("probe_asn").startswith("AS")
+            int(one_line.get('probe_asn')[2:])
+            if one_line.get('probe_asn') and one_line.get('probe_asn').startswith('AS')
             else None
         )
         # Add the DNS resolver to the set, unless its not a valid IP address
         try:
             self.all_dns_resolvers.add(
-                ipaddress.ip_address(one_line.get("resolver_ip"))
+                ipaddress.ip_address(one_line.get('resolver_ip'))
             )
         except ValueError:
             pass
-        probe_cc = one_line.get("probe_cc")
-        input_url = one_line.get("input")
-        test_keys = one_line.get("test_keys", {})
-        blocking = test_keys.get("blocking")
-        accessible = test_keys.get("accessible")
+        probe_cc = one_line.get('probe_cc')
+        input_url = one_line.get('input')
+        test_keys = one_line.get('test_keys', {})
+        blocking = test_keys.get('blocking')
+        accessible = test_keys.get('accessible')
 
         # Extract the IPs from the DNS replies, if they exist
-        queries = test_keys.get("queries", [])
+        queries = test_keys.get('queries', [])
         for query in queries:
-            answers = query.get("answers")
+            answers = query.get('answers')
             if answers:
                 for answer in answers:
-                    ipv4 = answer.get("ipv4", [])
-                    ipv6 = answer.get("ipv6", [])
-                    ips["ipv4"].extend(ipv4 if isinstance(ipv4, list) else [ipv4])
-                    ips["ipv6"].extend(ipv6 if isinstance(ipv6, list) else [ipv6])
+                    ipv4 = answer.get('ipv4', [])
+                    ipv6 = answer.get('ipv6', [])
+                    ips['ipv4'].extend(ipv4 if isinstance(ipv4, list) else [ipv4])
+                    ips['ipv6'].extend(ipv6 if isinstance(ipv6, list) else [ipv6])
 
         # Remove duplicates if necessary
-        ips["ipv4"] = list(set(ips["ipv4"]))
-        ips["ipv6"] = list(set(ips["ipv6"]))
+        ips['ipv4'] = list(set(ips['ipv4']))
+        ips['ipv6'] = list(set(ips['ipv6']))
 
         # Extract the hostname from the URL if its not an IP address
         if not bool(ipaddress.ip_address(urlparse(input_url).hostname)):
@@ -109,23 +111,24 @@ class Crawler(BaseCrawler):
 
         # Ensure all required fields are present
         if probe_asn and probe_cc and input_url and test_keys:
-            # Determine the result based on the table (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
+            # Determine the result based on the table
+            # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
             if blocking is None and accessible is None:
-                result = "Failure"  # Could not assign values to the fields
+                result = 'Failure'  # Could not assign values to the fields
             elif blocking is False and accessible is False:
-                result = "Failure"  # Expected failures (e.g., the website down)
+                result = 'Failure'  # Expected failures (e.g., the website down)
             elif blocking is False and accessible is True:
-                result = "OK"  # Expected success (i.e., no censorship)
-            elif blocking == "dns" and accessible is False:
-                result = "Confirmed"  # DNS-based blocking
-            elif blocking == "tcp_ip" and accessible is False:
-                result = "Confirmed"  # TCP-based blocking
-            elif blocking == "http-failure" and accessible is False:
-                result = "Confirmed"  # HTTP or TLS based blocking
-            elif blocking == "http-diff" and accessible is False:
-                result = "Confirmed"  # Blockpage rather than legit page
+                result = 'OK'  # Expected success (i.e., no censorship)
+            elif blocking == 'dns' and accessible is False:
+                result = 'Confirmed'  # DNS-based blocking
+            elif blocking == 'tcp_ip' and accessible is False:
+                result = 'Confirmed'  # TCP-based blocking
+            elif blocking == 'http-failure' and accessible is False:
+                result = 'Confirmed'  # HTTP or TLS based blocking
+            elif blocking == 'http-diff' and accessible is False:
+                result = 'Confirmed'  # Blockpage rather than legit page
             else:
-                result = "Anomaly"  # Default case if no other case matches
+                result = 'Anomaly'  # Default case if no other case matches
 
             # Append the results to the list
             self.all_asns.add(probe_asn)
@@ -139,16 +142,16 @@ class Crawler(BaseCrawler):
     def batch_add_to_iyp(self):
         # First, add the nodes and store their IDs directly as returned dictionaries
         self.node_ids = {
-            "asn": self.iyp.batch_get_nodes_by_single_prop("AS", "asn", self.all_asns),
-            "country": self.iyp.batch_get_nodes_by_single_prop(
-                "Country", "country_code", self.all_countries
+            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns),
+            'country': self.iyp.batch_get_nodes_by_single_prop(
+                'Country', 'country_code', self.all_countries
             ),
-            "url": self.iyp.batch_get_nodes_by_single_prop("URL", "url", self.all_urls),
-            "hostname": self.iyp.batch_get_nodes_by_single_prop(
-                "HostName", "name", self.all_hostnames
+            'url': self.iyp.batch_get_nodes_by_single_prop('URL', 'url', self.all_urls),
+            'hostname': self.iyp.batch_get_nodes_by_single_prop(
+                'HostName', 'name', self.all_hostnames
             ),
-            "dns_resolver": self.iyp.batch_get_nodes_by_single_prop(
-                "IP", "ip", self.all_dns_resolvers, all=False
+            'dns_resolver': self.iyp.batch_get_nodes_by_single_prop(
+                'IP', 'ip', self.all_dns_resolvers, all=False
             ),
         }
 
@@ -160,60 +163,60 @@ class Crawler(BaseCrawler):
         # Collect all IP addresses first
         all_ips = []
         for asn, country, url, result, hostname, ips in self.all_results:
-            if result == "OK" and hostname and ips:
+            if result == 'OK' and hostname and ips:
                 for ip_type in ips.values():
                     all_ips.extend(
                         ipaddress.ip_address(ip).compressed for ip in ip_type
                     )
 
         # Fetch all IP nodes in one batch
-        ip_id_map = self.iyp.batch_get_nodes_by_single_prop("IP", "ip", all_ips)
+        ip_id_map = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', all_ips)
 
         # Ensure all IDs are present and process results
         for asn, country, url, result, hostname, ips in self.all_results:
-            asn_id = self.node_ids["asn"].get(asn)
-            url_id = self.node_ids["url"].get(url)
-            country_id = self.node_ids["country"].get(country)
-            hostname_id = self.node_ids["hostname"].get(hostname)
+            asn_id = self.node_ids['asn'].get(asn)
+            url_id = self.node_ids['url'].get(url)
+            country_id = self.node_ids['country'].get(country)
+            hostname_id = self.node_ids['hostname'].get(hostname)
 
             if asn_id and url_id:
                 props = self.reference.copy()
                 if (asn, country, url) in self.all_percentages:
                     percentages = self.all_percentages[(asn, country, url)].get(
-                        "percentages", {}
+                        'percentages', {}
                     )
                     counts = self.all_percentages[(asn, country, url)].get(
-                        "category_counts", {}
+                        'category_counts', {}
                     )
                     total_count = self.all_percentages[(asn, country, url)].get(
-                        "total_count", 0
+                        'total_count', 0
                     )
 
-                    for category in ["OK", "Confirmed", "Failure", "Anomaly"]:
-                        props[f"percentage_{category}"] = percentages.get(category, 0)
-                        props[f"count_{category}"] = counts.get(category, 0)
-                    props["total_count"] = total_count
+                    for category in ['OK', 'Confirmed', 'Failure', 'Anomaly']:
+                        props[f'percentage_{category}'] = percentages.get(category, 0)
+                        props[f'count_{category}'] = counts.get(category, 0)
+                    props['total_count'] = total_count
 
                 censored_links.append(
-                    {"src_id": asn_id, "dst_id": url_id, "props": [props]}
+                    {'src_id': asn_id, 'dst_id': url_id, 'props': [props]}
                 )
 
             if asn_id and country_id:
                 if (
                     asn_id
                     and country_id
-                    and (asn_id, country_id) not in self.unique_links["COUNTRY"]
+                    and (asn_id, country_id) not in self.unique_links['COUNTRY']
                 ):
-                    self.unique_links["COUNTRY"].add((asn_id, country_id))
+                    self.unique_links['COUNTRY'].add((asn_id, country_id))
                     country_links.append(
                         {
-                            "src_id": asn_id,
-                            "dst_id": country_id,
-                            "props": [self.reference],
+                            'src_id': asn_id,
+                            'dst_id': country_id,
+                            'props': [self.reference],
                         }
                     )
 
-            if result == "OK" and hostname and ips:
+            if result == 'OK' and hostname and ips:
                 compressed_ips = [
                     ipaddress.ip_address(ip).compressed
                     for ip_type in ips.values()
@@ -224,14 +227,14 @@ class Crawler(BaseCrawler):
                     if (
                         hostname_id
                         and ip_id
-                        and (hostname_id, ip_id) not in self.unique_links["RESOLVES_TO"]
+                        and (hostname_id, ip_id) not in self.unique_links['RESOLVES_TO']
                     ):
-                        self.unique_links["RESOLVES_TO"].add((hostname_id, ip_id))
+                        self.unique_links['RESOLVES_TO'].add((hostname_id, ip_id))
                         resolves_to_links.append(
                             {
-                                "src_id": hostname_id,
-                                "dst_id": ip_id,
-                                "props": [self.reference],
+                                'src_id': hostname_id,
+                                'dst_id': ip_id,
+                                'props': [self.reference],
                             }
                         )
                     if url_id and ip_id:
@@ -239,14 +242,14 @@ class Crawler(BaseCrawler):
                             if (
                                 ip_id
                                 and url_id
-                                and (ip_id, url_id) not in self.unique_links["PART_OF"]
+                                and (ip_id, url_id) not in self.unique_links['PART_OF']
                             ):
-                                self.unique_links["PART_OF"].add((ip_id, url_id))
+                                self.unique_links['PART_OF'].add((ip_id, url_id))
                                 part_of_links.append(
                                     {
-                                        "src_id": ip_id,
-                                        "dst_id": url_id,
-                                        "props": [self.reference],
+                                        'src_id': ip_id,
+                                        'dst_id': url_id,
+                                        'props': [self.reference],
                                     }
                                 )
 
@@ -267,26 +270,26 @@ class Crawler(BaseCrawler):
                     if (
                         hostname_id
                         and url_id
-                        and (hostname_id, url_id) not in self.unique_links["PART_OF"]
+                        and (hostname_id, url_id) not in self.unique_links['PART_OF']
                     ):
-                        self.unique_links["PART_OF"].add((hostname_id, url_id))
+                        self.unique_links['PART_OF'].add((hostname_id, url_id))
                         part_of_links.append(
                             {
-                                "src_id": hostname_id,
-                                "dst_id": url_id,
-                                "props": [self.reference],
+                                'src_id': hostname_id,
+                                'dst_id': url_id,
+                                'props': [self.reference],
                             }
                         )
 
         # Batch add the links (this is faster than adding them one by one)
-        self.iyp.batch_add_links("CENSORED", censored_links)
-        self.iyp.batch_add_links("COUNTRY", country_links)
-        self.iyp.batch_add_links("RESOLVES_TO", resolves_to_links)
-        self.iyp.batch_add_links("PART_OF", part_of_links)
+        self.iyp.batch_add_links('CENSORED', censored_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('RESOLVES_TO', resolves_to_links)
+        self.iyp.batch_add_links('PART_OF', part_of_links)
 
         # Batch add node labels
         self.iyp.batch_add_node_label(
-            list(self.node_ids["dns_resolver"].values()), "Resolver"
+            list(self.node_ids['dns_resolver'].values()), 'Resolver'
         )
 
     # Calculate the percentages of the results
@@ -301,7 +304,7 @@ class Crawler(BaseCrawler):
         self.all_percentages = {}
 
         # Define all possible result categories to ensure they are included
-        possible_results = ["OK", "Confirmed", "Failure", "Anomaly"]
+        possible_results = ['OK', 'Confirmed', 'Failure', 'Anomaly']
 
         for (asn, country, target), counts in target_dict.items():
             total_count = sum(counts.values())
@@ -318,28 +321,28 @@ class Crawler(BaseCrawler):
             }
 
             result_dict = {
-                "total_count": total_count,
-                "category_counts": dict(counts),
-                "percentages": percentages,
+                'total_count': total_count,
+                'category_counts': dict(counts),
+                'percentages': percentages,
             }
             self.all_percentages[(asn, country, target)] = result_dict
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--unit-test", action="store_true")
+    parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
 
-    scriptname = os.path.basename(sys.argv[0]).replace("/", "_")[0:-3]
-    FORMAT = "%(asctime)s %(levellevelname)s %(message)s"
+    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
+    FORMAT = '%(asctime)s %(levellevelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename="log/" + scriptname + ".log",
+        filename='log/' + scriptname + '.log',
         level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S",
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -347,9 +350,9 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
     sys.exit(0)
