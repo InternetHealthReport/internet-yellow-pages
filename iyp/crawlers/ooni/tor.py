@@ -210,7 +210,7 @@ def main() -> None:
     args = parser.parse_args()
 
     scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
-    FORMAT = '%(asctime)s %(levellevelname)s %(message)s'
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
         filename='log/' + scriptname + '.log',
