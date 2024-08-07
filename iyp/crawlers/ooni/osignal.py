@@ -13,7 +13,8 @@ from .utils import grabber
 
 ORG = 'OONI'
 URL = 's3://ooni-data-eu-fra/raw/'
-NAME = 'ooni.signal'
+# signal is a built-in Python module, so we need to use a different name.
+NAME = 'ooni.osignal'
 
 label = 'OONI Signal Test'
 
