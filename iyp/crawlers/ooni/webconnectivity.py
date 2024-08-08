@@ -34,14 +34,15 @@ class Crawler(OoniCrawler):
 
         # Extract the IPs from the DNS replies, if they exist
         queries = test_keys.get('queries', [])
-        for query in queries:
-            answers = query.get('answers')
-            if answers:
-                for answer in answers:
-                    ipv4 = answer.get('ipv4', [])
-                    ipv6 = answer.get('ipv6', [])
-                    ips['ipv4'].extend(ipv4 if isinstance(ipv4, list) else [ipv4])
-                    ips['ipv6'].extend(ipv6 if isinstance(ipv6, list) else [ipv6])
+        if queries is not None:
+            for query in queries:
+                answers = query.get('answers')
+                if answers:
+                    for answer in answers:
+                        ipv4 = answer.get('ipv4', [])
+                        ipv6 = answer.get('ipv6', [])
+                        ips['ipv4'].extend(ipv4 if isinstance(ipv4, list) else [ipv4])
+                        ips['ipv6'].extend(ipv6 if isinstance(ipv6, list) else [ipv6])
 
         # Remove duplicates if necessary
         ips['ipv4'] = list(set(ips['ipv4']))

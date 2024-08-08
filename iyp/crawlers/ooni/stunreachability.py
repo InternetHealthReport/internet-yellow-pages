@@ -150,6 +150,8 @@ class Crawler(OoniCrawler):
 
         # Populate the target_dict with counts
         for entry in self.all_results:
+            if len(entry) != 6:
+                continue
             asn, country, stun_endpoint, result, hostname, ip_addresses = entry
             target_dict[(asn, country, stun_endpoint)][result] += 1
 
