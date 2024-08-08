@@ -1,14 +1,10 @@
 import argparse
-import json
 import logging
 import os
 import sys
-import tempfile
 from collections import defaultdict
 
-from iyp import BaseCrawler
-
-from .utils import grabber
+from iyp.crawlers.ooni import OoniCrawler
 
 ORG = 'OONI'
 URL = 's3://ooni-data-eu-fra/raw/'
@@ -17,56 +13,15 @@ NAME = 'ooni.httpheaderfieldmanipulation'
 label = 'OONI HTTP Header Field Manipulation Test'
 
 
-class Crawler(BaseCrawler):
+class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name)
-        self.repo = 'ooni-data-eu-fra'
-        self.reference['reference_url_info'] = 'https://ooni.org/post/mining-ooni-data'
-        self.unique_links = {'COUNTRY': set(), 'CENSORED': set()}
+        super().__init__(organization, url, name, 'httpheaderfieldmanipulation')
 
-    def run(self):
-        """Fetch data and push to IYP."""
-
-        self.all_asns = set()
-        self.all_countries = set()
-        self.all_results = list()
-        self.all_percentages = {}
-        self.all_dns_resolvers = set()
-
-        # Create a temporary directory
-        tmpdir = tempfile.mkdtemp()
-
-        # Fetch data
-        grabber.download_and_extract(self.repo, tmpdir, 'httpheaderfieldmanipulation')
-        logging.info('Successfully downloaded and extracted all files')
-        # Now that we have downloaded the jsonl files for the test we want, we can
-        # extract the data we want
-        testdir = os.path.join(tmpdir, 'httpheaderfieldmanipulation')
-        for file_name in os.listdir(testdir):
-            file_path = os.path.join(testdir, file_name)
-            if os.path.isfile(file_path) and file_path.endswith('.jsonl'):
-                with open(file_path, 'r') as file:
-                    for i, line in enumerate(file):
-                        data = json.loads(line)
-                        self.process_one_line(data)
-                        logging.info(f'\rProcessed {i+1} lines')
-        logging.info('\nProcessed lines, now calculating percentages\n')
-        self.calculate_percentages()
-        logging.info('\nCalculated percentages, now adding entries to IYP\n')
-        self.batch_add_to_iyp()
-        logging.info('\nSuccessfully added all entries to IYP\n')
-
-    # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
-        """Add the entry to IYP if it's not already there and update its properties."""
+        """Process a single line from the jsonl file and store the results locally."""
+        super().process_one_line(one_line)
 
-        probe_asn = (
-            int(one_line.get('probe_asn')[2:])
-            if one_line.get('probe_asn') and one_line.get('probe_asn').startswith('AS')
-            else None
-        )
-        probe_cc = one_line.get('probe_cc')
         test_keys = one_line.get('test_keys', {}).get('tampering', {})
 
         total = 'total' if test_keys.get('total', False) else 'no_total'
@@ -91,44 +46,27 @@ class Crawler(BaseCrawler):
             else 'no_header_field_number'
         )
 
-        # Append the results to the list
-        self.all_asns.add(probe_asn)
-        self.all_countries.add(probe_cc)
-        self.all_results.append(
-            (
-                probe_asn,
-                probe_cc,
-                total,
-                request_line_capitalization,
-                header_name_capitalization,
-                header_field_value,
-                header_field_number,
-            )
+        # Using the last result from the base class, add our unique variables
+        self.all_results[-1] = self.all_results[-1][:2] + (
+            total,
+            request_line_capitalization,
+            header_name_capitalization,
+            header_field_value,
+            header_field_number,
         )
 
     def batch_add_to_iyp(self):
-        # First, add the nodes and store their IDs directly as returned dictionaries
-        self.node_ids = {
-            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns),
-            'country': self.iyp.batch_get_nodes_by_single_prop(
-                'Country', 'country_code', self.all_countries
-            ),
-            'dns_resolver': self.iyp.batch_get_nodes_by_single_prop(
-                'IP', 'ip', self.all_dns_resolvers, all=False
-            ),
-        }
+        super().batch_add_to_iyp()
 
         httpheader_id = self.iyp.batch_get_nodes_by_single_prop(
             'Tag', 'label', {label}
         ).get(label)
 
-        country_links = []
         censored_links = []
 
         # Accumulate properties for each ASN-country pair
         link_properties = defaultdict(lambda: defaultdict(lambda: 0))
 
-        # Ensure all IDs are present and process results
         for (
             asn,
             country,
@@ -166,22 +104,12 @@ class Crawler(BaseCrawler):
                         'header_field_number',
                         'no_header_field_number',
                     ]:
-                        props[f'percentage_{category}'] = percentages.get(category, 0)
-                        props[f'count_{category}'] = counts.get(category, 0)
+                        props[f"percentage_{category}"] = percentages.get(category, 0)
+                        props[f"count_{category}"] = counts.get(category, 0)
                     props['total_count'] = total_count
 
                 # Accumulate properties
                 link_properties[(asn_id, httpheader_id)] = props
-
-                if (asn_id, country_id) not in self.unique_links['COUNTRY']:
-                    self.unique_links['COUNTRY'].add((asn_id, country_id))
-                    country_links.append(
-                        {
-                            'src_id': asn_id,
-                            'dst_id': country_id,
-                            'props': [self.reference],
-                        }
-                    )
 
         for (asn_id, httpheader_id), props in link_properties.items():
             if (asn_id, httpheader_id) not in self.unique_links['CENSORED']:
@@ -192,12 +120,6 @@ class Crawler(BaseCrawler):
 
         # Batch add the links (this is faster than adding them one by one)
         self.iyp.batch_add_links('CENSORED', censored_links)
-        self.iyp.batch_add_links('COUNTRY', country_links)
-
-        # Batch add node labels
-        self.iyp.batch_add_node_label(
-            list(self.node_ids['dns_resolver'].values()), 'Resolver'
-        )
 
     def calculate_percentages(self):
         target_dict = defaultdict(lambda: defaultdict(int))
@@ -269,7 +191,7 @@ def main() -> None:
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f'Started: {sys.argv}')
+    logging.info(f"Started: {sys.argv}")
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -277,7 +199,7 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f'Finished: {sys.argv}')
+    logging.info(f"Finished: {sys.argv}")
 
 
 if __name__ == '__main__':

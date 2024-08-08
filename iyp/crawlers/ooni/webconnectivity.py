@@ -1,90 +1,32 @@
 import argparse
 import ipaddress
-import json
 import logging
 import os
 import sys
-import tempfile
 from collections import defaultdict
 from urllib.parse import urlparse
 
 import tldextract
 
-from iyp import BaseCrawler
-
-from .utils import grabber
+from iyp.crawlers.ooni import OoniCrawler
 
 ORG = 'OONI'
 URL = 's3://ooni-data-eu-fra/raw/'
 NAME = 'ooni.webconnectivity'
 
+label = 'OONI Web Connectivity Test'
 
-class Crawler(BaseCrawler):
+
+class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name)
-        self.repo = 'ooni-data-eu-fra'
-        self.reference['reference_url_info'] = 'https://ooni.org/post/mining-ooni-data'
-        self.unique_links = {
-            'COUNTRY': set(),
-            'CENSORED': set(),
-            'RESOLVES_TO': set(),
-            'PART_OF': set(),
-        }
-
-    def run(self):
-        """Fetch data and push to IYP."""
-
-        self.all_asns = set()
-        self.all_urls = set()
-        self.all_countries = set()
-        self.all_results = list()
-        self.all_percentages = list()
-        self.all_hostnames = set()
-        self.all_dns_resolvers = set()
-
-        # Create a temporary directory
-        tmpdir = tempfile.mkdtemp()
-
-        # Fetch data
-        grabber.download_and_extract(self.repo, tmpdir, 'webconnectivity')
-        logging.info('Successfully downloaded and extracted all files')
-        # Now that we have downloaded the jsonl files for the test we want, we can
-        # extract the data we want
-        testdir = os.path.join(tmpdir, 'webconnectivity')
-        for file_name in os.listdir(testdir):
-            file_path = os.path.join(testdir, file_name)
-            if os.path.isfile(file_path) and file_path.endswith('.jsonl'):
-                with open(file_path, 'r') as file:
-                    for i, line in enumerate(file):
-                        data = json.loads(line)
-                        self.process_one_line(data)
-                        logging.info(f'\rProcessed {i+1} lines')
-        logging.info('\nProcessed lines, now calculating percentages\n')
-        self.calculate_percentages()
-        logging.info('\nCalculated percentages, now adding entries to IYP\n')
-        self.batch_add_to_iyp()
-        logging.info('\nSuccessfully added all entries to IYP\n')
+        super().__init__(organization, url, name, 'webconnectivity')
 
     # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
-        """Add the entry to IYP if it's not already there and update its properties."""
+        super().process_one_line(one_line)
 
         ips = {'ipv4': [], 'ipv6': []}
-
-        probe_asn = (
-            int(one_line.get('probe_asn')[2:])
-            if one_line.get('probe_asn') and one_line.get('probe_asn').startswith('AS')
-            else None
-        )
-        # Add the DNS resolver to the set, unless its not a valid IP address
-        try:
-            self.all_dns_resolvers.add(
-                ipaddress.ip_address(one_line.get('resolver_ip'))
-            )
-        except ValueError:
-            pass
-        probe_cc = one_line.get('probe_cc')
         input_url = one_line.get('input')
         test_keys = one_line.get('test_keys', {})
         blocking = test_keys.get('blocking')
@@ -105,12 +47,24 @@ class Crawler(BaseCrawler):
         ips['ipv4'] = list(set(ips['ipv4']))
         ips['ipv6'] = list(set(ips['ipv6']))
 
-        # Extract the hostname from the URL if its not an IP address
-        if not bool(ipaddress.ip_address(urlparse(input_url).hostname)):
-            hostname = tldextract.extract(input_url).fqdn
+        # Extract the hostname from the URL if it's not an IP address
+        hostname = urlparse(input_url).hostname
+        hostname = (
+            tldextract.extract(input_url).fqdn
+            if hostname
+            and not (
+                hostname.replace('.', '').isdigit() and ipaddress.ip_address(hostname)
+            )
+            else hostname
+        )
 
         # Ensure all required fields are present
-        if probe_asn and probe_cc and input_url and test_keys:
+        if (
+            self.all_results[-1][0]
+            and self.all_results[-1][1]
+            and input_url
+            and test_keys
+        ):
             # Determine the result based on the table
             # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
             if blocking is None and accessible is None:
@@ -130,32 +84,17 @@ class Crawler(BaseCrawler):
             else:
                 result = 'Anomaly'  # Default case if no other case matches
 
-            # Append the results to the list
-            self.all_asns.add(probe_asn)
-            self.all_countries.add(probe_cc)
-            self.all_urls.add(input_url)
-            self.all_hostnames.add(hostname)
-            self.all_results.append(
-                (probe_asn, probe_cc, input_url, result, hostname, ips)
+            # Using the last result from the base class, add our unique variables
+            self.all_results[-1] = self.all_results[-1][:2] + (
+                input_url,
+                result,
+                hostname,
+                ips,
             )
 
     def batch_add_to_iyp(self):
-        # First, add the nodes and store their IDs directly as returned dictionaries
-        self.node_ids = {
-            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns),
-            'country': self.iyp.batch_get_nodes_by_single_prop(
-                'Country', 'country_code', self.all_countries
-            ),
-            'url': self.iyp.batch_get_nodes_by_single_prop('URL', 'url', self.all_urls),
-            'hostname': self.iyp.batch_get_nodes_by_single_prop(
-                'HostName', 'name', self.all_hostnames
-            ),
-            'dns_resolver': self.iyp.batch_get_nodes_by_single_prop(
-                'IP', 'ip', self.all_dns_resolvers, all=False
-            ),
-        }
+        super().batch_add_to_iyp()
 
-        country_links = []
         censored_links = []
         resolves_to_links = []
         part_of_links = []
@@ -176,7 +115,6 @@ class Crawler(BaseCrawler):
         for asn, country, url, result, hostname, ips in self.all_results:
             asn_id = self.node_ids['asn'].get(asn)
             url_id = self.node_ids['url'].get(url)
-            country_id = self.node_ids['country'].get(country)
             hostname_id = self.node_ids['hostname'].get(hostname)
 
             if asn_id and url_id:
@@ -193,28 +131,13 @@ class Crawler(BaseCrawler):
                     )
 
                     for category in ['OK', 'Confirmed', 'Failure', 'Anomaly']:
-                        props[f'percentage_{category}'] = percentages.get(category, 0)
-                        props[f'count_{category}'] = counts.get(category, 0)
+                        props[f"percentage_{category}"] = percentages.get(category, 0)
+                        props[f"count_{category}"] = counts.get(category, 0)
                     props['total_count'] = total_count
 
                 censored_links.append(
                     {'src_id': asn_id, 'dst_id': url_id, 'props': [props]}
                 )
-
-            if asn_id and country_id:
-                if (
-                    asn_id
-                    and country_id
-                    and (asn_id, country_id) not in self.unique_links['COUNTRY']
-                ):
-                    self.unique_links['COUNTRY'].add((asn_id, country_id))
-                    country_links.append(
-                        {
-                            'src_id': asn_id,
-                            'dst_id': country_id,
-                            'props': [self.reference],
-                        }
-                    )
 
             if result == 'OK' and hostname and ips:
                 compressed_ips = [
@@ -283,16 +206,9 @@ class Crawler(BaseCrawler):
 
         # Batch add the links (this is faster than adding them one by one)
         self.iyp.batch_add_links('CENSORED', censored_links)
-        self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('RESOLVES_TO', resolves_to_links)
         self.iyp.batch_add_links('PART_OF', part_of_links)
 
-        # Batch add node labels
-        self.iyp.batch_add_node_label(
-            list(self.node_ids['dns_resolver'].values()), 'Resolver'
-        )
-
-    # Calculate the percentages of the results
     def calculate_percentages(self):
         target_dict = defaultdict(lambda: defaultdict(int))
 
@@ -342,7 +258,7 @@ def main() -> None:
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f'Started: {sys.argv}')
+    logging.info(f"Started: {sys.argv}")
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -350,7 +266,7 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f'Finished: {sys.argv}')
+    logging.info(f"Finished: {sys.argv}")
 
 
 if __name__ == '__main__':
