@@ -1,44 +1,68 @@
 import datetime
 import gzip
+import json
 import logging
 import os
 import shutil
+from multiprocessing import Pool
 
 import boto3
 import botocore
 
+# Global variable required for multiprocessing.
+s3 = None
 
-# list objects in directory
-def list_objects(s3, bucket, prefix):
-    paginator = s3.get_paginator('list_objects_v2')
-    for page in paginator.paginate(
-        Bucket=bucket, Prefix=prefix, PaginationConfig={'PageSize': 1000}
-    ):
-        for obj in page.get('Contents', []):
-            yield obj
+PARALLEL_DOWNLOADS = 4
+if os.path.exists('config.json'):
+    config = json.load(open('config.json', 'r'))
+    PARALLEL_DOWNLOADS = config['ooni']['parallel_downloads']
 
 
-# list subdirectories in directory
-def list_directories(s3, bucket, prefix):
-    paginator = s3.get_paginator('list_objects_v2')
-    for page in paginator.paginate(
-        Bucket=bucket, Prefix=prefix, Delimiter='/', PaginationConfig={'PageSize': 1000}
-    ):
-        for common_prefix in page.get('CommonPrefixes', []):
-            yield common_prefix['Prefix']
+def process(params: tuple):
+    """Download and extract a single file.
+
+    Args:
+        params (tuple): Object key and output file path.
+    """
+    key, dest_file = params
+    # Download the file
+    try:
+        s3.download_file(key, dest_file)
+    except Exception as e:
+        logging.error(f'Error downloading {key}: {e}')
+        return
+
+    # Extract the .gz file
+    try:
+        extracted_file = dest_file.rstrip('.gz')
+        with gzip.open(dest_file, 'rb') as f_in, open(extracted_file, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        # Delete the .gz file
+        os.remove(dest_file)
+    except Exception as e:
+        logging.error(f'Error extracting {key}: {e}')
 
 
-# download and extract all of the jsonl files for the last 7 days
-def download_and_extract(repo, tmpdir, test_name):
+def download_and_extract(repo: str, tmpdir: str, test_name: str):
+    """Download the last 7 days of data for the specified test from an S3 bucket into a
+    temporary directory.
+
+    Args:
+        repo (str): S3 bucket
+        tmpdir (str): Output directory
+        test_name (str): Test name
+    """
+    global s3
     # Create an anonymous session
-    s3 = boto3.client(
+    s3 = boto3.resource(
         's3',
+        region_name='ap-northeast-1',
         config=botocore.client.Config(
-            signature_version=botocore.UNSIGNED, region_name='eu-central-1'
-        ),
-    )
+            signature_version=botocore.UNSIGNED
+        )
+    ).Bucket(repo)
 
-    # get the dates for the last 7 days
+    # Get the dates for the last 7 days.
     dates = [
         (
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=i)
@@ -46,50 +70,31 @@ def download_and_extract(repo, tmpdir, test_name):
         for i in range(7)
     ]
 
-    # For each day, grab the data from the S3 bucket
+    dest_dir = os.path.join(tmpdir, test_name)
+    files = list()
+
+    logging.info('Fetching object list...')
+    # For each day, grab the objects from the S3 bucket.
     for date in dates:
-        # Grab initial numbered pages
-        root_pages = list_directories(s3, repo, f'raw/{date}/')
-        # For each numbered root page, grab the countries:
-        for root_page in root_pages:
-            countries = list_directories(s3, repo, root_page)
-            # For each country, grab the tests
-            for country in countries:
-                tests = list_directories(s3, repo, country)
-                # filter for the test we want
-                for test in tests:
-                    if test_name == test.strip('/').split('/')[-1]:
-                        objects = list_objects(s3, repo, test)
-                        for obj in objects:
-                            # Grab only the jsonl files, ignore the tar, download to
-                            # tmpdir path named after the test
-                            if obj['Key'].endswith('.jsonl.gz'):
-                                test_name = test.strip('/').split('/')[-1]
-                                dest_dir = os.path.join(tmpdir, test_name)
-                                dest_file = os.path.join(
-                                    dest_dir, os.path.basename(obj['Key'])
-                                )
+        date_objects = s3.objects.filter(Prefix=f'raw/{date}/').all()
+        # Filter for objects from the requested test and only fetch JSONL files.
+        for object_summary in date_objects:
+            key = object_summary.key
+            key_split = key.split('/')
+            if len(key_split) != 6:
+                logging.warning(f'Malformed key: {key}')
+                continue
+            test = key_split[4]
+            object_name = key_split[5]
+            if test != test_name or not object_name.endswith('.jsonl.gz'):
+                continue
+            dest_file = os.path.join(dest_dir, object_name)
+            files.append((key, dest_file))
 
-                                # Ensure the destination directory exists
-                                os.makedirs(dest_dir, exist_ok=True)
-
-                                # Download the file
-                                try:
-                                    s3.download_file(repo, obj['Key'], dest_file)
-                                except Exception as e:
-                                    logging.error(
-                                        f"Error downloading {obj['Key']}: {e}"
-                                    )
-                                    continue
-
-                                # Extract the .gz file
-                                try:
-                                    extracted_file = dest_file.rstrip('.gz')
-                                    with gzip.open(dest_file, 'rb') as f_in:
-                                        with open(extracted_file, 'wb') as f_out:
-                                            shutil.copyfileobj(f_in, f_out)
-
-                                    # Delete the .gz file
-                                    os.remove(dest_file)
-                                except Exception as e:
-                                    logging.error(f"Error extracting {obj['Key']}: {e}")
+    logging.info(f'Fetching {len(files)} objects with {PARALLEL_DOWNLOADS} processes in parallel...')
+    if files:
+        # Ensure the destination directory exists.
+        os.makedirs(dest_dir, exist_ok=True)
+        # Download and extract the files.
+        with Pool(PARALLEL_DOWNLOADS) as p:
+            p.map(process, files)
