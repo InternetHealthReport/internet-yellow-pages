@@ -19,6 +19,7 @@ class Crawler(OoniCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'stunreachability')
         self.all_ips = set()
+        self.all_hostnames = set()
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""

@@ -98,22 +98,25 @@ class OoniCrawler(BaseCrawler):
                 'IP', 'ip', self.all_dns_resolvers, all=False
             ),
         }
-        for entry in self.all_results:
-            asn, country = entry[:2]
-            asn_id = self.node_ids['asn'].get(asn)
-            country_id = self.node_ids['country'].get(country)
+        # to avoid duplication of country links, we only add them from
+        # the webconnectivity dataset
+        if self.dataset in ['webconnectivity']:
+            for entry in self.all_results:
+                asn, country = entry[:2]
+                asn_id = self.node_ids['asn'].get(asn)
+                country_id = self.node_ids['country'].get(country)
 
-            # Check if the COUNTRY link is unique
-            if (asn_id, country_id) not in self.unique_links['COUNTRY']:
-                self.unique_links['COUNTRY'].add((asn_id, country_id))
-                country_links.append(
-                    {
-                        'src_id': asn_id,
-                        'dst_id': country_id,
-                        'props': [self.reference],
-                    }
-                )
-        self.iyp.batch_add_links('COUNTRY', country_links)
+                # Check if the COUNTRY link is unique
+                if (asn_id, country_id) not in self.unique_links['COUNTRY']:
+                    self.unique_links['COUNTRY'].add((asn_id, country_id))
+                    country_links.append(
+                        {
+                            'src_id': asn_id,
+                            'dst_id': country_id,
+                            'props': [self.reference],
+                        }
+                    )
+            self.iyp.batch_add_links('COUNTRY', country_links)
 
         # Batch add node labels
         self.iyp.batch_add_node_label(
