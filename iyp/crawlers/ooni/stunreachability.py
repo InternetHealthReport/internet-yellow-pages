@@ -63,6 +63,10 @@ class Crawler(OoniCrawler):
                     ip_addresses,
                 )
 
+                # Ensure the entry has 6 elements, otherwise remove it
+                if len(self.all_results[-1]) != 6:
+                    self.all_results.pop()
+
                 # Append unique variables to corresponding sets
                 if hostname:
                     self.all_hostnames.add(hostname)
