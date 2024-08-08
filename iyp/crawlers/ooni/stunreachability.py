@@ -53,11 +53,11 @@ class Crawler(OoniCrawler):
                             ip_addresses.append(answer['ipv6'])
 
             self.all_ips.update(ip_addresses)
-
             # Ensure all required fields are present
             if stun_endpoint:
                 # Using the last result from the base class, add our unique variables
-                self.all_results[-1] = self.all_results[-1][:3] + (
+                self.all_results[-1] = self.all_results[-1][:2] + (
+                    stun_endpoint,
                     result,
                     hostname,
                     ip_addresses,
