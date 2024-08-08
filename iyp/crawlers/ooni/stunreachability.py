@@ -18,6 +18,7 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'stunreachability')
+        self.all_ips = set()
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
@@ -180,7 +181,7 @@ def main() -> None:
     args = parser.parse_args()
 
     scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
-    FORMAT = '%(asctime)s %(levellevel)s %(message)s'
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
         filename='log/' + scriptname + '.log',

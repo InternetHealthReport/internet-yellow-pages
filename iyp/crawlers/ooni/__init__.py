@@ -98,7 +98,8 @@ class OoniCrawler(BaseCrawler):
                 'IP', 'ip', self.all_dns_resolvers, all=False
             ),
         }
-        for asn, country, _, _ in self.all_results:
+        for entry in self.all_results:
+            asn, country = entry[:2]
             asn_id = self.node_ids['asn'].get(asn)
             country_id = self.node_ids['country'].get(country)
 
