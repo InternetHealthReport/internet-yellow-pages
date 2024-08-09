@@ -206,16 +206,12 @@ class Crawler(OoniCrawler):
                         )
                     )(urlparse(url).hostname)
                 ):
-                    if (
-                        hostname_id
-                        and url_id
-                        and (hostname_id, url_id) not in self.unique_links['PART_OF']
-                    ):
-                        self.unique_links['PART_OF'].add((hostname_id, url_id))
+                    if (url_id, hostname_id) not in self.unique_links['PART_OF']:
+                        self.unique_links['PART_OF'].add((url_id, hostname_id))
                         part_of_links.append(
                             {
-                                'src_id': hostname_id,
-                                'dst_id': url_id,
+                                'src_id': url_id,
+                                'dst_id': hostname_id,
                                 'props': [self.reference],
                             }
                         )
