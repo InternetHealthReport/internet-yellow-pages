@@ -53,8 +53,13 @@ class Crawler(OoniCrawler):
                             ip_addresses.append(answer['ipv6'])
 
             self.all_ips.update(ip_addresses)
-            # Ensure all required fields are present
+
+            # Ensure the stun_endpoint is valid before updating the results
             if stun_endpoint:
+                # Append unique variables to corresponding sets
+                if hostname:
+                    self.all_hostnames.add(hostname)
+
                 # Using the last result from the base class, add our unique variables
                 self.all_results[-1] = self.all_results[-1][:2] + (
                     stun_endpoint,
@@ -64,12 +69,8 @@ class Crawler(OoniCrawler):
                 )
 
                 # Ensure the entry has 6 elements, otherwise remove it
-                if len(self.all_results[-1]) != 6:
+                if len(self.all_results[-1]) != 6 or not stun_endpoint or not result:
                     self.all_results.pop()
-
-                # Append unique variables to corresponding sets
-                if hostname:
-                    self.all_hostnames.add(hostname)
 
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
