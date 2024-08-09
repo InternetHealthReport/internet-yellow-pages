@@ -86,6 +86,17 @@ class Crawler(OoniCrawler):
         else:
             ip_id_map = {}
 
+        self.node_ids.update(
+            {
+                'url': self.iyp.batch_get_nodes_by_single_prop(
+                    'URL', 'url', self.all_urls
+                ),
+                'hostname': self.iyp.batch_get_nodes_by_single_prop(
+                    'HostName', 'name', self.all_hostnames
+                ),
+            }
+        )
+
         # Accumulate properties for each ASN-country pair
         link_properties = defaultdict(lambda: defaultdict(lambda: 0))
 
