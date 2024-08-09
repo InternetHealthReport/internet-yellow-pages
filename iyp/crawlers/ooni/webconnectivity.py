@@ -21,6 +21,8 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'webconnectivity')
+        self.all_urls = set()
+        self.all_hostnames = set()
 
     # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
@@ -86,6 +88,8 @@ class Crawler(OoniCrawler):
                 result = 'Anomaly'  # Default case if no other case matches
 
             # Using the last result from the base class, add our unique variables
+            self.all_urls.add(input_url)
+            self.all_hostnames.add(hostname)
             self.all_results[-1] = self.all_results[-1][:2] + (
                 input_url,
                 result,
