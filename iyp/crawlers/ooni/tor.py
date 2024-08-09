@@ -74,7 +74,7 @@ class Crawler(OoniCrawler):
         censored_links = []
         categorized_links = []
 
-        link_properties = defaultdict(lambda: defaultdict(lambda: 0))
+        link_properties = defaultdict(lambda: defaultdict(int))
 
         for asn, country, ip, tor_type, _ in self.all_results:
             asn_id = self.node_ids['asn'].get(asn)

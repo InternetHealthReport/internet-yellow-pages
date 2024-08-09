@@ -33,13 +33,11 @@ class Crawler(OoniCrawler):
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
-        vanillator_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Tag', 'label', {label}
-        ).get(label)
+        vanillator_id = self.iyp.get_node('Tag', {'label': label}, create=True)
 
         censored_links = []
 
-        link_properties = defaultdict(lambda: defaultdict(lambda: 0))
+        link_properties = defaultdict(lambda: defaultdict(int))
 
         # Ensure all IDs are present and process results
         for asn, country, result in self.all_results:

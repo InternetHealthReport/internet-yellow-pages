@@ -30,14 +30,12 @@ class Crawler(OoniCrawler):
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
-        whatsapp_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Tag', 'label', {label}
-        ).get(label)
+        facebookmessenger_id = self.iyp.get_node('Tag', {'label': label}, create=True)
 
         censored_links = []
 
         # Accumulate properties for each ASN-country pair
-        link_properties = defaultdict(lambda: defaultdict(lambda: 0))
+        link_properties = defaultdict(lambda: defaultdict(int))
 
         for asn, country, result_dns, result_tcp in self.all_results:
             asn_id = self.node_ids['asn'].get(asn)
@@ -67,14 +65,14 @@ class Crawler(OoniCrawler):
                     props['total_count'] = total_count
 
                 # Accumulate properties
-                link_properties[(asn_id, whatsapp_id)] = props
+                link_properties[(asn_id, facebookmessenger_id)] = props
 
         # Create links only once per ASN-country pair
-        for (asn_id, whatsapp_id), props in link_properties.items():
-            if (asn_id, whatsapp_id) not in self.unique_links['CENSORED']:
-                self.unique_links['CENSORED'].add((asn_id, whatsapp_id))
+        for (asn_id, facebookmessenger_id), props in link_properties.items():
+            if (asn_id, facebookmessenger_id) not in self.unique_links['CENSORED']:
+                self.unique_links['CENSORED'].add((asn_id, facebookmessenger_id))
                 censored_links.append(
-                    {'src_id': asn_id, 'dst_id': whatsapp_id, 'props': [props]}
+                    {'src_id': asn_id, 'dst_id': facebookmessenger_id, 'props': [props]}
                 )
 
         # Batch add the links (this is faster than adding them one by one)

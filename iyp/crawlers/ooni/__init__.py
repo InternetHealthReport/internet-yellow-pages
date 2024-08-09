@@ -41,21 +41,15 @@ class OoniCrawler(BaseCrawler):
         logging.info('Successfully downloaded and extracted all files.')
         # Now that we have downloaded the jsonl files for the test we want, we can
         # extract the data we want
-        testdir = os.path.join(
-            tmpdir,
-            self.dataset,
-        )
         logging.info('Processing files...')
-        for file_name in os.listdir(testdir):
-            file_path = os.path.join(
-                testdir,
-                file_name,
-            )
-            if os.path.isfile(file_path) and file_path.endswith('.jsonl'):
-                with open(file_path, 'r') as file:
-                    for line in file:
-                        data = json.loads(line)
-                        self.process_one_line(data)
+        for entry in os.scandir(tmpdir):
+            if not entry.is_file() or not entry.name.endswith('.jsonl'):
+                continue
+            file_path = os.path.join(tmpdir, entry.name)
+            with open(file_path, 'r') as file:
+                for line in file:
+                    data = json.loads(line)
+                    self.process_one_line(data)
         logging.info('Calculating percentages...')
         self.calculate_percentages()
         logging.info('Adding entries to IYP...')
@@ -90,7 +84,7 @@ class OoniCrawler(BaseCrawler):
 
         # First, add the nodes and store their IDs directly as returned dictionaries
         self.node_ids = {
-            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns),
+            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns, all=False),
             'country': self.iyp.batch_get_nodes_by_single_prop(
                 'Country', 'country_code', self.all_countries
             ),
@@ -100,7 +94,7 @@ class OoniCrawler(BaseCrawler):
         }
         # to avoid duplication of country links, we only add them from
         # the webconnectivity dataset
-        if self.dataset in ['webconnectivity']:
+        if self.dataset == 'webconnectivity':
             for entry in self.all_results:
                 asn, country = entry[:2]
                 asn_id = self.node_ids['asn'].get(asn)

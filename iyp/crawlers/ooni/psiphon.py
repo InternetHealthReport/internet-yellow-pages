@@ -41,14 +41,12 @@ class Crawler(OoniCrawler):
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
-        psiphon_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Tag', 'label', {label}
-        ).get(label)
+        psiphon_id = self.iyp.get_node('Tag', {'label': label}, create=True)
 
         censored_links = []
 
         # Accumulate properties for each ASN-country pair
-        link_properties = defaultdict(lambda: defaultdict(lambda: 0))
+        link_properties = defaultdict(lambda: defaultdict(int))
 
         for asn, country, result in self.all_results:
             asn_id = self.node_ids['asn'].get(asn)

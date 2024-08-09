@@ -56,14 +56,12 @@ class Crawler(OoniCrawler):
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
-        telegram_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Tag', 'label', {label}
-        ).get(label)
+        telegram_id = self.iyp.get_node('Tag', {'label': label}, create=True)
 
         censored_links = []
 
         # Accumulate properties for each ASN-country pair
-        link_properties = defaultdict(lambda: defaultdict(lambda: 0))
+        link_properties = defaultdict(lambda: defaultdict(int))
 
         # Ensure all IDs are present and process results
         for asn, country, result_web, result_http, result_tcp in self.all_results:

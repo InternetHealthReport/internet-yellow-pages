@@ -70,7 +70,6 @@ def download_and_extract(repo: str, tmpdir: str, test_name: str):
         for i in range(7)
     ]
 
-    dest_dir = os.path.join(tmpdir, test_name)
     files = list()
 
     logging.info('Fetching object list...')
@@ -88,13 +87,10 @@ def download_and_extract(repo: str, tmpdir: str, test_name: str):
             object_name = key_split[5]
             if test != test_name or not object_name.endswith('.jsonl.gz'):
                 continue
-            dest_file = os.path.join(dest_dir, object_name)
+            dest_file = os.path.join(tmpdir, object_name)
             files.append((key, dest_file))
 
     logging.info(f'Fetching {len(files)} objects with {PARALLEL_DOWNLOADS} processes in parallel...')
-    if files:
-        # Ensure the destination directory exists.
-        os.makedirs(dest_dir, exist_ok=True)
-        # Download and extract the files.
-        with Pool(PARALLEL_DOWNLOADS) as p:
-            p.map(process, files)
+    # Download and extract the files.
+    with Pool(PARALLEL_DOWNLOADS) as p:
+        p.map(process, files)

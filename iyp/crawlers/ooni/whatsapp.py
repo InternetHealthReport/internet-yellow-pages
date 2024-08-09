@@ -51,9 +51,7 @@ class Crawler(OoniCrawler):
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
-        whatsapp_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Tag', 'label', {label}
-        ).get(label)
+        whatsapp_id = self.iyp.get_node('Tag', {'label': label}, create=True)
 
         censored_links = []
 

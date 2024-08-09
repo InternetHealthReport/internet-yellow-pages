@@ -117,15 +117,15 @@ class Crawler(OoniCrawler):
                     )
 
         # Fetch all IP nodes in one batch
-        ip_id_map = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', all_ips)
+        ip_id_map = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', all_ips, all=False)
 
         self.node_ids.update(
             {
                 'url': self.iyp.batch_get_nodes_by_single_prop(
-                    'URL', 'url', self.all_urls
+                    'URL', 'url', self.all_urls, all=False
                 ),
                 'hostname': self.iyp.batch_get_nodes_by_single_prop(
-                    'HostName', 'name', self.all_hostnames
+                    'HostName', 'name', self.all_hostnames, all=False
                 ),
             }
         )
