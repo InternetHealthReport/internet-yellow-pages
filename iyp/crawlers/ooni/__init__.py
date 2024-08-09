@@ -55,7 +55,7 @@ class OoniCrawler(BaseCrawler):
                     for i, line in enumerate(file):
                         data = json.loads(line)
                         self.process_one_line(data)
-                        logging.info(f"\rProcessed {i + 1} lines")
+                        logging.info(f'\rProcessed {i + 1} lines')
         logging.info('\n Processed lines, now calculating percentages\n')
         self.calculate_percentages()
         logging.info('\n Calculated percentages, now adding entries to IYP\n')

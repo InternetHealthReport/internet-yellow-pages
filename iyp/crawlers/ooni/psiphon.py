@@ -73,8 +73,8 @@ class Crawler(OoniCrawler):
                         'working',
                         'invalid',
                     ]:
-                        props[f"percentage_{category}"] = percentages.get(category, 0)
-                        props[f"count_{category}"] = counts.get(category, 0)
+                        props[f'percentage_{category}'] = percentages.get(category, 0)
+                        props[f'count_{category}'] = counts.get(category, 0)
                     props['total_count'] = total_count
 
                 # Accumulate properties
@@ -142,7 +142,7 @@ def main() -> None:
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -150,7 +150,7 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
 if __name__ == '__main__':

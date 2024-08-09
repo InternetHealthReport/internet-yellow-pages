@@ -59,7 +59,7 @@ class Crawler(OoniCrawler):
         super().batch_add_to_iyp()
 
         # Prepend "OONI Probe Tor Tag" to all tag labels
-        prepended_tags = {f"OONI Probe Tor Tag {tag}" for tag in self.all_tags}
+        prepended_tags = {f'OONI Probe Tor Tag {tag}' for tag in self.all_tags}
         self.node_ids.update(
             {
                 'ip': self.iyp.batch_get_nodes_by_single_prop(
@@ -79,7 +79,7 @@ class Crawler(OoniCrawler):
         for asn, country, ip, tor_type, _ in self.all_results:
             asn_id = self.node_ids['asn'].get(asn)
             ip_id = self.node_ids['ip'].get(str(ip))
-            tag_id = self.node_ids['tag'].get(f"OONI Probe Tor Tag {tor_type}")
+            tag_id = self.node_ids['tag'].get(f'OONI Probe Tor Tag {tor_type}')
 
             if asn_id and ip_id:
                 props = self.reference.copy()
@@ -89,8 +89,8 @@ class Crawler(OoniCrawler):
                     total_count = self.all_percentages[(asn, ip)].get('total_count', 0)
 
                     for category in ['Failure', 'Success']:
-                        props[f"percentage_{category}"] = percentages.get(category, 0)
-                        props[f"count_{category}"] = counts.get(category, 0)
+                        props[f'percentage_{category}'] = percentages.get(category, 0)
+                        props[f'count_{category}'] = counts.get(category, 0)
                     props['total_count'] = total_count
                 link_properties[(asn_id, ip_id)] = props
 
@@ -160,7 +160,7 @@ def main() -> None:
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -168,7 +168,7 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@ class PostProcess(BasePostProcess):
             if prop_dict
             else 'TRUE'
         )
-        prop_str = ', '.join([f"r.{k}" for k in prop_dict.keys()]) if prop_dict else '*'
+        prop_str = ', '.join([f'r.{k}' for k in prop_dict.keys()]) if prop_dict else '*'
 
         query = f"""
         MATCH (src)-[r:{link_type}]->(dst)
@@ -93,7 +93,7 @@ def main() -> None:
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     post = PostProcess()
     if args.unit_test:
@@ -101,7 +101,7 @@ def main() -> None:
     else:
         post.run()
         post.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
 if __name__ == '__main__':

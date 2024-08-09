@@ -33,10 +33,10 @@ class Crawler(OoniCrawler):
         server_result = (
             'server_failure'
             if server_failure is not None
-            else f"server_{server_status}"
+            else f'server_{server_status}'
         )
-        endpoint_result = f"endpoint_{endpoint_status}"
-        web_result = 'web_failure' if web_failure is not None else f"web_{web_status}"
+        endpoint_result = f'endpoint_{endpoint_status}'
+        web_result = 'web_failure' if web_failure is not None else f'web_{web_status}'
 
         # Update the last entry in all_results with the new test-specific data
         self.all_results[-1] = self.all_results[-1][:2] + (
@@ -97,8 +97,8 @@ class Crawler(OoniCrawler):
                         'no_web_failure',
                         'no_web_ok',
                     ]:
-                        props[f"percentage_{category}"] = percentages.get(category, 0)
-                        props[f"count_{category}"] = counts.get(category, 0)
+                        props[f'percentage_{category}'] = percentages.get(category, 0)
+                        props[f'count_{category}'] = counts.get(category, 0)
                     props['total_count'] = total_count
 
                 if (asn_id, whatsapp_id) not in self.unique_links['CENSORED']:
@@ -174,7 +174,7 @@ def main() -> None:
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    logging.info(f"Started: {sys.argv}")
+    logging.info(f'Started: {sys.argv}')
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
@@ -182,7 +182,7 @@ def main() -> None:
     else:
         crawler.run()
         crawler.close()
-    logging.info(f"Finished: {sys.argv}")
+    logging.info(f'Finished: {sys.argv}')
 
 
 if __name__ == '__main__':
