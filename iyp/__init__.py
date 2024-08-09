@@ -4,6 +4,7 @@ import ipaddress
 import logging
 import os
 import pickle
+import json
 from datetime import datetime, time, timezone
 from shutil import rmtree
 from typing import Optional
@@ -709,15 +710,17 @@ class BaseCrawler(object):
 
         return result['count']
 
-    def unit_test(self, logging):
-        relation_count = self.count_relations()
-        logging.info('Relations before starting: %s' % relation_count)
-        self.run()
-        relation_count_new = self.count_relations()
-        logging.info('Relations after starting: %s' % relation_count_new)
-        self.close()
-        print('assertion failed') if relation_count_new <= relation_count else print('assertion passed')
-        assert relation_count_new > relation_count
+    def unit_test(self, logging, relation_types): # optional start and end nodes or use reference name index
+        """Check for existence of data from this reference name"""
+        for relation_type in relation_types:
+            print(f'testing {relation_type}')
+            existenceQuery = f"""MATCH ()-[r:{relation_type}]-() 
+                                USING INDEX r:{relation_type}(reference_name)
+                                WHERE r.reference_name = '{self.reference['reference_name']}' 
+                                RETURN 0 LIMIT 1"""
+            result = self.iyp.tx.run(existenceQuery)
+            if len(list(result)) == 0:
+                raise RuntimeError(f"Missing data for crawler {self.reference['reference_name']}, relation {relation_type}")
 
     def close(self):
         # Commit changes to IYP

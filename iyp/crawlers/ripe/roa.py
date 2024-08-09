@@ -100,6 +100,9 @@ class Crawler(BaseCrawler):
             # Push all links to IYP
             self.iyp.batch_add_links('ROUTE_ORIGIN_AUTHORIZATION', links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['ROUTE_ORIGIN_AUTHORIZATION'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

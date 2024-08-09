@@ -114,6 +114,9 @@ class Crawler(BaseCrawler):
             # Push links to IYP
             self.iyp.batch_add_links('RANK', links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['RANK', 'COUNTRY'])
+
 
 # Main program
 def main() -> None:

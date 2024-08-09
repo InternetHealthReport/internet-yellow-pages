@@ -123,6 +123,9 @@ class Crawler(BaseCrawler):
         logging.info(f'Pushing {len(processed_links)} RANK relationships...')
         self.iyp.batch_add_links('RANK', processed_links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['RANK'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

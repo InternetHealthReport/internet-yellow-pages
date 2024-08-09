@@ -47,6 +47,10 @@ class Crawler(Crawler):
                 'props': [flat_prop, self.reference]
             })
 
+    # already defined in imported Crawler
+    # def unit_test(self):
+    #     pass
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

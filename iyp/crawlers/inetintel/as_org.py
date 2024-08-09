@@ -185,6 +185,9 @@ class Crawler(BaseCrawler):
         os.remove(self.filename)
         os.rmdir(self.tmpdir)
 
+    def unit_test(self):
+        super().unit_test(logging, ['SIBLING_OF'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

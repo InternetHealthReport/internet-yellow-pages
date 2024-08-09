@@ -90,6 +90,9 @@ class Crawler(BaseCrawler):
             # Push all links to IYP
             self.iyp.batch_add_links('PEERS_WITH', links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['PEERS_WITH'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

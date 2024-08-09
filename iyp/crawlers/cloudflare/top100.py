@@ -71,6 +71,9 @@ class Crawler(BaseCrawler):
         domain_qid = self.iyp.get_node('DomainName', {'name': entry['domain']})
         self.iyp.add_links(domain_qid, statements)
 
+    def unit_test(self):
+        super().unit_test(logging, ['RANK'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

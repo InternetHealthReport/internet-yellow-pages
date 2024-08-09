@@ -176,6 +176,9 @@ class Crawler(BaseCrawler):
         # Remove downloaded file
         os.remove(local_filename)
 
+    def unit_test(self):
+        super().unit_test(logging, ['ORIGINATE', 'CATEGORIZED', 'DEPENDS_ON', 'COUNTRY'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

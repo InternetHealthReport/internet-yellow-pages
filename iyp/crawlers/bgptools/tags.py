@@ -83,6 +83,9 @@ class Crawler(BaseCrawler):
                     print('Error for: ', line)
                     print(error)
 
+    def unit_test(self):
+        super().unit_test(logging, ['CATEGORIZED'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

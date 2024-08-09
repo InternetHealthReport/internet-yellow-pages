@@ -197,6 +197,9 @@ class Crawler(BaseCrawler):
         for label, links in prefix_status_links.items():
             self.iyp.batch_add_links(label, links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['AVAILABLE', 'ASSIGNED', 'RESERVED', 'COUNTRY'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

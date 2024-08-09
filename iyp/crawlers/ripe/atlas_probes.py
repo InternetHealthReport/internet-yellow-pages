@@ -175,6 +175,9 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('LOCATED_IN', located_in_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['ASSIGNED', 'LOCATED_IN', 'COUNTRY'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

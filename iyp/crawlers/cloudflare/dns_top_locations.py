@@ -168,6 +168,9 @@ class Crawler(BaseCrawler):
                 'props': [flat_prop, self.reference]
             })
 
+    def unit_test(self):
+        super().unit_test(logging, ['QUERIED_FROM'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

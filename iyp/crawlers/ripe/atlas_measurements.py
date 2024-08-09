@@ -258,6 +258,9 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('PART_OF', part_of_links)
         logging.info('Done.')
 
+    def unit_test(self):
+        super().unit_test(logging, ['PART_OF', 'TARGET'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

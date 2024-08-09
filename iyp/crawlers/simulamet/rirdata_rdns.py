@@ -123,6 +123,9 @@ class Crawler(BaseCrawler):
 
         self.iyp.batch_add_links('MANAGED_BY', links_managed_by)
 
+    def unit_test(self):
+        super().unit_test(logging, ['MANAGED_BY'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

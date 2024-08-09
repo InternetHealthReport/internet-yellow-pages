@@ -84,6 +84,9 @@ class Crawler(BaseCrawler):
 
         self.iyp.batch_add_links('NAME', name_links)
         self.iyp.batch_add_links('CATEGORIZED', tag_links)
+    
+    def unit_test(self):
+        super().unit_test(logging, ['NAME'])
 
 
 def main() -> None:

@@ -1,6 +1,7 @@
 import csv
 import os
 from datetime import timezone
+import logging
 
 import arrow
 import lz4.frame
@@ -101,3 +102,6 @@ class HegemonyCrawler(BaseCrawler):
 
         # Remove downloaded file
         os.remove(local_filename)
+
+    def unit_test(self):
+        super().unit_test(logging, ['DEPENDS_ON'])

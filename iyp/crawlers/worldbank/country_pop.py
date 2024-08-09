@@ -64,6 +64,9 @@ class Crawler(BaseCrawler):
         # Push all links to IYP
         self.iyp.batch_add_links('POPULATION', links)
 
+    def unit_test(self):
+        super().unit_test(logging, ['POPULATION'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

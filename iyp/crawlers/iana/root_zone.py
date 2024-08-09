@@ -107,6 +107,9 @@ class Crawler(BaseCrawler):
         logging.info(f'Pushing {len(managed_by)} MANAGED_BY relationships.')
         self.iyp.batch_add_links('MANAGED_BY', managed_by_relationships)
 
+    def unit_test(self):
+        super().unit_test(logging, ['RESOLVES_TO', 'MANAGED_BY'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
