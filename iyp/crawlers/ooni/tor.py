@@ -26,6 +26,7 @@ class Crawler(OoniCrawler):
         test_keys = one_line.get('test_keys', {})
 
         if not test_keys:
+            self.all_results.pop()
             return
 
         # Check each target in the test_keys
