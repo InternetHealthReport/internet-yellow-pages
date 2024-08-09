@@ -45,6 +45,9 @@ class Crawler(OoniCrawler):
                 result,
             )
 
+        if len(self.all_results[-1]) != 5:
+            self.all_results.pop()
+
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
