@@ -19,6 +19,7 @@ class Crawler(OoniCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'stunreachability')
         self.all_ips = set()
+        self.all_urls = set()
         self.all_hostnames = set()
 
     def process_one_line(self, one_line):
@@ -59,6 +60,7 @@ class Crawler(OoniCrawler):
                 # Append unique variables to corresponding sets
                 if hostname:
                     self.all_hostnames.add(hostname)
+                self.all_urls.add(stun_endpoint)
 
                 # Using the last result from the base class, add our unique variables
                 self.all_results[-1] = self.all_results[-1][:2] + (
