@@ -112,6 +112,17 @@ class Crawler(OoniCrawler):
         # Fetch all IP nodes in one batch
         ip_id_map = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', all_ips)
 
+        self.node_ids.update(
+            {
+                'url': self.iyp.batch_get_nodes_by_single_prop(
+                    'URL', 'url', self.all_urls
+                ),
+                'hostname': self.iyp.batch_get_nodes_by_single_prop(
+                    'HostName', 'name', self.all_hostnames
+                ),
+            }
+        )
+
         # Ensure all IDs are present and process results
         for asn, country, url, result, hostname, ips in self.all_results:
             asn_id = self.node_ids['asn'].get(asn)
