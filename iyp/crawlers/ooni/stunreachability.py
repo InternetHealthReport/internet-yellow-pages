@@ -70,9 +70,9 @@ class Crawler(OoniCrawler):
                     ip_addresses,
                 )
 
-                # Ensure the entry has 6 elements, otherwise remove it
-                if len(self.all_results[-1]) != 6 or not stun_endpoint or not result:
-                    self.all_results.pop()
+        # Ensure the entry has 6 elements, otherwise remove it
+        if len(self.all_results[-1]) != 6 or not stun_endpoint or not result:
+            self.all_results.pop()
 
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
