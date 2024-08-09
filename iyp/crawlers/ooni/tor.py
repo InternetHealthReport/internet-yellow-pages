@@ -30,6 +30,7 @@ class Crawler(OoniCrawler):
             return
 
         # Check each target in the test_keys
+        first_target = True
         targets = test_keys.get('targets', {})
         for _, target_data in targets.items():
             ip = ipaddress.ip_address(
@@ -40,14 +41,19 @@ class Crawler(OoniCrawler):
             target_protocol = target_data.get('target_protocol')
             if target_protocol not in self.all_tags:
                 continue
-            self.all_results[-1] = self.all_results[-1][:2] + (
-                ip,
-                target_protocol,
-                result,
-            )
+            if first_target:
+                self.all_results[-1] = self.all_results[-1][:2] + (
+                    ip,
+                    target_protocol,
+                    result,
+                )
+                first_target = False
+            else:
+                new_entry = self.all_results[-1][:2] + (ip, target_protocol, result)
+                self.all_results.append(new_entry)
 
-        if len(self.all_results[-1]) != 5:
-            self.all_results.pop()
+            if not first_target and len(self.all_results[-1]) != 5:
+                self.all_results.pop()
 
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()

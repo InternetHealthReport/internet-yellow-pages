@@ -140,13 +140,15 @@ class Crawler(OoniCrawler):
                 for ip in ip_addresses:
                     ip_id = ip_id_map.get(ip)
                     if ip_id:
-                        resolves_to_links.append(
-                            {
-                                'src_id': hostname_id,
-                                'dst_id': ip_id,
-                                'props': [self.reference],
-                            }
-                        )
+                        if (hostname_id, ip_id) not in self.unique_links['RESOLVES_TO']:
+                            self.unique_links['RESOLVES_TO'].add((hostname_id, ip_id))
+                            resolves_to_links.append(
+                                {
+                                    'src_id': hostname_id,
+                                    'dst_id': ip_id,
+                                    'props': [self.reference],
+                                }
+                            )
 
         for (asn_id, url_id), props in link_properties.items():
             if (asn_id, url_id) not in self.unique_links['CENSORED']:
