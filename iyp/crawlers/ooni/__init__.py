@@ -38,13 +38,14 @@ class OoniCrawler(BaseCrawler):
 
         # Fetch data
         grabber.download_and_extract(self.repo, tmpdir, self.dataset)
-        logging.info('Successfully downloaded and extracted all files')
+        logging.info('Successfully downloaded and extracted all files.')
         # Now that we have downloaded the jsonl files for the test we want, we can
         # extract the data we want
         testdir = os.path.join(
             tmpdir,
             self.dataset,
         )
+        logging.info('Processing files...')
         for file_name in os.listdir(testdir):
             file_path = os.path.join(
                 testdir,
@@ -52,15 +53,14 @@ class OoniCrawler(BaseCrawler):
             )
             if os.path.isfile(file_path) and file_path.endswith('.jsonl'):
                 with open(file_path, 'r') as file:
-                    for i, line in enumerate(file):
+                    for line in file:
                         data = json.loads(line)
                         self.process_one_line(data)
-                        logging.info(f'\rProcessed {i + 1} lines')
-        logging.info('\n Processed lines, now calculating percentages\n')
+        logging.info('Calculating percentages...')
         self.calculate_percentages()
-        logging.info('\n Calculated percentages, now adding entries to IYP\n')
+        logging.info('Adding entries to IYP...')
         self.batch_add_to_iyp()
-        logging.info('\n Successfully added all entries to IYP\n')
+        logging.info('Done.')
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
