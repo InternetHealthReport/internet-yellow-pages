@@ -63,3 +63,22 @@ services:
     depends_on:
       iyp_loader:
         condition: service_completed_successfully
+
+  caddy:
+    image: caddy:latest
+    profiles: ["caddy"]
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "2019:2019"
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019
+    volumes:
+      # - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./site:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+      
