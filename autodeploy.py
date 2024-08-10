@@ -1,14 +1,3 @@
-# 1. Run create_db
-# 2. Push the dump to ihr-archive
-# 3. Run autodeploy
-#   - Takes in date as argument
-#   - Downloads dump with corresponding date
-#   - Creates volume (name is based on the dump date)
-#   - Load data from dump into the volume and start neo4j
-#       - start neo4j on ports based on the date
-#       - '1' + [month] + [day] for gui
-#       - '2' + [month] + [day] for bolt
-
 import logging
 import sys
 import os
@@ -67,7 +56,11 @@ if not root:
 # Download logs from ihr archive
 logging.warning(f'Downloading logs for {date}')
 with requests.get(f'https://ihr-archive.iijlab.net/ihr-dev/iyp/{year}/{month}/{day}/iyp-{date}.log') as response:
-    pass
+    body = response.content
+    last_line = str(body).split('\n')[-1]
+    if 'Errors:' in last_line:
+        print('There were errors from create_db found in logs')
+        sys.exit(1)
 
 
 # Download dump from ihr archive
@@ -155,60 +148,3 @@ json = json.replace('<PREV_HTTP_PORT>', current_active_http_port)
 
 # Update config
 requests.post('http://localhost:2019/load', json, headers={'Content-Type': 'application/json'})
-# print(response.json())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from create_db import logging, root, dump_dir, date, create
-# import paramiko
-# from scp import SCPClient
-# import os
-# import json
-# import docker
-# import arrow
-# import requests
-# import json
-
-# NEO4J_VERSION = '5.16.0'
-
-# today = arrow.utcnow()
-
-# with open('autodeploy.config.json', 'r') as f:
-#     conf = json.load(f)
-
-# logging.warning('starting ssh connection')
-# ssh = paramiko.SSHClient()
-# ssh.load_system_host_keys()
-# ssh.connect(conf['server'], username=conf['user'])
-
-# logging.warning('making the directory for target date')
-# dest = os.path.join(conf['target_dir'], f'{today.year}/{today.month:02d}/{today.day:02d}', '')
-# ssh.exec_command(f'mkdir -p {dest}')
-
-# logging.warning('sending dump via scp')   
-# with SCPClient(ssh.get_transport()) as scp:
-#     scp.put(dump_dir, recursive=True, remote_path=dest)
-
-

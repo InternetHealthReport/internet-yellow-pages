@@ -6,6 +6,8 @@ import os
 import sys
 from time import sleep
 import datetime
+import paramiko
+from scp import SCPClient
 
 import arrow
 import docker
@@ -199,15 +201,27 @@ def create():
     final_words = ''
     if not no_error:
         # TODO send an email
-        final_words += f'There was errors: {" ".join((k for k in status))}'
-        logging.error('there was errors!\n')
-        logging.error({k: error for k, error in status.items() if error != 'OK'})
+
+        # Add the log line to indicate to autodeploy that there were errors
+        final_words += f'\nErrors: {" ".join((k for k in status))}'
+        logging.error(f'there was errors!\n')
     else:
         final_words = 'No error :)'
     # Delete tmp file in cron job
     #    shutil.rmtree(tmp_dir)
 
     logging.warning(f'Finished: {sys.argv} {final_words}')
+
+    # Push the dump and log to ihr archive
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys()
+    ssh.connect(conf['archive_server'], username=conf['archive_user'])
+
+    dest = os.path.join(conf['archive_base_path'], f'{today.year}/{today.month:02d}/{today.day:02d}', '')
+    ssh.exec_command(f'mkdir -p {dest}')
+
+    with SCPClient(ssh.get_transport()) as scp:
+        scp.put(dump_dir, recursive=True, remote_path=dest)
 
 if __name__ == '__main__':
     create()
