@@ -77,7 +77,6 @@ services:
     environment:
       - CADDY_ADMIN=0.0.0.0:2019
     volumes:
-      # - ./Caddyfile:/etc/caddy/Caddyfile
       - ./site:/srv
       - caddy_data:/data
       - caddy_config:/config
