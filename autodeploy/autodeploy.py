@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import sys
@@ -52,24 +53,25 @@ def get_config_ports():
         body = json.loads(response.content.decode())
         routes = body['apps']['http']['servers']['srv0']['routes']
         active = {}
-        try:
-            for route in routes:
-                host = route['match'][0]['host'][0]
-                dial = route['handle'][0]['routes'][0]['handle'][0]['upstreams'][0]['dial']
-                active[host] = dial
-            active_bolt_port = active['ryan-bolt.ihr.live'].split(':')[1]
-            active_http_port = active['ryan.ihr.live'].split(':')[1]
-            prev_http_port = active['ryan-prev.ihr.live'].split(':')[1]
-            prev_bolt_port = active['ryan-prev-bolt.ihr.live'].split(':')[1]
-            return {
-                'active_bolt': active_bolt_port,
-                'active_http': active_http_port,
-                'prev_http': prev_http_port,
-                'prev_bolt': prev_bolt_port
-            }
-        except BaseException:
-            logging.warning('Unable to find currently active deployments')
-            return None
+        for route in routes:
+            # This happens with a fresh caddy build. No ports are active, so
+            # return an empty dict
+            if 'match' not in route:
+                return {}
+            host = route['match'][0]['host'][0]
+            dial = route['handle'][0]['routes'][0]['handle'][0]['upstreams'][0]['dial']
+            active[host] = dial
+
+        ports = {}
+        if 'ryan-bolt.ihr.live' in active:
+            ports['active_bolt'] = active['ryan-bolt.ihr.live'].split(':')[1]
+        if 'ryan.ihr.live' in active:
+            ports['active_http'] = active['ryan.ihr.live'].split(':')[1]
+        if 'ryan-prev-bolt.ihr.live' in active and 'PREV_BOLT_PORT' not in active['ryan-prev-bolt.ihr.live']:
+            ports['prev_bolt'] = active['ryan-prev-bolt.ihr.live'].split(':')[1]
+        if 'ryan-prev.ihr.live' in active and 'PREV_HTTP_PORT' not in active['ryan-prev.ihr.live']:
+            ports['prev_http'] = active['ryan-prev.ihr.live'].split(':')[1]
+        return ports
 
 
 def check_log(year, month, day):
@@ -103,16 +105,18 @@ def get_port_date(port):
 # use the date provided in command line arg.
 if len(sys.argv) < 2:
     ports = get_config_ports()
-    if ports:
+    success = False
+    if 'active_http' in ports:
         active_http = ports['active_http']
         month, day = get_port_date(active_http)
         start_date = datetime.date(int(today.year), int(month), int(day))
-        success = False
+    else:
+        start_date = datetime.date(int(today.year), int(today.month), int(today.day))
 
     # Download logs from ihr archive each day in the next week since
     # the previous release
     for i in range(1, 8):
-        date = start_date + datetime.timedelta(days=i)
+        date = start_date - datetime.timedelta(days=i)
         date = date.strftime('%Y-%m-%d')
         logging.warning(f'Checking archive for {date}')
         year, month, day = date.split('-')
@@ -190,21 +194,28 @@ container = client.containers.run(
 
 # Get currently active config
 ports = get_config_ports()
-prev_month, prev_day = get_port_date(ports['prev_http'])
-# It's possible that you're trying to redeploy the current prev
-# If this condition isn't here, then the new deployment will be deleted
-# since it has the same date as prev
-if prev_month != month or prev_day != day:
-    remove_deployment(prev_month, prev_day)
 
-with open('caddy.json', 'r') as f:
-    json = f.read()
+# Only delete current prev if it exists
+if 'prev_http' in ports:
+    prev_month, prev_day = get_port_date(ports['prev_http'])
+    # It's possible that you're trying to redeploy the current prev
+    # If this condition isn't here, then the new deployment will be deleted
+    # since it has the same date as prev
+    if prev_month != month or prev_day != day:
+        remove_deployment(prev_month, prev_day)
 
-json = json.replace('<BOLT_PORT>', bolt_port)
-json = json.replace('<HTTP_PORT>', gui_port)
-json = json.replace('<PREV_BOLT_PORT>', ports['active_bolt'])
-json = json.replace('<PREV_HTTP_PORT>', ports['active_http'])
+with open('caddy.template.json', 'r') as f:
+    caddy_template = f.read()
+
+caddy_template = caddy_template.replace('<BOLT_PORT>', bolt_port)
+caddy_template = caddy_template.replace('<HTTP_PORT>', gui_port)
+
+# If there are no active ports (for example, on the first run after a fresh
+# caddy build), don't try to set prev ports
+if 'active_http' in ports:
+    caddy_template = caddy_template.replace('<PREV_BOLT_PORT>', ports['active_bolt'])
+    caddy_template = caddy_template.replace('<PREV_HTTP_PORT>', ports['active_http'])
 
 
 # Update config
-requests.post('http://localhost:2019/load', json, headers={'Content-Type': 'application/json'})
+requests.post('http://localhost:2019/load', caddy_template, headers={'Content-Type': 'application/json'})
