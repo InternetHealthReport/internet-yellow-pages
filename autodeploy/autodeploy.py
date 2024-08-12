@@ -1,13 +1,12 @@
-import logging
-import sys
-import os
-import docker
-import logging
-import requests
-import time
-import json
-import arrow
 import datetime
+import logging
+import os
+import sys
+import time
+
+import arrow
+import docker
+import requests
 
 NEO4J_VERSION = '5.16.0'
 today = arrow.utcnow()
@@ -23,28 +22,33 @@ logging.basicConfig(
 logging.warning('Starting deployment')
 
 client = docker.from_env()
+
+
 def remove_deployment(month, day):
-    """Checks if there is an active deployment for the given month and day. If there is,
-    remove it and the corresponding volume storing its data.
+    """Checks if there is an active deployment for the given month and day.
+
+    If there is, remove it and the corresponding volume storing its data.
     """
     try:
         container = client.containers.get(f'deploy-{month}-{day}')
         logging.warning(f'Removing active deployment for {month}-{day}')
         container.stop()
-        # Wait a little bit after the container has been removed before deleting the volume
+        # Wait a little bit after the container has been removed
+        # before deleting the volume
         while True:
             try:
                 client.volumes.get(f'data-{month}-{day}').remove()
                 break
-            except:
+            except BaseException:
                 time.sleep(0.1)
     except docker.errors.NotFound:
         logging.warning(f'No existing deployment for {date}. Starting deployment')
 
 
 def get_config_ports():
-    """Makes a request to caddy config and returns the ports current being used (both active and previous)"""
-    with requests.get("http://sandbox.ihr.live:2019/config/") as response:
+    """Makes a request to caddy config and returns the ports current being used (both
+    active and previous)"""
+    with requests.get('http://sandbox.ihr.live:2019/config/') as response:
         body = json.loads(response.content.decode())
         routes = body['apps']['http']['servers']['srv0']['routes']
         active = {}
@@ -63,13 +67,14 @@ def get_config_ports():
                 'prev_http': prev_http_port,
                 'prev_bolt': prev_bolt_port
             }
-        except:
+        except BaseException:
             logging.warning('Unable to find currently active deployments')
             return None
-        
+
 
 def check_log(year, month, day):
-    """Makes a request to archive and checks if there is a valid dump for the specified date"""
+    """Makes a request to archive and checks if there is a valid dump for the specified
+    date."""
     date = f'{year}-{month}-{day}'
     logging.warning(f'Downloading logs for {date}')
     with requests.get(f'https://ihr-archive.iijlab.net/ihr-dev/iyp/{year}/{month}/{day}/iyp-{date}.log') as response:
@@ -82,15 +87,20 @@ def check_log(year, month, day):
             return True
         return False
 
-        
+
 def get_port_date(port):
-    """Extracts the month and day from a port. Returns the tuple (month, day)"""
+    """Extracts the month and day from a port.
+
+    Returns the tuple (month, day)
+    """
     month = port[-4:-2]
     day = port[-2:]
     return month, day
 
-# If no date is provided when running the script, check if any dumps have been made within a week since the
-# previous deployment. Otherwise, use the date provided in command line arg.
+
+# If no date is provided when running the script, check if any dumps
+# have been made within a week since the previous deployment. Otherwise,
+# use the date provided in command line arg.
 if len(sys.argv) < 2:
     ports = get_config_ports()
     if ports:
@@ -98,9 +108,10 @@ if len(sys.argv) < 2:
         month, day = get_port_date(active_http)
         start_date = datetime.date(int(today.year), int(month), int(day))
         success = False
-    
-    # Download logs from ihr archive each day in the next week since the previous release
-    for i in range(1,8):
+
+    # Download logs from ihr archive each day in the next week since
+    # the previous release
+    for i in range(1, 8):
         date = start_date + datetime.timedelta(days=i)
         date = date.strftime('%Y-%m-%d')
         logging.warning(f'Checking archive for {date}')
@@ -142,17 +153,17 @@ with requests.get(f'https://ihr-archive.iijlab.net/ihr-dev/iyp/{year}/{month}/{d
 # Load dump into volume
 logging.warning('Load dump into neo4j db')
 container = client.containers.run(
-        'neo4j/neo4j-admin:' + NEO4J_VERSION,
-        command='neo4j-admin database load neo4j --from-path=/dumps --verbose',
-        name='load',
-        tty=True,
-        stdin_open=True,
-        remove=True,
-        volumes={
+    'neo4j/neo4j-admin:' + NEO4J_VERSION,
+    command='neo4j-admin database load neo4j --from-path=/dumps --verbose',
+    name='load',
+    tty=True,
+    stdin_open=True,
+    remove=True,
+    volumes={
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
             dump_dir: {'bind': '/dumps', 'mode': 'rw'},
-        }
-    )
+    }
+)
 
 
 # Run neo4j based on data in volume just created
