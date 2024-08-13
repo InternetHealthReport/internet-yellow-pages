@@ -59,11 +59,13 @@ class OoniCrawler(BaseCrawler):
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
 
+        # Extract the ASN, throw an exception if malformed
         probe_asn = (
-            int(one_line.get('probe_asn')[2:])
-            if one_line.get('probe_asn') and one_line.get('probe_asn').startswith('AS')
-            else None
+            int(one_line['probe_asn'][2:])
+            if one_line.get('probe_asn', '').startswith('AS')
+            else (_ for _ in ()).throw(Exception('Invalid ASN'))
         )
+
         # Add the DNS resolver to the set, unless its not a valid IP address
         try:
             self.all_dns_resolvers.add(
@@ -98,7 +100,9 @@ class OoniCrawler(BaseCrawler):
 
         # First, add the nodes and store their IDs directly as returned dictionaries
         self.node_ids = {
-            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns, all=False),
+            'asn': self.iyp.batch_get_nodes_by_single_prop(
+                'AS', 'asn', self.all_asns, all=False
+            ),
             'country': self.iyp.batch_get_nodes_by_single_prop(
                 'Country', 'country_code', self.all_countries
             ),
