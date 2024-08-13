@@ -77,6 +77,20 @@ class OoniCrawler(BaseCrawler):
         self.all_asns.add(probe_asn)
         self.all_countries.add(probe_cc)
         self.all_results.append((probe_asn, probe_cc, None, None))
+        """The base function adds a skeleton to the all_results list, which includes the
+        probe_asn and the probe_cc, as well as 2 dummy entries.
+
+        Each extended crawler then modifies this entry
+        by calling self.all_results[-1][:2] to access the latest entry
+        in the all_list and modify the non-populated variables. Adding
+        further variables (e.g. more than 4) is also possible, as well
+        as adding less, in that case only modify variable 3.
+        Attention: if you are discarding a result in the extended
+        class, you need to make sure you specifically pop() the entry
+        created here, in the base class, or you WILL end up with
+        misformed entries that only contain the probe_asn and
+        probe_cc, and mess up your data.
+        """
 
     def batch_add_to_iyp(self):
         """Add the results to the IYP."""
