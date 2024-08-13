@@ -116,7 +116,7 @@ if len(sys.argv) < 2:
     # Download logs from ihr archive each day in the next week since
     # the previous release
     for i in range(1, 8):
-        date = start_date - datetime.timedelta(days=i)
+        date = start_date + datetime.timedelta(days=i)
         date = date.strftime('%Y-%m-%d')
         logging.warning(f'Checking archive for {date}')
         year, month, day = date.split('-')
