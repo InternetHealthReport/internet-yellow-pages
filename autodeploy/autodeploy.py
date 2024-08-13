@@ -127,7 +127,7 @@ if len(sys.argv) < 2:
             logging.warning(f'No archive entry found for {date}')
 
     if not success:
-        logging.warning('Exiting because no active dates were found in caddy')
+        logging.warning('Exiting because no active dates were found in archive')
         sys.exit(1)
 else:
     date = sys.argv[1]
