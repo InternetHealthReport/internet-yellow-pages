@@ -1,0 +1,31 @@
+
+# Relationships available in IYP
+
+
+| Relationship               | Description                                                                                                                                                                                                      |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ALIAS_OF                   | Equivalent to the CNAME record in DNS. It relates two HostNames.                                                                                                                                                 |
+| ASSIGNED                   | Represent the allocation by a RIR of a network resource (AS, Prefix) to a resource holder (see OpaqueID). Or represent the assigned IP address of an AtlasProbe.                                                 |
+| AVAILABLE                  | Relate ASes and Prefixes to RIRs (in the form of an OpaqueID) meaning that the resource is not allocated and available at the related RIR.                                                                       |
+| CATEGORIZED                | Relate a network resource (AS, Prefix, URL) to a Tag, meaning that the resource has been classified accordingly to the Tag. The **reference_name** property provide the name of the original dataset/classifier. |
+| COUNTRY                    | Relate any node to its corresponding country. This relation may have different meaning depending on the original dataset (e.g. geo-location or registration).                                                    |
+| DEPENDS_ON                 | Relate an AS or Prefix to an AS, meaning the reachability of the AS/Prefix depends on a certain AS.                                                                                                              |
+| EXTERNAL_ID                | Relate a node to an identifier commonly used by an organization. For example, PeeringDB assigns unique identifiers to IXPs (see PeeringdbIXID).                                                                  |
+| LOCATED_IN                 | Location of a resource at a specific geographical or topological location. For example, co-location Facility for an IXP or AS for an AtlasProbe.                                                                 |
+| MANAGED_BY                 | Entity in charge of a network resource. For example an AS is  managed by an Organization, a DomainName is managed by an AuthoritativeNameServer.                                                                 |
+| MEMBER_OF                  | Represent the membership to an organization. For example, an AS is member of an IXP.                                                                                                                             |
+| NAME                       | Relate an entity to its usual or registered name. For example, the name of an AS.                                                                                                                                |
+| ORIGINATE                  | Relate a Prefix to an AS, meaning that the prefix is seen as being originated from that AS in BGP.                                                                                                               |
+| PARENT                     | Relate two DomainNames and represent a zone cut between the parent zone and the more specific zone.                                                                                                              |
+| PART_OF                    | Represent that one entity is a part of another. For example, an IP address is a part of an IP Prefix, a HostName is a part of a DomainName.                                                                      |
+| PEERS_WITH                 | Represent the connection between two ASes as seen in BGP. It also include peerings between ASes and BGPCollectors.                                                                                               |
+| POPULATION                 | Indicate that an AS hosts a certain fraction of the population of a country. It also represent the estimated population of a country.                                                                            |
+| QUERIED_FROM               | Relate a DomainName to an AS or Country, meaning that the AS or Country appears in the Top 100AS or Country to query the most the DomainName (as reported by Cloudflare radar).                                  |
+| RANK                       | Relate a resource to a Ranking, meaning that the resource appears in the Ranking. The **rank** property gives the exact rank position.                                                                           |
+| RESERVED                   | Indicate that an AS or Prefix is reserved for a certain purpose by RIRs or IANA.                                                                                                                                 |
+| RESOLVES_TO                | Relate a HostName to an IP address, meaning that a DNS resolution resolved the corresponding IP.                                                                                                                 |
+| ROUTE_ORIGIN_AUTHORIZATION | Relate an AS and a Prefix, meaning that the AS is authorized to originate the Prefix according to RPKI.                                                                                                          |
+| SIBLING_OF                 | Relate ASes or Organization together, meaning that they represent the same entity.                                                                                                                               |
+| TARGET                     | Relate an AtlasMeasurement to an IP, HostName, or AS, meaning that an Atlas measurement is setup to probe that resource.                                                                                         |
+| WEBSITE                    | Relate a URL to an Organization, Facility, IXP, AS, representing a common website for the resource.                                                                                                              |
+
