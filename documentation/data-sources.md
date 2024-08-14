@@ -20,9 +20,8 @@
 |                             | IXPs Dataset                                 | https://www.caida.org/catalog/datasets/ixps}                     |
 | Cisco                       | Umbrella Popularity List                     | https://s3-us-west-1.amazonaws.com/umbrella-static/index.html}   |
 | Citizen Lab                 | URL testing lists                            | https://github.com/citizenlab/test-lists}                        |
-| Cloudflare                  | Cloudflare Radar API endpoints               | https://radar.cloudflare.com}}                                   |
-|                             | radar/dns/top/ases, radar/dns/top/locations, |                                                                       |
-|                             | radar/ranking/top, radar/datasets            |                                                                       |
+| Cloudflare                  | Cloudflare Radar API endpoints radar/dns/top/ases, radar/dns/top/locations, radar/ranking/top, radar/datasets   | https://radar.cloudflare.com}}                                   |
+|                             |                                   |
 | Emile Aben                  | AS names                                     | https://github.com/emileaben/asnames}                                 |
 | IHR                         | Country Dependency, AS Hegemony, ROV         | https://ihr.iijlab.net}                                               |
 | Internet Intelligence Lab   | AS to Organization Mapping                   | https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping}      |
