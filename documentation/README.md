@@ -9,7 +9,7 @@ The list of node and relationship types defined for IYP are available at:
 ## IYP Data Sources
 
 The list of all datasets imported in IYP is available [here](data-sources.md).
-The datasets licences are available the [ACKNOWLEDGMENTS file](../ACKNOWLEDGMENTS.md).
+The datasets licence are available the [IYP acknowledgments](../ACKNOWLEDGMENTS.md).
 
 ## IYP Gallery
 
@@ -37,12 +37,12 @@ to include the crawler to IYP's github repository main branch.
 
 Along with the python code and README, the addition of new datasets should also 
 be reflected in the following files:
-- The list of [imported datasets](./data-sources.md).
-- The [ACKNOWLEDGMENTS.md](../ACKNOWLEDGMENTS.md) file should list the licence of all imported dataset.
+- the list of [imported datasets](./data-sources.md),
+- the [IYP acknowledgments](../ACKNOWLEDGMENTS.md) file should list the licence of all imported dataset.
 
-Furthermore, **any change to the ontology should be reflected in the documentation** ([Node types](./node_types.md) and [Relationship types](./relationship_types.md)).
-Changes to the ontology should be discussed in advance so that a consensus is
-reached before the ontology is updated either on [github discussion](https://github.com/InternetHealthReport/internet-yellow-pages/discussions) or by reaching [IYP maintainers](mailto:iyp@ihr.live).
+Changes to the ontology should be discussed in advance, either on [github discussion](https://github.com/InternetHealthReport/internet-yellow-pages/discussions) or by reaching [IYP maintainers](mailto:iyp@ihr.live),
+so that a consensus is reached before the ontology is updated. 
+**Any change to the ontology should be reflected in the documentation** ([Node types](./node_types.md) and [Relationship types](./relationship_types.md)).
 
 You can also consider adding example queries to the [IYP gallery](./gallery.md),
 and organizations providing data to the [IYP frontpage]().
