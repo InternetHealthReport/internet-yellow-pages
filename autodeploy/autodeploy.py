@@ -67,6 +67,10 @@ def get_config_ports():
             ports['active_bolt'] = active['ryan-bolt.ihr.live'].split(':')[1]
         if 'ryan.ihr.live' in active:
             ports['active_http'] = active['ryan.ihr.live'].split(':')[1]
+
+        # It's possible for there to be only one active deployment, and there
+        # are no previous ports. Only attempt to parse the previous ports
+        # if they have been filled in on the caddy config
         if 'ryan-prev-bolt.ihr.live' in active and 'PREV_BOLT_PORT' not in active['ryan-prev-bolt.ihr.live']:
             ports['prev_bolt'] = active['ryan-prev-bolt.ihr.live'].split(':')[1]
         if 'ryan-prev.ihr.live' in active and 'PREV_HTTP_PORT' not in active['ryan-prev.ihr.live']:
