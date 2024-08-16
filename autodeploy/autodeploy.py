@@ -141,7 +141,7 @@ else:
 # Define ports and filenames that depend on the date
 neo4j_volume = f'data-{month}-{day}'
 deploy_name = f'deploy-{month}-{day}'
-gui_port = f'1{month}{day}'
+http_port = f'1{month}{day}'
 bolt_port = f'2{month}{day}'
 
 
@@ -180,7 +180,7 @@ container = client.containers.run(
     'neo4j:' + NEO4J_VERSION,
     name=deploy_name,
     ports={
-        7474: int(gui_port),
+        7474: int(http_port),
         7687: int(bolt_port)
     },
     volumes={
@@ -212,7 +212,7 @@ with open('caddy.template.json', 'r') as f:
     caddy_template = f.read()
 
 caddy_template = caddy_template.replace('<BOLT_PORT>', bolt_port)
-caddy_template = caddy_template.replace('<HTTP_PORT>', gui_port)
+caddy_template = caddy_template.replace('<HTTP_PORT>', http_port)
 
 # If there are no active ports (for example, on the first run after a fresh
 # caddy build), don't try to set prev ports
