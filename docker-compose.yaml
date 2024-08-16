@@ -1,3 +1,6 @@
+volumes:
+  caddy_data:
+  caddy_config:
 services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.21.2
@@ -66,7 +69,6 @@ services:
 
   caddy:
     image: caddy:latest
-    profiles: ["caddy"]
     container_name: caddy
     restart: unless-stopped
     ports:
@@ -80,4 +82,5 @@ services:
       - ./site:/srv
       - caddy_data:/data
       - caddy_config:/config
+    command: /usr/bin/caddy run --resume
       
