@@ -1,0 +1,11 @@
+{
+  "caddy_config_url": "http://sandbox.ihr.live:2019/config/",
+  "caddy_post_url": "http://localhost:2019/load",
+  "caddy_template": "caddy.template.json",
+  "urls": {
+    "active_bolt": "ryan-bolt.ihr.live",
+    "active_http": "ryan.ihr.live",
+    "prev_bolt": "ryan-prev-bolt.ihr.live",
+    "prev_http": "ryan-prev.ihr.live"
+  }
+}
