@@ -11,9 +11,9 @@ import requests
 
 NEO4J_VERSION = '5.16.0'
 
-DUMP_URL_PREFIX = 'https://ihr-archive.iijlab.net/ihr-dev/iyp/%Y/%m/%d/iyp-%Y-%m-%d'
-LOG_URL = DUMP_URL_PREFIX + '.log'
-DUMP_URL = DUMP_URL_PREFIX + '.dump'
+ARCHIVE_URL_SUFFIX = '%Y/%m/%d/iyp-%Y-%m-%d'
+LOG_URL_SUFFIX = ARCHIVE_URL_SUFFIX + '.log'
+DUMP_URL_SUFFIX = ARCHIVE_URL_SUFFIX + '.dump'
 
 DUMP_DOWNLOAD_DIR_SUFFIX = 'dumps/%Y/%m/%d'
 
@@ -97,11 +97,12 @@ def get_ports_from_caddy_config(config: dict):
     return ports
 
 
-def check_log(date: datetime):
+def check_log(config: dict, date: datetime):
     """Makes a request to archive and checks if there is a valid dump for the specified
     date."""
     logging.info(f'Downloading logs for {date.strftime("%Y-%m-%d")}')
-    log_url = date.strftime(LOG_URL)
+    log_url_fmt = os.path.join(config['archive_base_url'], LOG_URL_SUFFIX)
+    log_url = date.strftime(log_url_fmt)
     r = requests.get(log_url)
     try:
         r.raise_for_status()
@@ -178,7 +179,7 @@ def main():
         # the previous release
         for i in range(1, 8):
             date = start_date + timedelta(days=i)
-            if check_log(date):
+            if check_log(config, date):
                 success = True
                 break
             else:
@@ -200,10 +201,11 @@ def main():
     remove_deployment(client, date)
 
     # Download dump from ihr archive
-    logging.warning(f'Downloading dump for {date.strftime("%Y-%m-%d")}')
+    logging.info(f'Downloading dump for {date.strftime("%Y-%m-%d")}')
     dump_dir = os.path.join(root, date.strftime(DUMP_DOWNLOAD_DIR_SUFFIX))
     os.makedirs(dump_dir, exist_ok=True)
-    dump_url = date.strftime(DUMP_URL)
+    dump_url_fmt = os.path.join(config['archive_base_url'], DUMP_URL_SUFFIX)
+    dump_url = date.strftime(dump_url_fmt)
     r = requests.get(dump_url)
     try:
         r.raise_for_status()
@@ -215,7 +217,7 @@ def main():
         f.write(r.content)
 
     # Load dump into volume
-    logging.warning('Load dump into neo4j db')
+    logging.info('Load dump into neo4j db')
     client.containers.run(
         'neo4j/neo4j-admin:' + NEO4J_VERSION,
         command='neo4j-admin database load neo4j --from-path=/dumps --verbose',

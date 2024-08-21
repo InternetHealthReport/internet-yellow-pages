@@ -1,5 +1,6 @@
 {
-  "caddy_config_url": "http://sandbox.ihr.live:2019/config/",
+  "archive_base_url": "https://ihr-archive.iijlab.net/ihr/iyp/",
+  "caddy_config_url": "http://sandbox.ihr.live:2019/config",
   "caddy_post_url": "http://localhost:2019/load",
   "caddy_template": "caddy.template.json",
   "urls": {
