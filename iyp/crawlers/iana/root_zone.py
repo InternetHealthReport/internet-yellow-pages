@@ -108,7 +108,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('MANAGED_BY', managed_by_relationships)
 
     def unit_test(self):
-        super().unit_test(logging, ['RESOLVES_TO', 'MANAGED_BY'])
+        super().unit_test(['RESOLVES_TO', 'MANAGED_BY'])
 
 
 def main() -> None:
@@ -129,7 +129,7 @@ def main() -> None:
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

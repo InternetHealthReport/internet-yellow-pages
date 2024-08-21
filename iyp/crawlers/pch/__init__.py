@@ -328,4 +328,4 @@ class RoutingSnapshotCrawler(BaseCrawler):
         self.cache_handler.clear_cache()
 
     def unit_test(self):
-        super().unit_test(logging, ['ORIGINATE'])
+        super().unit_test(['ORIGINATE'])

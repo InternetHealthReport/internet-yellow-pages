@@ -4,7 +4,6 @@ import ipaddress
 import logging
 import os
 import pickle
-import json
 from datetime import datetime, time, timezone
 from shutil import rmtree
 from typing import Optional
@@ -477,7 +476,7 @@ class IYP(object):
         label: label string or list of label strings
         """
         label_str = str(label)
-        if type(label) is list:
+        if isinstance(label, list):
             label_str = ':'.join(label)
 
         for i in range(0, len(node_ids), BATCH_SIZE):
@@ -710,17 +709,20 @@ class BaseCrawler(object):
 
         return result['count']
 
-    def unit_test(self, logging, relation_types): # optional start and end nodes or use reference name index
-        """Check for existence of data from this reference name"""
+    def unit_test(self, relation_types):
+        """Check for existence of relationships created by this crawler.
+
+        relation_types should be a list of types for which existence is checked.
+        """
+        logging.info(f'Running existence test for {relation_types}')
         for relation_type in relation_types:
-            print(f'testing {relation_type}')
-            existenceQuery = f"""MATCH ()-[r:{relation_type}]-() 
+            existenceQuery = f"""MATCH ()-[r:{relation_type}]-()
                                 USING INDEX r:{relation_type}(reference_name)
-                                WHERE r.reference_name = '{self.reference['reference_name']}' 
+                                WHERE r.reference_name = '{self.reference['reference_name']}'
                                 RETURN 0 LIMIT 1"""
             result = self.iyp.tx.run(existenceQuery)
             if len(list(result)) == 0:
-                raise RuntimeError(f"Missing data for crawler {self.reference['reference_name']}, relation {relation_type}")
+                raise RuntimeError(f'Missing data for relation {relation_type}')
 
     def close(self):
         # Commit changes to IYP

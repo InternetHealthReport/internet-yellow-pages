@@ -63,7 +63,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('ORIGINATE', links)
 
     def unit_test(self):
-        super().unit_test(logging, ['ORIGINATE'])
+        super().unit_test(['ORIGINATE'])
 
 
 def main() -> None:
@@ -84,7 +84,7 @@ def main() -> None:
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

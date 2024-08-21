@@ -241,7 +241,7 @@ class OpenIntelCrawler(BaseCrawler):
 
     def unit_test(self):
         # use different version depending on infra_ns vs others
-        super().unit_test(logging, ['RESOLVES_TO', 'MANAGED_BY', 'PART_OF'])
+        super().unit_test(['RESOLVES_TO', 'MANAGED_BY', 'PART_OF'])
 
 
 class DnsgraphCrawler(BaseCrawler):
@@ -388,4 +388,4 @@ class DnsgraphCrawler(BaseCrawler):
         self.iyp.batch_add_node_label(ns_id, 'AuthoritativeNameServer')
 
     def unit_test(self):
-        super().unit_test(logging, ['PARENT', 'PART_OF', 'ALIAS_OF', 'MANAGED_BY', 'RESOLVES_TO'])
+        super().unit_test(['PARENT', 'PART_OF', 'ALIAS_OF', 'MANAGED_BY', 'RESOLVES_TO'])

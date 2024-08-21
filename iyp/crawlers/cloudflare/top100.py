@@ -72,7 +72,7 @@ class Crawler(BaseCrawler):
         self.iyp.add_links(domain_qid, statements)
 
     def unit_test(self):
-        super().unit_test(logging, ['RANK'])
+        super().unit_test(['RANK'])
 
 
 def main() -> None:
@@ -93,7 +93,7 @@ def main() -> None:
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

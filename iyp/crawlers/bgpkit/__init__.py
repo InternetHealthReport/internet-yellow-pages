@@ -1,6 +1,6 @@
 import bz2
 import json
-import logging
+
 import requests
 
 from iyp import (BaseCrawler, RequestStatusError,
@@ -49,4 +49,4 @@ class AS2RelCrawler(BaseCrawler):
         self.iyp.batch_add_links('PEERS_WITH', links)
 
     def unit_test(self):
-        super().unit_test(logging, ['PEERS_WITH'])
+        super().unit_test(['PEERS_WITH'])
