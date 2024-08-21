@@ -186,7 +186,7 @@ class Crawler(BaseCrawler):
         os.rmdir(self.tmpdir)
 
     def unit_test(self):
-        super().unit_test(['SIBLING_OF'])
+        return super().unit_test(['SIBLING_OF'])
 
 
 def main() -> None:

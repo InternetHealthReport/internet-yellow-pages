@@ -101,7 +101,7 @@ class Crawler(BaseCrawler):
             self.iyp.batch_add_links('ROUTE_ORIGIN_AUTHORIZATION', links)
 
     def unit_test(self):
-        super().unit_test(['ROUTE_ORIGIN_AUTHORIZATION'])
+        return super().unit_test(['ROUTE_ORIGIN_AUTHORIZATION'])
 
 
 def main() -> None:

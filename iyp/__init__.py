@@ -715,6 +715,7 @@ class BaseCrawler(object):
         relation_types should be a list of types for which existence is checked.
         """
         logging.info(f'Running existence test for {relation_types}')
+        passed = True
         for relation_type in relation_types:
             existenceQuery = f"""MATCH ()-[r:{relation_type}]-()
                                 USING INDEX r:{relation_type}(reference_name)
@@ -722,7 +723,9 @@ class BaseCrawler(object):
                                 RETURN 0 LIMIT 1"""
             result = self.iyp.tx.run(existenceQuery)
             if len(list(result)) == 0:
-                raise RuntimeError(f'Missing data for relation {relation_type}')
+                passed = False
+                logging.error(f'Missing data for relation {relation_type}')
+        return passed
 
     def close(self):
         # Commit changes to IYP

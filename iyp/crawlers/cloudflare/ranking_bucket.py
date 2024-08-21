@@ -123,7 +123,7 @@ class Crawler(BaseCrawler):
                 self.iyp.batch_add_links('RANK', domain_links)
 
     def unit_test(self):
-        super().unit_test(['RANK'])
+        return super().unit_test(['RANK'])
 
 
 # Main program

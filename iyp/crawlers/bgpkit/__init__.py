@@ -49,4 +49,4 @@ class AS2RelCrawler(BaseCrawler):
         self.iyp.batch_add_links('PEERS_WITH', links)
 
     def unit_test(self):
-        super().unit_test(['PEERS_WITH'])
+        return super().unit_test(['PEERS_WITH'])

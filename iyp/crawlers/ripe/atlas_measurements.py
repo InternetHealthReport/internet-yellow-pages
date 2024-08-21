@@ -259,7 +259,7 @@ class Crawler(BaseCrawler):
         logging.info('Done.')
 
     def unit_test(self):
-        super().unit_test(['PART_OF', 'TARGET'])
+        return super().unit_test(['PART_OF', 'TARGET'])
 
 
 def main() -> None:

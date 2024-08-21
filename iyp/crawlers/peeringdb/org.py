@@ -120,7 +120,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('EXTERNAL_ID', orgid_links)
 
     def unit_test(self):
-        super().unit_test(['NAME', 'WEBSITE', 'COUNTRY', 'EXTERNAL_ID'])
+        return super().unit_test(['NAME', 'WEBSITE', 'COUNTRY', 'EXTERNAL_ID'])
 
 
 def main() -> None:

@@ -84,7 +84,7 @@ class Crawler(BaseCrawler):
                     print(error)
 
     def unit_test(self):
-        super().unit_test(['CATEGORIZED'])
+        return super().unit_test(['CATEGORIZED'])
 
 
 def main() -> None:

@@ -394,7 +394,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('NAME', name_links)
 
     def unit_test(self):
-        super().unit_test(['MANAGED_BY', 'LOCATED_IN', 'COUNTRY', 'WEBSITE', 'EXTERNAL_ID', 'NAME'])
+        return super().unit_test(['MANAGED_BY', 'LOCATED_IN', 'COUNTRY', 'WEBSITE', 'EXTERNAL_ID', 'NAME'])
 
 
 def main() -> None:

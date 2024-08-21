@@ -91,7 +91,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('MEMBER_OF', member_links)
 
     def unit_test(self):
-        super().unit_test(['MEMBER_OF'])
+        return super().unit_test(['MEMBER_OF'])
 
 
 def main() -> None:

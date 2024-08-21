@@ -85,7 +85,7 @@ class Crawler(BaseCrawler):
             self.iyp.batch_add_links('POPULATION', pop_links)
 
     def unit_test(self):
-        super().unit_test(['POPULATION', 'COUNTRY', 'RANK', 'NAME'])
+        return super().unit_test(['POPULATION', 'COUNTRY', 'RANK', 'NAME'])
 
 
 def main() -> None:

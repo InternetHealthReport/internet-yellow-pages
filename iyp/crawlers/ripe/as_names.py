@@ -70,7 +70,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('COUNTRY', country_links)
 
     def unit_test(self):
-        super().unit_test(['NAME', 'COUNTRY'])
+        return super().unit_test(['NAME', 'COUNTRY'])
 
 
 def main() -> None:

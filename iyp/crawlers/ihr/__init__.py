@@ -103,4 +103,4 @@ class HegemonyCrawler(BaseCrawler):
         os.remove(local_filename)
 
     def unit_test(self):
-        super().unit_test(['DEPENDS_ON'])
+        return super().unit_test(['DEPENDS_ON'])

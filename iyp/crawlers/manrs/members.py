@@ -130,7 +130,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('IMPLEMENT', implement_rels)
 
     def unit_test(self):
-        super().unit_test(['MEMBER_OF', 'IMPLEMENT', 'COUNTRY'])
+        return super().unit_test(['MEMBER_OF', 'IMPLEMENT', 'COUNTRY'])
 
 
 def main() -> None:

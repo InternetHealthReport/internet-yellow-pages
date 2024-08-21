@@ -177,7 +177,7 @@ class Crawler(BaseCrawler):
         os.remove(local_filename)
 
     def unit_test(self):
-        super().unit_test(['ORIGINATE', 'CATEGORIZED', 'DEPENDS_ON', 'COUNTRY'])
+        return super().unit_test(['ORIGINATE', 'CATEGORIZED', 'DEPENDS_ON', 'COUNTRY'])
 
 
 def main() -> None:

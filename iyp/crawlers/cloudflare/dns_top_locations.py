@@ -169,7 +169,7 @@ class Crawler(BaseCrawler):
             })
 
     def unit_test(self):
-        super().unit_test(['QUERIED_FROM'])
+        return super().unit_test(['QUERIED_FROM'])
 
 
 def main() -> None:

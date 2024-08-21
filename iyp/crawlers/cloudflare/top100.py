@@ -72,7 +72,7 @@ class Crawler(BaseCrawler):
         self.iyp.add_links(domain_qid, statements)
 
     def unit_test(self):
-        super().unit_test(['RANK'])
+        return super().unit_test(['RANK'])
 
 
 def main() -> None:

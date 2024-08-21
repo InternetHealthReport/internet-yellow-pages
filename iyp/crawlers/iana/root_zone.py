@@ -108,7 +108,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('MANAGED_BY', managed_by_relationships)
 
     def unit_test(self):
-        super().unit_test(['RESOLVES_TO', 'MANAGED_BY'])
+        return super().unit_test(['RESOLVES_TO', 'MANAGED_BY'])
 
 
 def main() -> None:
