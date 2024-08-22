@@ -1,5 +1,5 @@
 {
-    "archive" {
+    "archive": {
         "host": "",
         "user": "",
         "base_path": ""
