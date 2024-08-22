@@ -212,6 +212,8 @@ def main():
     if args.archive:
         # Push the dump and log to ihr archive
         ssh = paramiko.SSHClient()
+        # Do not show info logging for paramiko.
+        logging.getLogger('paramiko').setLevel(logging.WARNING)
         ssh.load_system_host_keys()
         ssh.connect(conf['archive']['host'], username=conf['archive']['user'])
 
