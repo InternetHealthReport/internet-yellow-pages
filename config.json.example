@@ -40,8 +40,7 @@
     },
 
     "ooni": {
-        "username": "",
-        "password": ""
+        "parallel_downloads": 40
     },
 
     "iyp": {
@@ -94,7 +93,20 @@
             "iyp.crawlers.openintel.dnsgraph_nl",
             "iyp.crawlers.openintel.dnsgraph_rdns",
             "iyp.crawlers.cloudflare.dns_top_locations",
-            "iyp.crawlers.cloudflare.dns_top_ases"
+            "iyp.crawlers.cloudflare.dns_top_ases",
+            "iyp.crawlers.ooni.facebookmessenger",
+            "iyp.crawlers.ooni.httpheaderfieldmanipulation",
+            "iyp.crawlers.ooni.httpinvalidrequestline",
+            "iyp.crawlers.ooni.osignal",
+            "iyp.crawlers.ooni.psiphon",
+            "iyp.crawlers.ooni.riseupvpn",
+            "iyp.crawlers.ooni.stunreachability",
+            "iyp.crawlers.ooni.telegram",
+            "iyp.crawlers.ooni.tor",
+            "iyp.crawlers.ooni.torsf",
+            "iyp.crawlers.ooni.vanillator",
+            "iyp.crawlers.ooni.webconnectivity",
+            "iyp.crawlers.ooni.whatsapp"
         ],
 
         "post": [
