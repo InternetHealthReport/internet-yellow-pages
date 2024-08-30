@@ -47,3 +47,6 @@ class AS2RelCrawler(BaseCrawler):
 
         # Push all links to IYP
         self.iyp.batch_add_links('PEERS_WITH', links)
+
+    def unit_test(self):
+        return super().unit_test(['PEERS_WITH'])

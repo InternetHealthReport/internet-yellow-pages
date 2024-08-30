@@ -100,6 +100,9 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('RANK', rank_links)
 
+    def unit_test(self):
+        return super().unit_test(['NAME', 'COUNTRY', 'RANK'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -119,7 +122,7 @@ def main() -> None:
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

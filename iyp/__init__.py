@@ -476,7 +476,7 @@ class IYP(object):
         label: label string or list of label strings
         """
         label_str = str(label)
-        if type(label) is list:
+        if isinstance(label, list):
             label_str = ':'.join(label)
 
         for i in range(0, len(node_ids), BATCH_SIZE):
@@ -709,15 +709,23 @@ class BaseCrawler(object):
 
         return result['count']
 
-    def unit_test(self, logging):
-        relation_count = self.count_relations()
-        logging.info('Relations before starting: %s' % relation_count)
-        self.run()
-        relation_count_new = self.count_relations()
-        logging.info('Relations after starting: %s' % relation_count_new)
-        self.close()
-        print('assertion failed') if relation_count_new <= relation_count else print('assertion passed')
-        assert relation_count_new > relation_count
+    def unit_test(self, relation_types):
+        """Check for existence of relationships created by this crawler.
+
+        relation_types should be a list of types for which existence is checked.
+        """
+        logging.info(f'Running existence test for {relation_types}')
+        passed = True
+        for relation_type in relation_types:
+            existenceQuery = f"""MATCH ()-[r:{relation_type}]-()
+                                USING INDEX r:{relation_type}(reference_name)
+                                WHERE r.reference_name = '{self.reference['reference_name']}'
+                                RETURN 0 LIMIT 1"""
+            result = self.iyp.tx.run(existenceQuery)
+            if len(list(result)) == 0:
+                passed = False
+                logging.error(f'Missing data for relation {relation_type}')
+        return passed
 
     def close(self):
         # Commit changes to IYP
