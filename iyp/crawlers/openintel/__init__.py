@@ -239,6 +239,10 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
         self.iyp.batch_add_links('PART_OF', partof_links)
 
+    def unit_test(self):
+        # use different version depending on infra_ns vs others
+        return super().unit_test(['RESOLVES_TO', 'MANAGED_BY', 'PART_OF'])
+
 
 class DnsgraphCrawler(BaseCrawler):
 
@@ -382,3 +386,6 @@ class DnsgraphCrawler(BaseCrawler):
         ns_id = [link['dst_id'] for link in links_managed_by]
         logging.info(f'Adding AuthoritativeNameServer label to {len(ns_id)} nodes')
         self.iyp.batch_add_node_label(ns_id, 'AuthoritativeNameServer')
+
+    def unit_test(self):
+        return super().unit_test(['PARENT', 'PART_OF', 'ALIAS_OF', 'MANAGED_BY', 'RESOLVES_TO'])

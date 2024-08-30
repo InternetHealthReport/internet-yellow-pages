@@ -22,3 +22,5 @@ pre-commit
 PyGithub
 clickhouse_driver
 pyspark
+paramiko
+scp

@@ -1,4 +1,10 @@
 {
+    "archive": {
+        "host": "",
+        "user": "",
+        "base_path": ""
+    },
+
     "cache": {
         "directory": "tmp/",
         "duration_in_days": 6

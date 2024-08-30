@@ -1,3 +1,6 @@
+volumes:
+  caddy_data:
+  caddy_config:
 services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.21.2
@@ -63,3 +66,21 @@ services:
     depends_on:
       iyp_loader:
         condition: service_completed_successfully
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "2019:2019"
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019
+    volumes:
+      - ./site:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    command: /usr/bin/caddy run --resume
+      

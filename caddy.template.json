@@ -1,0 +1,109 @@
+{
+    "apps": {
+      "http": {
+        "servers": {
+          "srv0": {
+            "listen": [":443"],
+            "routes": [
+              {
+                "match": [{ "host": ["ryan-bolt.ihr.live"] }],
+                "handle": [
+                  {
+                    "handler": "subroute",
+                    "routes": [
+                      {
+                        "handle": [
+                          {
+                            "handler": "reverse_proxy",
+                            "upstreams": [{ "dial": "sandbox.ihr.live:<BOLT_PORT>" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "terminal": true
+              },
+              {
+                "match": [{ "host": ["ryan-prev-bolt.ihr.live"] }],
+                "handle": [
+                  {
+                    "handler": "subroute",
+                    "routes": [
+                      {
+                        "handle": [
+                          {
+                            "handler": "reverse_proxy",
+                            "upstreams": [{ "dial": "sandbox.ihr.live:<PREV_BOLT_PORT>" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "terminal": true
+              },
+              {
+                "match": [{ "host": ["sandbox.ihr.live"] }],
+                "handle": [
+                  {
+                    "handler": "subroute",
+                    "routes": [
+                      {
+                        "handle": [
+                          {
+                            "handler": "reverse_proxy",
+                            "upstreams": [{ "dial": "ryan.ihr.live:<HTTP_PORT>" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "terminal": true
+              },
+              {
+                "match": [{ "host": ["ryan.ihr.live"] }],
+                "handle": [
+                  {
+                    "handler": "subroute",
+                    "routes": [
+                      {
+                        "handle": [
+                          {
+                            "handler": "reverse_proxy",
+                            "upstreams": [{ "dial": "sandbox.ihr.live:<HTTP_PORT>" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "terminal": true
+              },
+              {
+                "match": [{ "host": ["ryan-prev.ihr.live"] }],
+                "handle": [
+                  {
+                    "handler": "subroute",
+                    "routes": [
+                      {
+                        "handle": [
+                          {
+                            "handler": "reverse_proxy",
+                            "upstreams": [{ "dial": "sandbox.ihr.live:<PREV_HTTP_PORT>" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "terminal": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+  

@@ -71,6 +71,9 @@ class Crawler(BaseCrawler):
         domain_qid = self.iyp.get_node('DomainName', {'name': entry['domain']})
         self.iyp.add_links(domain_qid, statements)
 
+    def unit_test(self):
+        return super().unit_test(['RANK'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -90,7 +93,7 @@ def main() -> None:
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

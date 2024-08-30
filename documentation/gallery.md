@@ -1,19 +1,11 @@
 # IYP Gallery
 
+Below are examples queries that you can copy/paste in [Neo4j browser](https://iyp.iijlab.net/iyp/browser/?dbms=iyp-bolt.iijlab.net:443).
+
 Querying the IYP database requires to be familiar with:
 - Cypher, Neo4j's query langage https://neo4j.com/docs/getting-started/current/cypher-intro/
 - Basic networking knowledge (IP, prefixes, ASes, etc..)
-- IYP ontology (TODO link to ontology)
-
-Below are examples queries that you can copy/paste in Neo4j browser:
-1. [Names for AS2497](#names-for-as2497)
-2. [All nodes related to 8.8.8.0/24](#all-nodes-related-to-888024)
-3. [Country code of AS2497 in delegated files](#country-code-of-as2497-in-delegated-files)
-4. [Countries of IXPs where AS2497 is present](#countries-of-ixps-where-as2497-is-present)
-5. [Top domain names hosted by AS2497](#top-domain-names-hosted-by-as2497)
-6. [ASes hosting top domain names in Japan](#ases-hosting-top-domain-names-in-japan)
-7. [Topology for AS2501's dependencies](#topology-for-as2501s-dependencies)
-
+- [IYP ontology](./README.md)
 
 ### Names for AS2497
 Find 'Name' nodes directly connected to the node corresponding to AS2497.
@@ -95,8 +87,18 @@ RETURN p
 ```
 ![Dependencies for AS2501](/documentation/assets/gallery/as2501dependencies.svg)
 
-### List of IPs for RIPE RIS full feeds
+### List of IPs for RIPE RIS full feed peers (more than 800k prefixes)
 
 ```cypher
-MATCH (n:BGPCollector)-[p:PEERS_WITH]-(a:AS) WHERE n.project = 'riperis' AND p.num_v4_pfxs > 800000 RETURN n.name, COUNT(DISTINCT p.ip) AS nb_full, COLLECT(DISTINCT p.ip) AS ips_full
+MATCH (n:BGPCollector)-[p:PEERS_WITH]-(a:AS) 
+WHERE n.project = 'riperis' AND p.num_v4_pfxs > 800000 
+RETURN n.name, COUNT(DISTINCT p.ip) AS nb_full, COLLECT(DISTINCT p.ip) AS ips_full
+```
+
+### Active RIPE Atlas probes for the top 5 ISPs in Japan
+
+```cypher
+MATCH (pb:AtlasProbe)-[:LOCATED_IN]-(a:AS)-[pop:POPULATION]-(c:Country) 
+WHERE c.country_code = 'JP' AND pb.status_name = 'Connected' AND pop.rank <= 5 
+RETURN pop.rank, a.asn, COLLECT(pb.id) AS probe_ids ORDER BY pop.rank
 ```

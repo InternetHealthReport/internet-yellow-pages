@@ -122,6 +122,9 @@ class Crawler(BaseCrawler):
                 print(f'Adding {len(domain_links)} RANK relationships', file=sys.stderr)
                 self.iyp.batch_add_links('RANK', domain_links)
 
+    def unit_test(self):
+        return super().unit_test(['RANK'])
+
 
 # Main program
 if __name__ == '__main__':
@@ -141,7 +144,7 @@ if __name__ == '__main__':
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

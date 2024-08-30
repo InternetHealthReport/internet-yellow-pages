@@ -101,3 +101,6 @@ class HegemonyCrawler(BaseCrawler):
 
         # Remove downloaded file
         os.remove(local_filename)
+
+    def unit_test(self):
+        return super().unit_test(['DEPENDS_ON'])

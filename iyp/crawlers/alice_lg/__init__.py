@@ -442,3 +442,6 @@ class Crawler(BaseCrawler):
         if originate_rels:
             logging.info(f'Pushing {len(originate_rels)} ORIGINATE relationships.')
             self.iyp.batch_add_links('ORIGINATE', originate_rels)
+
+    def unit_test(self):
+        return super().unit_test(['MEMBER_OF', 'ORIGINATE', 'MANAGED_BY'])
