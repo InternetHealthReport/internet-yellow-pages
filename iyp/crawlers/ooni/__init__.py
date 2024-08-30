@@ -4,8 +4,7 @@ import logging
 import os
 
 from iyp import BaseCrawler
-
-from .utils import grabber
+from iyp.crawlers.ooni.utils import grabber
 
 
 # OONI Crawler base class

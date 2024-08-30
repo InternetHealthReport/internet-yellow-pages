@@ -197,6 +197,9 @@ class Crawler(OoniCrawler):
             }
             self.all_percentages[(asn, country, stun_endpoint)] = result_dict
 
+    def unit_test(self):
+        return super().unit_test(['CENSORED', 'RESOLVES_TO'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -216,7 +219,7 @@ def main() -> None:
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
-        crawler.unit_test(logging)
+        crawler.unit_test()
     else:
         crawler.run()
         crawler.close()

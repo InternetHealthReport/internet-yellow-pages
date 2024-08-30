@@ -132,3 +132,5 @@ dmypy.json
 dumps/
 data/
 .vscode/
+neo4j/
+tmp/
