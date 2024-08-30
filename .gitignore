@@ -129,5 +129,8 @@ dmypy.json
 .pyre/
 
 .history/
-
-**/dumps
+dumps/
+data/
+.vscode/
+neo4j/
+tmp/
