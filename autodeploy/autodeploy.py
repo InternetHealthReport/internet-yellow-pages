@@ -115,7 +115,7 @@ def check_log(config: dict, date: datetime):
         return False
     body = r.content
     last_line = body.decode().split('\n')[-1]
-    if 'Errors:' in last_line:
+    if 'errors' in last_line:
         logging.error(f'There were errors from create_db found in logs for {log_url}')
         sys.exit(1)
     return True

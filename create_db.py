@@ -15,6 +15,8 @@ from send_email import send_email
 
 NEO4J_VERSION = '5.16.0'
 
+STATUS_OK = 'OK'
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -131,7 +133,7 @@ def main():
             if not passed:
                 error_message = f'Did not receive data from crawler {name}'
                 raise RelationCountError(error_message)
-            status[module_name] = 'OK'
+            status[module_name] = STATUS_OK
             logging.info(f'end {module}')
         except RelationCountError as relation_count_error:
             no_error = False
@@ -155,7 +157,7 @@ def main():
             post = module.PostProcess()
             post.run()
             post.close()
-            status[module_name] = 'OK'
+            status[module_name] = STATUS_OK
             logging.info(f'end {module}')
 
         except Exception as e:
@@ -200,14 +202,17 @@ def main():
         # TODO send an email
 
         # Add the log line to indicate to autodeploy that there were errors
-        final_words = f'\nErrors: {" ".join((k for k in status))}'
-        logging.error('There were errors!')
+        final_words = '\nErrors: '
+        for module, status in status.items():
+            if status != STATUS_OK:
+                final_words += f'\n{module}: {status}'
     else:
         final_words = 'No error :)'
     # Delete tmp file in cron job
     #    shutil.rmtree(tmp_dir)
 
     logging.info(f'Finished: {sys.argv} {final_words}')
+    logging.error('There were errors!')
 
     if args.archive:
         # Push the dump and log to ihr archive
