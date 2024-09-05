@@ -9,7 +9,7 @@ import requests
 
 from iyp import BaseCrawler, RequestStatusError
 
-URL = 'http://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?per_page=400&mrv=1&format=json'
+URL = 'https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?per_page=400&mrv=1&format=json'
 ORG = 'WorldBank'
 NAME = 'worldbank.country_pop'
 
