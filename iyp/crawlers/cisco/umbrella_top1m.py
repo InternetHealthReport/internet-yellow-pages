@@ -44,7 +44,7 @@ class Crawler(BaseCrawler):
         # date now points to the last available historical file , which means the
         # current file is the day after this date.
         self.reference['reference_time_modification'] = date + timedelta(days=1)
-        logging.info(self.reference)
+        logging.info(f'Got list for date {self.reference["reference_time_modification"].strftime("%Y-%m-%d")}')
 
     def run(self):
         """Fetch Umbrella top 1M and push to IYP."""
@@ -69,7 +69,6 @@ class Crawler(BaseCrawler):
                     links.append({'src_name': domain, 'dst_id': self.cisco_qid,
                                   'props': [self.reference, {'rank': int(rank)}]})
 
-        logging.info('Fetching DomainName/HostName nodes...')
         domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
         host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name')
 
@@ -103,10 +102,8 @@ class Crawler(BaseCrawler):
                     new_host_names.add(name)
 
         if new_domain_names:
-            logging.info(f'Pushing {len(new_domain_names)} additional DomainName nodes...')
             domain_id.update(self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', new_domain_names, all=False))
         if new_host_names:
-            logging.info(f'Pushing {len(new_host_names)} additional HostName nodes...')
             host_id.update(self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', new_host_names, all=False))
 
         for link in unprocessed_links:
@@ -120,7 +117,6 @@ class Crawler(BaseCrawler):
             processed_links.append(link)
 
         # Push all links to IYP
-        logging.info(f'Pushing {len(processed_links)} RANK relationships...')
         self.iyp.batch_add_links('RANK', processed_links)
 
     def unit_test(self):

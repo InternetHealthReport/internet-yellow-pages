@@ -50,7 +50,7 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch facilities information from PeeringDB and push to IYP."""
 
-        sys.stderr.write('Fetching PeeringDB data...\n')
+        logging.info('Fetching PeeringDB data...')
         req = self.requests.get(URL, headers=self.headers)
         if req.status_code != 200:
             logging.error('Error while fetching peeringDB data')
@@ -103,7 +103,6 @@ class Crawler(BaseCrawler):
             try:
                 flat_fac = dict(flatdict.FlatDict(fac))
             except Exception as e:
-                sys.stderr.write(f'Cannot flatten dictionary {fac}\n{e}\n')
                 logging.error(f'Cannot flatten dictionary {fac}\n{e}')
 
             facid_qid = self.facid_id[fac['id']]

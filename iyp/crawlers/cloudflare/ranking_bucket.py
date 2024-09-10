@@ -98,14 +98,11 @@ class Crawler(BaseCrawler):
         # Note: Since we do not specify all=False in batch_get_nodes we will get the IDs
         # of _all_ DomainName nodes, so we must not create relationships for all
         # domain_ids, but iterate over the domains set instead.
-        logging.info(f'Adding/retrieving {len(all_domains)} DomainName nodes.')
-        print(f'Adding/retrieving {len(all_domains)} DomainName nodes')
         domain_ids = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', all_domains)
 
         for dataset, domains in datasets:
             dataset_title = f'Cloudflare {dataset["title"]}'
             logging.info(f'Processing dataset: {dataset_title}')
-            print(f'Processing dataset: {dataset_title}')
             ranking_id = self.iyp.get_node('Ranking',
                                            {
                                                'name': dataset_title,
@@ -119,7 +116,6 @@ class Crawler(BaseCrawler):
                             for domain in domains]
             if domain_links:
                 # Push RANK relationships to IYP
-                print(f'Adding {len(domain_links)} RANK relationships', file=sys.stderr)
                 self.iyp.batch_add_links('RANK', domain_links)
 
     def unit_test(self):

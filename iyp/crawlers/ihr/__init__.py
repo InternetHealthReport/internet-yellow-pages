@@ -1,33 +1,12 @@
 import csv
-import os
-from datetime import timezone
+import io
+import logging
+from datetime import datetime, timedelta, timezone
 
-import arrow
 import lz4.frame
 import requests
 
-from iyp import BaseCrawler
-
-
-class lz4Csv:
-    def __init__(self, filename):
-        """Start reading a lz4 compress csv file."""
-
-        self.fp = lz4.frame.open(filename, 'rb')
-
-    def __iter__(self):
-        """Read file header line and set self.fields."""
-        line = self.fp.readline()
-        self.fields = line.decode('utf-8').rstrip().split(',')
-        return self
-
-    def __next__(self):
-        line = self.fp.readline().decode('utf-8').rstrip()
-
-        if len(line) > 0:
-            return line
-        else:
-            raise StopIteration
+from iyp import BaseCrawler, DataNotAvailableError
 
 
 class HegemonyCrawler(BaseCrawler):
@@ -39,68 +18,67 @@ class HegemonyCrawler(BaseCrawler):
     def run(self):
         """Fetch data from file and push to IYP."""
 
-        today = arrow.utcnow()
-        url = self.url.format(year=today.year, month=today.month, day=today.day)
+        today = datetime.now(tz=timezone.utc)
+        max_lookback = today - timedelta(days=7)
+        url = today.strftime(self.url)
         req = requests.head(url)
-        if req.status_code != 200:
-            today = today.shift(days=-1)
-            url = self.url.format(year=today.year, month=today.month, day=today.day)
+        while req.status_code != 200 and today > max_lookback:
+            today -= timedelta(days=1)
+            url = today.strftime(self.url)
             req = requests.head(url)
-            if req.status_code != 200:
-                today = today.shift(days=-1)
-                url = self.url.format(year=today.year, month=today.month, day=today.day)
-                req = requests.head(url)
+        if req.status_code != 200:
+            logging.error('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
 
         self.reference['reference_url_data'] = url
-        self.reference['reference_time_modification'] = today.datetime.replace(hour=0,
-                                                                               minute=0,
-                                                                               second=0,
-                                                                               microsecond=0,
-                                                                               tzinfo=timezone.utc)
 
-        os.makedirs('tmp/', exist_ok=True)
-        os.system(f'wget {url} -P tmp/')
+        logging.info(f'Fetching data from: {url}')
+        req = requests.get(url)
+        req.raise_for_status()
 
-        local_filename = 'tmp/' + url.rpartition('/')[2]
-        self.csv = lz4Csv(local_filename)
+        # lz4.frame.decompress() and splitlines() break the CSV parsing due to some
+        # weird input.
+        with lz4.frame.open(io.BytesIO(req.content)) as f:
+            csv_lines = [l.decode('utf-8').rstrip() for l in f]
 
-        self.timebin = None
-        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', set())
+        timebin = None
+        asns = set()
+        links = list()
 
-        links = []
-
-        for line in csv.reader(self.csv, quotechar='"', delimiter=',', skipinitialspace=True):
+        logging.info('Computing links...')
+        for rec in csv.DictReader(csv_lines):
             # header
             # timebin,originasn,asn,hege
 
-            rec = dict(zip(self.csv.fields, line))
             rec['hege'] = float(rec['hege'])
             rec['af'] = self.af
 
-            if self.timebin is None:
-                self.timebin = rec['timebin']
-            elif self.timebin != rec['timebin']:
+            if timebin is None:
+                timebin = rec['timebin']
+                mod_time = datetime.strptime(timebin, '%Y-%m-%d %H:%M:%S+00').replace(tzinfo=timezone.utc)
+                self.reference['reference_time_modification'] = mod_time
+            elif timebin != rec['timebin']:
                 break
 
             originasn = int(rec['originasn'])
-            if originasn not in asn_id:
-                asn_id[originasn] = self.iyp.get_node('AS', {'asn': originasn})
-
             asn = int(rec['asn'])
-            if asn not in asn_id:
-                asn_id[asn] = self.iyp.get_node('AS', {'asn': asn})
+            asns.add(originasn)
+            asns.add(asn)
 
             links.append({
-                'src_id': asn_id[originasn],
-                'dst_id': asn_id[asn],
+                'src_id': originasn,
+                'dst_id': asn,
                 'props': [self.reference, rec]
             })
 
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
+        # Replace values in links with node IDs.
+        for link in links:
+            link['src_id'] = asn_id[link['src_id']]
+            link['dst_id'] = asn_id[link['dst_id']]
+
         # Push links to IYP
         self.iyp.batch_add_links('DEPENDS_ON', links)
-
-        # Remove downloaded file
-        os.remove(local_filename)
 
     def unit_test(self):
         return super().unit_test(['DEPENDS_ON'])

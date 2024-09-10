@@ -268,8 +268,10 @@ class IYP(object):
             prop_set = set(map(prop_formatters[prop_name], prop_set))
 
         if all:
+            logging.info(f'Fetching all {label_str} nodes.')
             existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id')
         else:
+            logging.info(f'Fetching up to {len(prop_set)} {label_str} nodes.')
             list_prop = list(prop_set)
             existing_nodes = self.tx.run(f"""
             WITH $list_prop AS list_prop
@@ -283,7 +285,8 @@ class IYP(object):
         missing_nodes = [{prop_name: val} for val in missing_props]
 
         # Create missing nodes
-        if create:
+        if create and missing_nodes:
+            logging.info(f'Creating {len(missing_nodes)} {label_str} nodes.')
             for i in range(0, len(missing_nodes), BATCH_SIZE):
                 batch = missing_nodes[i:i + BATCH_SIZE]
 
@@ -479,6 +482,8 @@ class IYP(object):
         if isinstance(label, list):
             label_str = ':'.join(label)
 
+        logging.info(f'Adding label "{label_str}" to {len(node_ids)} nodes.')
+
         for i in range(0, len(node_ids), BATCH_SIZE):
             batch = node_ids[i:i + BATCH_SIZE]
 
@@ -531,6 +536,9 @@ class IYP(object):
         batch_format_link_properties(links, inplace=True)
 
         self.__create_range_index(type, 'reference_name', on_relationship=True)
+
+        action_str = 'Creating' if action == 'create' else 'Merging'
+        logging.info(f'{action_str} {len(links)} {type} relationships.')
 
         # Create links in batches
         for i in range(0, len(links), BATCH_SIZE):

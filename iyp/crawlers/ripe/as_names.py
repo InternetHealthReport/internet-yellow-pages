@@ -36,7 +36,7 @@ class Crawler(BaseCrawler):
 
             # Country codes are two digits
             if len(cc) > 2:
-                print(cc)
+                logging.warning(cc)
                 continue
 
             asn = int(asn)

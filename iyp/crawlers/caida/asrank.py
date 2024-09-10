@@ -22,16 +22,15 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch networks information from ASRank and push to IYP."""
-        print('Fetching CAIDA AS Rank', file=sys.stderr)
-
         nodes = list()
 
         has_next = True
         i = 0
+        logging.info('Fetching AS Ranks...')
         while has_next:
             url = URL + f'&offset={i * 10000}'
             i += 1
-            logging.info(f'Fetching {url}')
+            logging.debug(f'Fetching {url}')
             req = requests.get(url)
             if req.status_code != 200:
                 logging.error(f'Request failed with status: {req.status_code}')
@@ -42,7 +41,6 @@ class Crawler(BaseCrawler):
 
             nodes += ranking['edges']
 
-        print(f'Fetched {len(nodes):,d} ranks.', file=sys.stderr)
         logging.info(f'Fetched {len(nodes):,d} ranks.')
 
         # Collect all ASNs, names, and countries
@@ -59,8 +57,6 @@ class Crawler(BaseCrawler):
             asns.add(int(asn['asn']))
 
         # Get/create ASNs, names, and country nodes
-        print('Pushing nodes.', file=sys.stderr)
-        logging.info('Pushing nodes.')
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
         self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names, all=False)
@@ -94,8 +90,6 @@ class Crawler(BaseCrawler):
             rank_links.append({'src_id': asn_qid, 'dst_id': self.asrank_qid, 'props': [self.reference, flat_asn]})
 
         # Push all links to IYP
-        print('Pushing links.', file=sys.stderr)
-        logging.info('Pushing links.')
         self.iyp.batch_add_links('NAME', name_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('RANK', rank_links)

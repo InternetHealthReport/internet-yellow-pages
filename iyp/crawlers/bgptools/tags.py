@@ -60,7 +60,7 @@ class Crawler(BaseCrawler):
 
             req = requests.get(url, headers=self.headers)
             if req.status_code != 200:
-                print(req.text)
+                logging.error(req.text)
                 raise RequestStatusError('Error while fetching AS names')
 
             self.tag_qid = self.iyp.get_node('Tag', {'label': label})
@@ -74,14 +74,8 @@ class Crawler(BaseCrawler):
                 asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]})
                 statements = [['CATEGORIZED', self.tag_qid, self.reference]]  # Set AS name
 
-                try:
-                    # Update AS name and country
-                    self.iyp.add_links(asn_qid, statements)
-
-                except Exception as error:
-                    # print errors and continue running
-                    print('Error for: ', line)
-                    print(error)
+                # Update AS name and country
+                self.iyp.add_links(asn_qid, statements)
 
     def unit_test(self):
         return super().unit_test(['CATEGORIZED'])

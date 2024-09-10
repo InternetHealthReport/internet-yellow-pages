@@ -131,7 +131,6 @@ class Crawler(BaseCrawler):
         self.ixs = result['data']
 
         # Register IXPs
-        logging.warning('Pushing IXP info...')
         self.register_ixs()
         self.ix_id = self.iyp.batch_get_node_extid(IXID_LABEL)
 
@@ -149,7 +148,6 @@ class Crawler(BaseCrawler):
         for ixlan in ixlans:
             self.ixlans[ixlan['id']] = ixlan
 
-        logging.warning('Pushing IXP LAN and members...')
         self.register_ix_membership()
         self.iyp.commit()
 

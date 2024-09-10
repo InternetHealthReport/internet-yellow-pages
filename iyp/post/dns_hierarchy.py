@@ -18,12 +18,10 @@ class PostProcess(BasePostProcess):
         """
 
         self.reference['reference_name'] = 'iyp.post.dns_hierarchy'
-        print('Building DNS hierarchy.', file=sys.stderr)
+        logging.info('Building DNS hierarchy.')
 
         # Fetch all existing DomainName nodes.
         dns_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
-        logging.info(f'Fetched {len(dns_id):,d} DomainName nodes.')
-        print(f'Fetched {len(dns_id):,d} DomainName nodes.', file=sys.stderr)
 
         # Build hierarchical relationships and keep track of new nodes that have to be
         # created.
@@ -40,8 +38,6 @@ class PostProcess(BasePostProcess):
                 dns_name = parent
 
         # Create new nodes.
-        logging.info(f'Creating {len(new_nodes):,d} new DomainName nodes.')
-        print(f'Creating {len(new_nodes):,d} new DomainName nodes.', file=sys.stderr)
         dns_id.update(self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', new_nodes, all=False))
 
         # Build relationships and push to IYP.
@@ -49,8 +45,6 @@ class PostProcess(BasePostProcess):
         for child, parent in link_tuples:
             part_of_links.append({'src_id': dns_id[child], 'dst_id': dns_id[parent], 'props': [self.reference]})
 
-        logging.info(f'Creating {len(part_of_links):,d} PART_OF relationships.')
-        print(f'Creating {len(part_of_links):,d} PART_OF relationships.', file=sys.stderr)
         self.iyp.batch_add_links('PART_OF', part_of_links)
 
     def count_relation(self):

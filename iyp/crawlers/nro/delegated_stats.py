@@ -76,7 +76,7 @@ class Crawler(BaseCrawler):
         asn_status_links = defaultdict(list)
         prefix_status_links = defaultdict(list)
 
-        logging.info('Parsing file')
+        logging.info('Parsing file...')
         for line in req.text.splitlines():
             # Skip comments.
             if line.strip().startswith('#'):

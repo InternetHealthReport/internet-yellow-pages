@@ -73,5 +73,4 @@ The country geo-location is provided by Maxmind.
 
 ## Dependence
 
-`rov.py` assumes ASes and prefixes are already registered in the database, it becomes very slow if
-this is not the case. Running `bgpkit.pfx2asn` before makes it much faster.
+These crawlers are not depending on other crawlers.

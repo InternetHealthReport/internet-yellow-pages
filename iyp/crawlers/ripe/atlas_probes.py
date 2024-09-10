@@ -52,12 +52,12 @@ class Crawler(BaseCrawler):
 
         next_url = data['next']
         if not next_url:
-            logging.info('Reached end of list')
+            logging.debug('Reached end of list')
             next_url = str()
         return next_url, data['results']
 
     def __execute_query(self, url: str):
-        logging.info(f'Querying {url}')
+        logging.debug(f'Querying {url}')
         r = self.session.get(url)
         return self.__process_response(r)
 
@@ -75,8 +75,8 @@ class Crawler(BaseCrawler):
         while next_url:
             next_url, next_data = self.__execute_query(next_url)
             data += next_data
-            logging.info(f'Added {len(next_data)} probes. Total: {len(data)}')
-        print(f'Fetched {len(data)} probes.', file=sys.stderr)
+            logging.debug(f'Added {len(next_data)} probes. Total: {len(data)}')
+        logging.info(f'Fetched {len(data)} probes.')
 
         # Compute nodes
         probe_ids = set()
@@ -125,7 +125,6 @@ class Crawler(BaseCrawler):
                 probe.pop('country_code')
 
         # push nodes
-        logging.info('Fetching/pushing nodes')
         probe_id = dict()
         # Each probe is a JSON object with nested fields, so we need to flatten it.
         flattened_probes = [dict(flatdict.FlatterDict(probe, delimiter='_')) for probe in valid_probes]
@@ -170,7 +169,6 @@ class Crawler(BaseCrawler):
                                      'props': [self.reference]})
 
         # Push all links to IYP
-        logging.info('Fetching/pushing relationships')
         self.iyp.batch_add_links('ASSIGNED', assigned_links)
         self.iyp.batch_add_links('LOCATED_IN', located_in_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
@@ -194,7 +192,7 @@ def main() -> None:
     )
 
     logging.info(f'Started: {sys.argv}')
-    print('Fetching RIPE Atlas probes', file=sys.stderr)
+    print('Fetching RIPE Atlas probes')
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
