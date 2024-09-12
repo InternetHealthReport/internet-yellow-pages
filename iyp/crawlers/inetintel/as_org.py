@@ -26,7 +26,7 @@ def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str)
     latest_files = repo.get_contents(all_data_dir[-1])
     for file in latest_files:
         if file.path.endswith(file_extension):
-            print(file.download_url)
+            logging.info(file.download_url)
             return file.download_url
 
     return ''
@@ -79,12 +79,12 @@ class Crawler(BaseCrawler):
         with open(self.filename, 'w') as file:
             file.write(req.text)
 
-        print('Dataset crawled and saved in a temporary file.')
+        logging.info('Dataset crawled and saved in a temporary file.')
 
         # The dataset is very large. Pandas has the ability to read JSON, and, in
         # theory, it could do it in a more memory-efficient way.
         df = pd.read_json(self.filename, orient='index')
-        print('Dataset has {} rows.'.format(len(df)))
+        logging.info('Dataset has {} rows.'.format(len(df)))
 
         # Optimized code
         batch_size = 10000
@@ -176,8 +176,8 @@ class Crawler(BaseCrawler):
 
             count_rows_global += count_rows
             count_relationships_global += count_relationships
-            print('processed: {} rows and {} relationships'
-                  .format(count_rows_global, count_relationships_global))
+            logging.info('processed: {} rows and {} relationships'
+                         .format(count_rows_global, count_relationships_global))
 
     def close(self):
         super().close()

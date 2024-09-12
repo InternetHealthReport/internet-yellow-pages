@@ -95,7 +95,6 @@ class Crawler(BaseCrawler):
             try:
                 flat_org = dict(flatdict.FlatDict(org))
             except Exception as e:
-                sys.stderr.write(f'Cannot flatten dictionary {org}\n{e}\n')
                 logging.error(f'Cannot flatten dictionary {org}\n{e}')
 
             orgid_qid = self.orgid_id[org['id']]

@@ -28,8 +28,9 @@ class Crawler(BaseCrawler):
 
         processed_asn = set()
 
+        logging.info(f'Processing {len(self.countries)} countries...')
         for cc, country in self.countries.items():
-            logging.info(f'processing {country}')
+            logging.debug(f'processing {country}')
 
             # Get the QID of the country and corresponding ranking
             cc_qid = self.iyp.get_node('Country', {'country_code': cc})
@@ -46,7 +47,7 @@ class Crawler(BaseCrawler):
             names = set()
 
             ranking = req.json()
-            logging.info(f'{len(ranking)} eyeball ASes')
+            logging.debug(f'{len(ranking)} eyeball ASes')
 
             # Collect all ASNs and names
             # and make sure the ranking is sorted and add rank field

@@ -55,7 +55,6 @@ class Crawler(BaseCrawler):
             if len(data) < batch_size:
                 break
 
-        logging.info('Pushing nodes to neo4j...')
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
         tag_id_not_valid = self.iyp.get_node('Tag', {'label': 'Not Validating RPKI ROV'})
@@ -71,7 +70,6 @@ class Crawler(BaseCrawler):
                 links.append({'src_id': asn_qid, 'dst_id': tag_id_not_valid,
                              'props': [self.reference, {'ratio': entry['ratio']}]})
 
-        logging.info('Pushing links to neo4j...')
         # Push all links to IYP
         self.iyp.batch_add_links('CATEGORIZED', links)
 

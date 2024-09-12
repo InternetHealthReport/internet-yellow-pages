@@ -2,7 +2,6 @@ import gzip
 import json
 import logging
 import os
-import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from ipaddress import ip_network
@@ -95,8 +94,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
             except ChunkedEncodingError as e:
                 logging.error(f'Failed to retrieve data for {query}')
                 logging.error(e)
-                print(f'Failed to retrieve data for {query}', file=sys.stderr)
-                print(e, file=sys.stderr)
                 return False, str(), name
 
     def fetch_url(self, url: str, name: str = str()) -> Tuple[bool, str, str]:
@@ -112,7 +109,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
         within the lookback interval.
         """
         logging.info('Fetching list of collectors.')
-        print('Fetching list of collectors.')
         today = datetime.now(tz=timezone.utc)
         self.collector_site_url = self.url + today.strftime('%Y/%m/')
         resp = self.session.get(self.collector_site_url).result()
@@ -160,7 +156,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
         Return None if no data is found within the valid interval.
         """
         logging.info('Probing latest available dataset.')
-        print('Probing latest available dataset.')
         curr_date = datetime.now(tz=timezone.utc)
         max_lookback = curr_date - self.MAX_LOOKBACK
         while curr_date >= max_lookback:
@@ -172,7 +167,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
             resp = self.session.head(probe_url).result()
             if resp.status_code == 200:
                 logging.info(f'Latest available dataset: {curr_date.strftime("%Y-%m-%d")}')
-                print(f'Latest available dataset: {curr_date.strftime("%Y-%m-%d")}')
                 return curr_date
             curr_date -= timedelta(days=1)
         logging.error('Failed to find current data.')
@@ -194,7 +188,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
 
         tmp_dir = self.get_tmp_dir()
         if not os.path.exists(tmp_dir):
-            logging.info(f'Creating tmp dir: {tmp_dir}')
             tmp_dir = self.create_tmp_dir()
 
         # Get a list of collector names
@@ -238,8 +231,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
         if to_fetch:
             logging.info(f'{len(self.collector_files)}/{len(collector_names)} collector files in cache, fetching '
                          f'{len(to_fetch)}')
-            print(f'{len(self.collector_files)}/{len(collector_names)} collector files in cache, fetching '
-                  f'{len(to_fetch)}')
 
             # If some collectors do not have current data available,
             # try again until the max lookback window is reached.
@@ -267,8 +258,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
             if failed_fetches:
                 # Max lookback reached.
                 logging.warning(f'Failed to find current data for {len(failed_fetches)} collectors: {failed_fetches}')
-                print(f'Failed to find current data for {len(failed_fetches)} collectors: {failed_fetches}',
-                      file=sys.stderr)
 
     def run(self) -> None:
         """Fetch data from PCH, parse the files, and push nodes and relationships to the
@@ -278,7 +267,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
 
         # Parse files in parallel.
         logging.info(f'Parsing {len(self.collector_files)} collector files.')
-        print(f'Parsing {len(self.collector_files)} collector files.')
         fixtures = list()
         for collector_name, collector_file in self.collector_files.items():
             fixtures.append((collector_name, collector_file))
@@ -306,8 +294,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
                     raw_links[(asn, prefix)].add(collector_name)
 
         # Get/push nodes.
-        logging.info(f'Fetching {len(ases)} AS and {len(prefixes)} Prefix nodes.')
-        print(f'Fetching {len(ases)} AS and {len(prefixes)} Prefix nodes.')
         as_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
         prefix_ids = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
 
@@ -320,8 +306,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
                                   'dst_id': prefix_ids[prefix],
                                   'props': [props, self.reference]})
 
-        logging.info(f'Pushing {len(relationships)} relationships.')
-        print(f'Pushing {len(relationships)} relationships.')
         self.iyp.batch_add_links('ORIGINATE', relationships)
 
         # Clear cache.

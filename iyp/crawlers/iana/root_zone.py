@@ -35,11 +35,9 @@ class Crawler(BaseCrawler):
             # NAME, TTL, CLASS, TYPE, RDATA
             if len(l) < 5:
                 logging.warning(f'DNS record line is too short: {l}')
-                print(f'DNS record line is too short: {l}', file=sys.stderr)
                 continue
             if l[2] != 'IN':
                 logging.warning(f'Unexpected DNS record class: "{l[2]}". Expecting only IN records.')
-                print(f'Unexpected DNS record class: "{l[2]}". Expecting only IN records.', file=sys.stderr)
                 continue
             record_type = l[3]
             if record_type not in {'A', 'AAAA', 'NS'}:
@@ -54,7 +52,6 @@ class Crawler(BaseCrawler):
                 nsdname = rdata.rstrip('.')
                 if not nsdname:
                     logging.warning(f'NS record points to root node? {l}')
-                    print(f'NS record points to root node? {l}', file=sys.stderr)
                     continue
                 if nsdname not in domainnames:
                     domainnames.add(nsdname)
@@ -72,8 +69,6 @@ class Crawler(BaseCrawler):
                 except ValueError as e:
                     logging.warning(f'Invalid IP address in A/AAAA record: {l}')
                     logging.warning(e)
-                    print(f'Invalid IP address in A/AAAA record: {l}', file=sys.stderr)
-                    print(e, file=sys.stderr)
                     continue
                 if ip not in ips:
                     ips.add(ip)

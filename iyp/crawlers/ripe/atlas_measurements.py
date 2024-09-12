@@ -52,12 +52,12 @@ class Crawler(BaseCrawler):
 
         next_url = data['next']
         if not next_url:
-            logging.info('Reached end of list')
+            logging.debug('Reached end of list')
             next_url = str()
         return next_url, data['results']
 
     def __execute_query(self, url: str):
-        logging.info(f'Querying {url}')
+        logging.debug(f'Querying {url}')
         r = self.session.get(url)
         return self.__process_response(r)
 
@@ -140,8 +140,8 @@ class Crawler(BaseCrawler):
         while next_url:
             next_url, next_data = self.__execute_query(next_url)
             data += next_data
-            logging.info(f'Added {len(next_data)} measurements. Total: {len(data)}')
-        print(f'Fetched {len(data)} measurements', file=sys.stderr)
+            logging.debug(f'Added {len(next_data)} measurements. Total: {len(data)}')
+        logging.info(f'Fetched {len(data)} measurements')
 
         # Transform the data to be compatible with the flatdict format.
         self.__transform_data(data)
@@ -191,7 +191,6 @@ class Crawler(BaseCrawler):
             valid_probe_measurements.append(probe_measurement)
 
         # push nodes
-        logging.info('Fetching/pushing nodes')
         probe_measurement_ids = dict()
 
         attrs_flattened = []
@@ -201,15 +200,10 @@ class Crawler(BaseCrawler):
             probe_measurement_flattened = dict(flatdict.FlatterDict(probe_measurement_copy, delimiter='_'))
             attrs_flattened.append(probe_measurement_flattened)
 
-        logging.info(f'{len(attrs_flattened)} measurements')
         probe_measurement_ids = self.iyp.batch_get_nodes('AtlasMeasurement', attrs_flattened, ['id'], create=True)
-        logging.info(f'{len(probe_ids)} probes')
         probe_ids = self.iyp.batch_get_nodes_by_single_prop('AtlasProbe', 'id', probe_ids, all=False, create=True)
-        logging.info(f'{len(ips)} IPs')
         ip_ids = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False, create=True)
-        logging.info(f'{len(hostnames)} hostnames')
         hostname_ids = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', hostnames, all=False, create=True)
-        logging.info(f'{len(ases)} ASNs')
         asn_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False, create=True)
 
         # compute links
@@ -251,12 +245,8 @@ class Crawler(BaseCrawler):
                                           'props': [probe_measurement_reference]})
 
         # Push all links to IYP
-        logging.info('Fetching/pushing relationships')
-        logging.info(f'{len(target_links)} TARGET')
         self.iyp.batch_add_links('TARGET', target_links)
-        logging.info(f'{len(part_of_links)} PART_OF')
         self.iyp.batch_add_links('PART_OF', part_of_links)
-        logging.info('Done.')
 
     def unit_test(self):
         return super().unit_test(['PART_OF', 'TARGET'])
@@ -277,7 +267,6 @@ def main() -> None:
     )
 
     logging.info(f'Started: {sys.argv}')
-    print('Fetching RIPE Atlas probe measurements', file=sys.stderr)
 
     crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:

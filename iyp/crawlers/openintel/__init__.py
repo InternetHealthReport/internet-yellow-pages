@@ -111,11 +111,11 @@ class OpenIntelCrawler(BaseCrawler):
                                              suffix='.parquet',
                                              delete=True) as tempFile:
 
-                print("Opened temporary file for object download: '{}'.".format(tempFile.name))
+                logging.info("Opened temporary file for object download: '{}'.".format(tempFile.name))
                 WAREHOUSE_BUCKET.download_fileobj(
                     Key=i_obj.key, Fileobj=tempFile, Config=boto3.s3.transfer.TransferConfig(
                         multipart_chunksize=16 * 1024 * 1024))
-                print("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
+                logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
                     os.path.join(S3A_OPENINTEL_ENDPOINT, WAREHOUSE_BUCKET.name, i_obj.key),
                     os.path.getsize(tempFile.name) / (1024 * 1024),
                     tempFile.name
@@ -164,7 +164,7 @@ class OpenIntelCrawler(BaseCrawler):
         df.query_name = df.query_name.str[:-1]  # Remove root '.'
         df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None else None)  # Remove root '.'
 
-        print(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
+        logging.info(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
         # query_names for NS records are domain names
         domain_names = set(df[df.response_type == 'NS']['query_name'])
@@ -194,8 +194,8 @@ class OpenIntelCrawler(BaseCrawler):
             df[df.ip4_address.notnull()]['ip4_address']), all=False)
         ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses, all=False)
 
-        print(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, {len(ip4_id)} IPv4, '
-              f'{len(ip6_id)} IPv6')
+        logging.info(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, '
+                     f'{len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
 
         # Compute links
         res_links = []
@@ -232,7 +232,7 @@ class OpenIntelCrawler(BaseCrawler):
         for hd in host_names.intersection(domain_names):
             partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
 
-        print(f'Computed {len(res_links)} RESOLVES_TO links and {len(mng_links)} MANAGED_BY links')
+        logging.info(f'Computed {len(res_links)} RESOLVES_TO links and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
         self.iyp.batch_add_links('RESOLVES_TO', res_links)
@@ -240,7 +240,9 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_links('PART_OF', partof_links)
 
     def unit_test(self):
-        # use different version depending on infra_ns vs others
+        # infra_ns only has RESOLVES_TO relationships.
+        if self.reference['reference_name'] == 'openintel.infra_ns':
+            return super().unit_test(['RESOLVES_TO'])
         return super().unit_test(['RESOLVES_TO', 'MANAGED_BY', 'PART_OF'])
 
 
@@ -316,8 +318,6 @@ class DnsgraphCrawler(BaseCrawler):
             unique_host_names.update(connections[connections[node_type] == 'HOSTNAME'][node_key].unique())
             unique_ips.update(connections[connections[node_type] == 'IP'][node_key].unique())
 
-        logging.info(f'Pushing/getting {len(unique_domain_names)} DomainName {len(unique_host_names)} HostName '
-                     f'{len(unique_ips)} IP nodes...')
         domains_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', unique_domain_names)
         hosts_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', unique_host_names)
         ips_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', unique_ips)
@@ -374,8 +374,6 @@ class DnsgraphCrawler(BaseCrawler):
                 logging.error(f'Unknown relationship type: {connection.relation_name}')
 
         # Push all links to IYP
-        logging.info(f'Pushing {len(links_parent)} PARENT {len(links_part_of)} PART_OF {len(links_alias_of)} ALIAS_OF '
-                     f'{len(links_managed_by)} MANAGED_BY {len(links_resolves_to)} RESOLVES_TO relationships...')
         self.iyp.batch_add_links('PARENT', links_parent)
         self.iyp.batch_add_links('PART_OF', links_part_of)
         self.iyp.batch_add_links('ALIAS_OF', links_alias_of)
@@ -384,7 +382,6 @@ class DnsgraphCrawler(BaseCrawler):
 
         # Push the Authoritative NS Label
         ns_id = [link['dst_id'] for link in links_managed_by]
-        logging.info(f'Adding AuthoritativeNameServer label to {len(ns_id)} nodes')
         self.iyp.batch_add_node_label(ns_id, 'AuthoritativeNameServer')
 
     def unit_test(self):

@@ -38,7 +38,7 @@ def main():
     os.makedirs(dump_dir, exist_ok=True)
 
     # Initialize logging
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
         filename=os.path.join(dump_dir, f'iyp-{date}.log'),
@@ -59,7 +59,7 @@ def main():
 
     # ######### Start a new docker image ##########
 
-    logging.warning('Starting new container...')
+    logging.info('Starting new container...')
     container = client.containers.run(
         'neo4j:' + NEO4J_VERSION,
         name=f'iyp-{date}',
@@ -142,7 +142,7 @@ def main():
             send_email(relation_count_error)
         except Exception as e:
             no_error = False
-            logging.error('crawler crashed!')
+            logging.error('Crawler crashed!')
             status[module_name] = e
             send_email(e)
 
@@ -162,7 +162,7 @@ def main():
 
         except Exception as e:
             no_error = False
-            logging.error('crawler crashed!')
+            logging.error('Crawler crashed!')
             logging.error(e)
             status[module_name] = e
 

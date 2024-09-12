@@ -6,9 +6,7 @@ import sys
 from iyp.crawlers.ihr import HegemonyCrawler
 
 # URL to the API
-URL = ('https://ihr-archive.iijlab.net/ihr/hegemony/ipv6/local/'
-       '{year}/{month:02d}/{day:02d}/'
-       'ihr_hegemony_ipv6_local_{year}-{month:02d}-{day:02d}.csv.lz4')
+URL = 'https://ihr-archive.iijlab.net/ihr/hegemony/ipv6/local/%Y/%m/%d/ihr_hegemony_ipv6_local_%Y-%m-%d.csv.lz4'
 ORG = 'IHR'
 NAME = 'ihr.local_hegemony_v6'
 

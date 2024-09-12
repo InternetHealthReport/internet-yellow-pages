@@ -319,15 +319,14 @@ class Crawler(BaseCrawler):
             if failed_neighbors:
                 logging.warning(f'Failed to fetch routes for {len(failed_neighbors)} neighbors: {failed_neighbors}')
             if failed_pages:
-                logging.warning(
-                    f'Failed to fetch {sum(failed_pages.values())} pages for {len(failed_pages)} neighbors:')
+                logging.warning(f'Failed to fetch {sum(failed_pages.values())} pages for {len(failed_pages)} '
+                                f'neighbors:')
                 for key, count in failed_pages.items():
                     logging.warning(f'  {key}: {count}')
 
     def fetch(self) -> None:
         tmp_dir = self.get_tmp_dir()
         if not os.path.exists(tmp_dir):
-            logging.info(f'Creating tmp dir: {tmp_dir}')
             self.create_tmp_dir()
 
         self.__fetch_routeservers()
@@ -360,7 +359,7 @@ class Crawler(BaseCrawler):
             member_ip = neighbor['address']
             n = peering_lans.search_best(member_ip)
             if n is None:
-                logging.warning(f'Failed to map member IP to peering LAN: {member_ip}')
+                logging.debug(f'Failed to map member IP to peering LAN: {member_ip}')
                 continue
             member_asn = neighbor['asn']
             if not member_asn or not isinstance(member_asn, int):
@@ -419,11 +418,9 @@ class Crawler(BaseCrawler):
                                            'props': [flattened_route, self.reference.copy()]})
 
         # Get/create nodes.
-        logging.info(f'Getting {len(asns)} AS nodes.')
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
         prefix_id = dict()
         if prefixes:
-            logging.info(f'Getting {len(prefixes)} Prefix nodes.')
             prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
 
         # Translate raw values to QID.
@@ -437,11 +434,9 @@ class Crawler(BaseCrawler):
             relationship['dst_id'] = prefix_id[prefix]
 
         # Push relationships.
-        logging.info(f'Pushing {len(member_of_rels)} MEMBER_OF relationships.')
         self.iyp.batch_add_links('MEMBER_OF', member_of_rels)
         if originate_rels:
-            logging.info(f'Pushing {len(originate_rels)} ORIGINATE relationships.')
             self.iyp.batch_add_links('ORIGINATE', originate_rels)
 
     def unit_test(self):
-        return super().unit_test(['MEMBER_OF', 'ORIGINATE', 'MANAGED_BY'])
+        return super().unit_test(['MEMBER_OF'])

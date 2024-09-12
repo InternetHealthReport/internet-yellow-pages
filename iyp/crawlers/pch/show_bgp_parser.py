@@ -1,6 +1,5 @@
 import logging
 import re
-import sys
 from collections import defaultdict, namedtuple
 from ipaddress import (AddressValueError, IPv4Address, IPv4Network,
                        IPv6Address, IPv6Network)
@@ -52,7 +51,6 @@ class ShowBGPParser:
         for c in code:
             if c not in self.status_codes:
                 logging.critical(f'{self.collector}: Invalid status code {c} in code {code}')
-                print(f'{self.collector}: Invalid status code {c} in code {code}', file=sys.stderr)
                 return set()
             ret.add(self.status_codes[c])
         return ret
@@ -61,7 +59,6 @@ class ShowBGPParser:
         """Map origin code to its label."""
         if code not in self.origin_codes:
             logging.critical(f'{self.collector}: Invalid origin code {code}')
-            print(f'{self.collector}: Invalid origin code {code}', file=sys.stderr)
             return str()
         return self.origin_codes[code]
 
@@ -178,10 +175,8 @@ class ShowBGPParser:
             prefix_map[prefix].add(origin)
         if not_valid_routes:
             logging.info(f'{self.collector}: Ignored {not_valid_routes} not valid routes.')
-            print(f'{self.collector}: Ignored {not_valid_routes} not valid routes.', file=sys.stderr)
         if as_sets:
-            logging.info(f'{self.collector}: Ignored {as_sets} AS set origins.')
-            print(f'{self.collector}: Ignored {as_sets} AS set origins.', file=sys.stderr)
+            logging.debug(f'{self.collector}: Ignored {as_sets} AS set origins.')
         if incomplete_origin_routes:
             logging.info(f'{self.collector}: Ignored {incomplete_origin_routes} routes with incomplete origin.')
         return prefix_map
@@ -201,7 +196,7 @@ class ShowBGPParser:
         fixture: Tuple of (collector_name, input_str)
         """
         collector_name, input_str = fixture
-        logging.info(collector_name)
+        logging.debug(collector_name)
         self.collector = collector_name
         return collector_name, self.parse(input_str)
 
@@ -216,7 +211,6 @@ class ShowBGPParser:
                 pass
         except StopIteration:
             logging.warning(f'{self.collector}: Empty file.')
-            print(f'{self.collector}: Empty file.', file=sys.stderr)
             return dict()
         routes = list()
         last_pfx = str()

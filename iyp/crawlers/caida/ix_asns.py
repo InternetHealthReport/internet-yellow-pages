@@ -38,7 +38,7 @@ class Crawler(BaseCrawler):
             raise Exception('No recent CAIDA ix-asns file available')
         date = date.datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
 
-        logging.info('going to use this URL: ' + url)
+        logging.info(f'Fetching data from: {url}')
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://publicdata.caida.org/datasets/ixps/README.txt'
         self.reference['reference_time_modification'] = date

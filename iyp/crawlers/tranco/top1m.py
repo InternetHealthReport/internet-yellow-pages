@@ -36,7 +36,7 @@ class Crawler(BaseCrawler):
 
         self.tranco_qid = self.iyp.get_node('Ranking', {'name': 'Tranco top 1M'})
 
-        sys.stderr.write('Downloading latest list...\n')
+        logging.info('Downloading latest list...')
         req = requests.get(URL)
         if req.status_code != 200:
             raise RequestStatusError('Error while fetching Tranco csv file')

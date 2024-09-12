@@ -138,14 +138,11 @@ class Crawler(BaseCrawler):
                     self.compute_link(domain_top)
 
             if i % 100 == 0:
-                sys.stderr.write(f'Pushing link batch #{int(i / 100)}...\r')
                 self.iyp.batch_add_links('QUERIED_FROM', self.statements)
                 self.statements = []
 
         if self.statements:
             self.iyp.batch_add_links('QUERIED_FROM', self.statements)
-
-        sys.stderr.write('\n')
 
     def compute_link(self, param):
         """Compute link for the given domain name' top countries and corresponding

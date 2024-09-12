@@ -43,7 +43,7 @@ class Crawler(BaseCrawler):
 
         req = requests.get(self.reference['reference_url_data'], headers=headers)
         if req.status_code != 200:
-            print(f'Cannot download data {req.status_code}: {req.text}')
+            logging.error(f'Cannot download data {req.status_code}: {req.text}')
             raise RequestStatusError(f'Error while fetching data file: {req.status_code}')
 
         results = req.json()['result']
@@ -56,9 +56,8 @@ class Crawler(BaseCrawler):
             logging.warning(f'Failed to get modification time: {e}')
 
         # Process line one after the other
-        for i, _ in enumerate(map(self.update, results['top'])):
-            sys.stderr.write(f'\rProcessed {i} lines')
-        sys.stderr.write('\n')
+        processed = list(map(self.update, results['top']))
+        logging.info(f'Processed {len(processed)} lines')
 
     def update(self, entry):
         """Add the entry to IYP if it's not already there and update its properties."""

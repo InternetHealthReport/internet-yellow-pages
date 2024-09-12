@@ -99,9 +99,6 @@ class Crawler(BaseCrawler):
                     if action_bool == 'Yes':
                         implement_rel_set.add((asn, self.actions[j]['qid']))
 
-            print(f'\rProcessed {i} organizations', file=sys.stderr, end='')
-        print()
-
         # Get/create nodes.
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asn_set, all=False)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', country_set)

@@ -17,7 +17,7 @@ class PostProcess(BasePostProcess):
 
         for country_code in country_id:
             if country_code not in iso3166.countries_by_alpha2:
-                logging.error(f'Country code {country_code} is not ISO 3166-1 alpha-2 conform.')
+                logging.error(f'Country code "{country_code}" is not ISO 3166-1 alpha-2 conform.')
                 continue
             country_info = iso3166.countries_by_alpha2[country_code]
             new_props = {'name': country_info.apolitical_name,
