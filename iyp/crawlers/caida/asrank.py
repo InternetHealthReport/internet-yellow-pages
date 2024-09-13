@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 import flatdict
 import requests
@@ -19,6 +20,16 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://asrank.caida.org/'
+
+    def __set_modification_time(self):
+        try:
+            date = requests.get('https://api.asrank.caida.org/v2/restful/datasets').json()['data'][0]['date']
+            self.reference['reference_time_modification'] = datetime.strptime(date,
+                                                                              '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            logging.info(f'Dataset modification time: {date}')
+        except Exception as e:
+            logging.warning(f'Failed to set modification time: {e}')
+            return
 
     def run(self):
         """Fetch networks information from ASRank and push to IYP."""
@@ -42,6 +53,7 @@ class Crawler(BaseCrawler):
             nodes += ranking['edges']
 
         logging.info(f'Fetched {len(nodes):,d} ranks.')
+        self.__set_modification_time()
 
         # Collect all ASNs, names, and countries
         asns = set()
