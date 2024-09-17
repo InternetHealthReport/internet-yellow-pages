@@ -201,7 +201,6 @@ def main():
     if not no_error:
         # TODO send an email
 
-        # Add the log line to indicate to autodeploy that there were errors
         final_words = '\nErrors: '
         for module, status in status.items():
             if status != STATUS_OK:
@@ -212,7 +211,9 @@ def main():
     #    shutil.rmtree(tmp_dir)
 
     logging.info(f'Finished: {sys.argv} {final_words}')
-    logging.error('There were errors!')
+    if not no_error:
+        # Add the log line to indicate to autodeploy that there were errors.
+        logging.error('There were errors!')
 
     if args.archive:
         # Push the dump and log to ihr archive
