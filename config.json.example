@@ -49,6 +49,8 @@
             "iyp.crawlers.bgptools.as_names",
             "iyp.crawlers.apnic.eyeball",
             "iyp.crawlers.caida.asrank",
+            "iyp.crawlers.caida.as_relationships_v4",
+            "iyp.crawlers.caida.as_relationships_v6",
             "iyp.crawlers.ihr.country_dependency",
             "iyp.crawlers.bgpkit.pfx2asn",
             "iyp.crawlers.bgpkit.as2rel_v4",
