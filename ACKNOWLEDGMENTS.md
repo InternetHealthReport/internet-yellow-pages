@@ -42,15 +42,19 @@ tags](https://github.com/bgptools/anycast-prefixes) provided by
 
 ## CAIDA
 
-We use two datasets from [CAIDA](https://www.caida.org/) which use is authorized
+We use three datasets from [CAIDA](https://www.caida.org/) which use is authorized
 under their [Acceptable Use Agreement](https://www.caida.org/about/legal/aua/).
 
-> CAIDA AS Rank https://doi.org/10.21986/CAIDA.DATA.AS-RANK.
+> AS Rank https://doi.org/10.21986/CAIDA.DATA.AS-RANK.
 
 and
 
-> The CAIDA UCSD IXPs Dataset,
-> https://www.caida.org/catalog/datasets/ixps
+> Internet eXchange Points Dataset,
+> https://doi.org/10.21986/CAIDA.DATA.IXPS
+
+and
+
+> AS Relationships (serial-1), https://catalog.caida.org/dataset/as_relationships_serial_1
 
 ## Cisco
 
@@ -194,7 +198,7 @@ NetSecLab group at Virginia Tech.
 > ACM Internet Measurement Conference (IMC), October 2023.
 
 ## World Bank
-We use the country population indicator `SP.POP.TOTL.` from the 
+We use the country population indicator `SP.POP.TOTL.` from the
 [Indicators API](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation)
 dataset provided by the
 [World Bank](https://www.worldbank.org/en/home).
