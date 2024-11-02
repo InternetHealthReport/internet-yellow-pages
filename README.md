@@ -1,152 +1,111 @@
 # Internet Yellow Pages
 
-The Internet Yellow Pages (IYP) is a knowledge database that gathers information about Internet resources (for example ASNs, IP prefixes, and domain names). 
+The Internet Yellow Pages (IYP) is a knowledge database that gathers information about
+Internet resources (for example ASNs, IP prefixes, and domain names).
 
 ## Public IYP prototype
 
-Visit http://iyp.iijlab.net to try our online prototype. No password is required, just click the 'connect' button to get started. Don't know how to use IYP ? You'll find a guide after clicking the 'connect' button, see also examples [here](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/documentation/gallery.md).
+Visit <https://iyp.iijlab.net> to try our online prototype. You will find instructions
+on how to connect to the prototype and some example queries there. For even more
+examples, check out the [IYP
+gallery](documentation/gallery.md).
 
-## Deploying a local IYP instance
+## Deploy a local IYP instance
+
+We describe the basic process of deploying a local IYP instance below. For more advanced
+commands see the [database documentation](documentation/database-management.md).
 
 ### Prerequisites
+
 - [Curl](https://curl.se/download.html)
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- about 30GB of free disk space
+- about 50GB of free disk space
 
-### Downloading the Database dump
+### Download the database dump
 
-#### Explore and Download Dumps
-
-Visit the database dumps repository at:
-```
-https://ihr-archive.iijlab.net/ihr/iyp/
-```
-
-#### Specific Dump Format
+Visit the [database dump repository](https://ihr-archive.iijlab.net/ihr/iyp/).
 
 Dumps are organized by year, month, and day in this format:
-```
+
+```text
 https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump
 ```
 
-Replace `YYYY`, `MM`, and `DD` in the URL with the desired date to access a specific database dump.
+Replace `YYYY`, `MM`, and `DD` in the URL with the desired date to access a specific
+database dump.
 
-#### Download Instructions
+The dump file needs to be called `neo4j.dump` and needs to be put in a folder called
+`dumps` (`dumps/neo4j.dump`).
+To create the folder and download a dump with `curl`:
 
-1. **Create a Directory:**
+```bash
+mkdir dumps
+curl https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
+```
 
-   Execute the following command to create a `dumps` directory in your current working directory:
-   ```
-   mkdir dumps
-   ```
+### Set up IYP
 
-2. **Download the Database Dump:**
-
-   Use `curl` to download the database dump and save it in the `dumps/neo4j.dump` path:
-   ```
-   curl https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
-   ```
-
-Remember to replace `YYYY`, `MM`, and `DD` in the download command with the specific date you require.
-
-### Setting up IYP
 To uncompress the dump and start the database run the following command:
-```
-docker compose --profile local up
-```
-This creates a `data` directory containing the database. 
-This initial setup needs be done only once. 
-It won't work if this directory already contains a database.
 
-Afterwards, you can simply [start/stop](#startstop-iyp) IYP to use it. 
-To update the database with a new dump see [Updating an existing database](#updating-an-existing-database).
+```bash
+mkdir -p data
+UID="$(id -u)" GID="$(id -g)" docker compose --profile local up
+```
 
+This creates a `data` directory containing the database, load the database dump, and
+start the local IYP instance. This initial setup needs be done only once. It won't work
+if this directory already contains a database.
+
+This setup keeps the database instance running in the foreground. It can be stopped with
+`Ctrl+C`. Afterwards, you can simply [start/stop](#startstop-iyp) IYP in the background
+to use it. To update the database with a new dump see [Update existing
+database](documentation/database-management.md#update-existing-database).
 
 ### Start/Stop IYP
-To stop the database, run the following command:
-```
-docker stop iyp
-```
 
-To restart the database, run the following command:
-```
+To start the database, run the following command:
+
+```bash
 docker start iyp
 ```
 
+To stop the database, run the following command:
 
-### Querying the database
+``` bash
+docker stop iyp
+```
 
-Open http://localhost:7474 in your favorite browser. To connect the interface to the database give
+### Query the database
+
+Open <http://localhost:7474> in your favorite browser. To connect the interface to the database give
 the default login and password: `neo4j` and `password` respectively. Then enter your query in the top input field.
 
 For example, this finds the IXPs and corresponding country codes where IIJ (AS2497) is:
+
 ```cypher
 MATCH (iij:AS {asn:2497})-[:MEMBER_OF]-(ix:IXP)--(cc:Country)
 RETURN iij, ix, cc
 ```
+
 ![Countries of IXPs where AS2497 is present](/documentation/assets/gallery/as2497ixpCountry.svg)
 
 ### IYP gallery
 
 See more query examples in [IYP gallery](/documentation/gallery.md)
 
-### Save modified database
+## Contributing
 
-If you modify the database and want to make a new dump, use the following command. Run the following command for updating an existing database. **Note: This command writes the dump to `backups/neo4j.dump` and overwrites this file if it exists.** 
-```
-docker compose run -it iyp_loader neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
-```
-
-### Updating an existing database
-
-To update the database with a new dump remove the existing `data` directory and 
-reload a dump with the following commands:
-```
-docker stop iyp
-sudo rm -rf data
-docker start iyp_loader -i
-```
-
-### Viewing Neo4j logs
-To view the logs of the Neo4j container, use the following command:
-```
-docker compose logs -f iyp
-```
-
-
-## Creating a new dump from scratch
-
-Clone this repository.
-```
-git clone https://github.com/InternetHealthReport/internet-yellow-pages.git
-cd internet-yellow-pages
-```
-
-Create python environment and install python libraries:
-```
-python3 -m venv .
-source bin/activate
-pip install -r requirements.txt
-```
-
-Configuration file, rename example file and add API keys:
-```
-cp config.json.example config.json
-# Edit as needed
-```
-
-Create and populate a new database:
-```
-python3 create_db.py
-```
-This will take a couple of hours to download all datasets and push them to neo4j.
+Want to [propose a new dataset](documentation/README.md#add-new-datasets) or [implement
+a crawler](documentation/writing-a-crawler.md)? Checkout the
+[documentation](documentation/README.md) for more info.
 
 ## Changelog
 
-See: https://github.com/InternetHealthReport/internet-yellow-pages/releases
+See: <https://github.com/InternetHealthReport/internet-yellow-pages/releases>
 
 ## External links
-- Public instance of IYP: https://iyp.iijlab.net
-- RIPE86 presentation: https://ripe86.ripe.net/archives/video/1073/
-- APNIC blog article: https://blog.apnic.net/2023/09/06/understanding-the-japanese-internet-with-the-internet-yellow-pages/
+
+- [Public instance of IYP](https://iyp.iijlab.net)
+- [RIPE86 presentation](https://ripe86.ripe.net/archives/video/1073/)
+- [APNIC blog article](https://blog.apnic.net/2023/09/06/understanding-the-japanese-internet-with-the-internet-yellow-pages/)

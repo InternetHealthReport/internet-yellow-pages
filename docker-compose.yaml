@@ -1,22 +1,20 @@
-volumes:
-  caddy_data:
-  caddy_config:
 services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.21.2
     profiles: ["local", "public_tls", "public_notls"]
+    user: "${UID}:${GID}"
     container_name: iyp_loader
     tty: true
     stdin_open: true
     volumes:
       - ./data:/data
       - ./dumps:/dumps
-      - ./backups:/backups
     command: neo4j-admin database load neo4j --from-path=/dumps --verbose
 
   iyp:
     image: neo4j:5.21.2
     profiles: ["local"]
+    user: "${UID}:${GID}"
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -33,6 +31,7 @@ services:
   iyp_readonly_tls:
     image: neo4j:5.21.2
     profiles: ["public_tls"]
+    user: "${UID}:${GID}"
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -52,6 +51,7 @@ services:
   iyp_readonly_notls:
     image: neo4j:5.21.2
     profiles: ["public_notls"]
+    user: "${UID}:${GID}"
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -69,12 +69,13 @@ services:
 
   caddy:
     image: caddy:latest
+    profiles: ["caddy"]
+    user: "${UID}:${GID}"
     container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"
       - "2019:2019"
     environment:
       - CADDY_ADMIN=0.0.0.0:2019
@@ -84,3 +85,6 @@ services:
       - caddy_config:/config
     command: /usr/bin/caddy run --resume
       
+volumes:
+  caddy_data:
+  caddy_config:
