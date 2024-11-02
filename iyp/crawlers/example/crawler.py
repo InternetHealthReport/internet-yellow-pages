@@ -11,6 +11,7 @@ from iyp import BaseCrawler, RequestStatusError
 # Organization name and URL to data
 ORG = 'Example Org'
 URL = 'https://example.com/data.csv'
+NAME = 'example.crawler'
 
 
 class Crawler(BaseCrawler):
