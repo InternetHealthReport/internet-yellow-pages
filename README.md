@@ -54,8 +54,9 @@ UID="$(id -u)" GID="$(id -g)" docker compose --profile local up
 ```
 
 This creates a `data` directory containing the database, load the database dump, and
-start the local IYP instance. This initial setup needs be done only once. It won't work
-if this directory already contains a database.
+start the local IYP instance. This initial setup needs be done only once but it takes
+some time to completely load the database and start IYP. Please wait until IYP is fully
+loaded. Also this step won't work if the data directory already contains a database.
 
 This setup keeps the database instance running in the foreground. It can be stopped with
 `Ctrl+C`. Afterwards, you can simply [start/stop](#startstop-iyp) IYP in the background
