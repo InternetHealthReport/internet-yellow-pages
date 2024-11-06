@@ -29,6 +29,10 @@
         "password": ""
     },
 
+    "ipinfo": {
+        "token": "",
+    },
+
     "pch": {
         "parallel_downloads": 8,
         "parallel_parsers": 40
@@ -108,7 +112,8 @@
             "iyp.crawlers.ooni.torsf",
             "iyp.crawlers.ooni.vanillator",
             "iyp.crawlers.ooni.webconnectivity",
-            "iyp.crawlers.ooni.whatsapp"
+            "iyp.crawlers.ooni.whatsapp",
+            "iyp.crawlers.ipinfo.ip_country"
         ],
 
         "post": [
