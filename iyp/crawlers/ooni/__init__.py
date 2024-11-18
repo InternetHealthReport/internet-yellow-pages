@@ -16,10 +16,11 @@ class OoniCrawler(BaseCrawler):
         self.reference['reference_url_info'] = 'https://ooni.org/post/mining-ooni-data'
         self.repo = 'ooni-data-eu-fra'
         self.dataset = dataset
+        self.categories = list()
         self.all_asns = set()
         self.all_countries = set()
         self.all_results = list()
-        self.all_percentages = list()
+        self.all_percentages = dict()
         self.all_dns_resolvers = set()
         self.unique_links = {
             'COUNTRY': set(),
@@ -50,52 +51,65 @@ class OoniCrawler(BaseCrawler):
                     data = json.loads(line)
                     self.process_one_line(data)
         logging.info('Calculating percentages...')
-        self.calculate_percentages()
+        self.aggregate_results()
         logging.info('Adding entries to IYP...')
         self.batch_add_to_iyp()
         logging.info('Done.')
 
     def process_one_line(self, one_line):
-        """Process a single line from the jsonl file and store the results locally."""
+        """Process a single line from the jsonl file and store the results locally.
+
+        Return True if an error occurred and no result was added, i.e., the extended
+        class should not continue to process this line.
+        """
+
+        # No test result. Can happen sometimes.
+        if not one_line.get('test_keys'):
+            return True
 
         # Extract the ASN, throw an exception if malformed
-        probe_asn = (
-            int(one_line['probe_asn'][2:])
-            if one_line.get('probe_asn', '').startswith('AS')
-            else (_ for _ in ()).throw(Exception('Invalid ASN'))
-        )
+        try:
+            probe_asn = int(one_line['probe_asn'].removeprefix('AS'))
+        except ValueError as e:
+            logging.error(f'Invalid probe ASN: {one_line["probe_asn"]}')
+            raise e
 
         # Add the DNS resolver to the set, unless its not a valid IP address
         try:
-            self.all_dns_resolvers.add(
-                ipaddress.ip_address(one_line.get('resolver_ip'))
-            )
+            resolver_ip = ipaddress.ip_address(one_line.get('resolver_ip'))
+            if resolver_ip.is_global:
+                self.all_dns_resolvers.add(resolver_ip.compressed)
         except ValueError:
             pass
+
         probe_cc = one_line.get('probe_cc')
 
-        # Append the results to the list
-        self.all_asns.add(probe_asn)
-        self.all_countries.add(probe_cc)
-        self.all_results.append((probe_asn, probe_cc, None, None))
-        """The base function adds a skeleton to the all_results list, which includes the
-        probe_asn and the probe_cc, as well as 2 dummy entries.
+        if probe_asn == 0:
+            # Ignore result if probe ASN is hidden.
+            return True
 
-        Each extended crawler then modifies this entry
-        by calling self.all_results[-1][:2] to access the latest entry
-        in the all_list and modify the non-populated variables. Adding
-        further variables (e.g. more than 4) is also possible, as well
-        as adding less, in that case only modify variable 3.
-        Attention: if you are discarding a result in the extended
-        class, you need to make sure you specifically pop() the entry
-        created here, in the base class, or you WILL end up with
-        misformed entries that only contain the probe_asn and
+        self.all_asns.add(probe_asn)
+        if probe_cc != 'ZZ':
+            # Do not create country nodes for ZZ country.
+            self.all_countries.add(probe_cc)
+
+        # Append the results to the list.
+        self.all_results.append((probe_asn, probe_cc))
+        """The base function adds a skeleton to the all_results list, which includes the
+        probe_asn and the probe_cc.
+
+        Each extended crawler then modifies this entry by calling self.all_results[-1]
+        to access the last result and add its specific variables.
+        Attention: if you are discarding a result in the extended class, you need to
+        make sure you specifically pop() the entry created here, in the base class, or
+        you WILL end up with misformed entries that only contain the probe_asn and
         probe_cc, and mess up your data.
         """
+        return False
 
     def batch_add_to_iyp(self):
         """Add the results to the IYP."""
-        country_links = []
+        country_links = list()
 
         # First, add the nodes and store their IDs directly as returned dictionaries
         self.node_ids = {
@@ -109,13 +123,15 @@ class OoniCrawler(BaseCrawler):
                 'IP', 'ip', self.all_dns_resolvers, all=False
             ),
         }
-        # to avoid duplication of country links, we only add them from
+        # To avoid duplication of country links, we only add them from
         # the webconnectivity dataset
         if self.dataset == 'webconnectivity':
             for entry in self.all_results:
                 asn, country = entry[:2]
-                asn_id = self.node_ids['asn'].get(asn)
-                country_id = self.node_ids['country'].get(country)
+                if country == 'ZZ':
+                    continue
+                asn_id = self.node_ids['asn'][asn]
+                country_id = self.node_ids['country'][country]
 
                 # Check if the COUNTRY link is unique
                 if (asn_id, country_id) not in self.unique_links['COUNTRY']:
@@ -133,3 +149,60 @@ class OoniCrawler(BaseCrawler):
         self.iyp.batch_add_node_label(
             list(self.node_ids['dns_resolver'].values()), 'Resolver'
         )
+
+    def aggregate_results(self):
+        """Populate the self.all_percentages dict by aggregating results and calculating
+        percentages."""
+        raise NotImplementedError()
+
+    def make_result_dict(self, counts: dict, total_count: int = None):
+        """Create a result dict containing the counts, total count, and percentages.
+
+        Ensure that entries for all categories defined in self.categories exist. If not
+        specified, total_count is the sum of all counts.
+        """
+        if total_count is None:
+            total_count = sum(counts.values())
+
+        for category in self.categories:
+            # Ensure entry for each category exists.
+            counts[category] = counts.get(category, 0)
+
+        percentages = {
+            category: (
+                (counts[category] / total_count) * 100 if total_count > 0 else 0
+            )
+            for category in self.categories
+        }
+
+        return {
+            'total_count': total_count,
+            'category_counts': dict(counts),
+            'percentages': percentages,
+        }
+
+
+def process_dns_queries(queries_list: list):
+    host_ip_set = set()
+    if not queries_list:
+        return host_ip_set
+    for query in queries_list:
+        if query['query_type'] not in {'A', 'AAAA'} or query['failure']:
+            continue
+        hostname = query['hostname']
+        for answer in query['answers']:
+            try:
+                if answer['answer_type'] == 'A':
+                    ip = ipaddress.ip_address(answer['ipv4'])
+                elif answer['answer_type'] == 'AAAA':
+                    ip = ipaddress.ip_address(answer['ipv6'])
+                else:
+                    # CNAME etc.
+                    continue
+            except ValueError:
+                # In rare cases the answer IP is scrubbed and thus invalid.
+                continue
+            if not ip.is_global:
+                continue
+            host_ip_set.add((hostname, ip.compressed))
+    return host_ip_set
