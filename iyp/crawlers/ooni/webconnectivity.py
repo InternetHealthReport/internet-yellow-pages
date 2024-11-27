@@ -24,7 +24,7 @@ class Crawler(OoniCrawler):
         self.all_urls = set()
         self.all_hostname_ips = set()
         self.all_ip_urls = set()
-        self.categories = ['OK', 'Confirmed', 'Failure', 'Anomaly']
+        self.categories = ['ok', 'confirmed', 'failure', 'anomaly']
 
     # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
@@ -57,21 +57,21 @@ class Crawler(OoniCrawler):
         # Determine the result based on the table
         # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
         if blocking is None and accessible is None:
-            result = 'Failure'  # Could not assign values to the fields
+            result = 'failure'  # Could not assign values to the fields
         elif blocking is False and accessible is False:
-            result = 'Failure'  # Expected failures (e.g., the website down)
+            result = 'failure'  # Expected failures (e.g., the website down)
         elif blocking is False and accessible is True:
-            result = 'OK'  # Expected success (i.e., no censorship)
+            result = 'ok'  # Expected success (i.e., no censorship)
         elif blocking == 'dns' and accessible is False:
-            result = 'Confirmed'  # DNS-based blocking
+            result = 'confirmed'  # DNS-based blocking
         elif blocking == 'tcp_ip' and accessible is False:
-            result = 'Confirmed'  # TCP-based blocking
+            result = 'confirmed'  # TCP-based blocking
         elif blocking == 'http-failure' and accessible is False:
-            result = 'Confirmed'  # HTTP or TLS based blocking
+            result = 'confirmed'  # HTTP or TLS based blocking
         elif blocking == 'http-diff' and accessible is False:
-            result = 'Confirmed'  # Blockpage rather than legit page
+            result = 'confirmed'  # Blockpage rather than legit page
         else:
-            result = 'Anomaly'  # Default case if no other case matches
+            result = 'anomaly'  # Default case if no other case matches
 
         # Using the last result from the base class, add our unique variables
         self.all_urls.add(input_url)

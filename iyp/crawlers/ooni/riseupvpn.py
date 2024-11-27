@@ -17,7 +17,7 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'riseupvpn')
-        self.categories = ['working', 'not_working']
+        self.categories = ['ok', 'failure']
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
@@ -28,9 +28,9 @@ class Crawler(OoniCrawler):
         ca_cert_status = one_line['test_keys']['ca_cert_status']
 
         if not api_failures and ca_cert_status:
-            result = 'working'
+            result = 'ok'
         else:
-            result = 'not_working'
+            result = 'failure'
 
         # Using the last result from the base class, add our unique variables
         self.all_results[-1] = self.all_results[-1] + (result,)

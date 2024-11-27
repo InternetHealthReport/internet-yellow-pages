@@ -20,7 +20,7 @@ class Crawler(OoniCrawler):
         # Prepend "OONI Probe Tor Tag" to all tag labels
         self.all_tags = {tag: f'OONI Probe Tor Tag {tag}'
                          for tag in ['or_port_dirauth', 'dir_port', 'obfs4', 'or_port']}
-        self.categories = ['OK', 'Failure']
+        self.categories = ['ok', 'failure']
 
     def process_one_line(self, one_line):
         """Process a single line of the JSONL file."""
@@ -38,7 +38,7 @@ class Crawler(OoniCrawler):
                 target_data['target_address'].rsplit(':', 1)[0].strip('[]')
             ).compressed
 
-            result = 'Failure' if target_data['failure'] else 'OK'
+            result = 'failure' if target_data['failure'] else 'ok'
 
             target_protocol = target_data['target_protocol']
             if target_protocol not in self.all_tags:

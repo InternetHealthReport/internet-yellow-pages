@@ -18,6 +18,8 @@ class Crawler(OoniCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'whatsapp')
         self.categories = [
+            'total_ok',
+            'total_blocked',
             'endpoint_ok',
             'endpoint_blocked',
             'registration_server_ok',
@@ -41,8 +43,16 @@ class Crawler(OoniCrawler):
         endpoint_result = f'endpoint_{endpoint_status}'
         web_result = f'web_{web_status}'
 
+        total = 'total_ok'
+        if (
+            server_result == 'registration_server_blocked'
+            or endpoint_result == 'endpoint_blocked'
+            or web_result == 'web_blocked'
+        ):
+            total = 'total_blocked'
         # Update the last entry in all_results with the new test-specific data
         self.all_results[-1] = self.all_results[-1] + (
+            total,
             server_result,
             endpoint_result,
             web_result,
@@ -74,13 +84,15 @@ class Crawler(OoniCrawler):
         target_dict = defaultdict(lambda: defaultdict(int))
 
         for entry in self.all_results:
-            asn, country, server_result, endpoint_result, web_result = entry
+            asn, country, total, server_result, endpoint_result, web_result = entry
+            target_dict[(asn, country)][total] += 1
             target_dict[(asn, country)][server_result] += 1
             target_dict[(asn, country)][endpoint_result] += 1
             target_dict[(asn, country)][web_result] += 1
 
         for (asn, country), counts in target_dict.items():
-            self.all_percentages[(asn, country)] = self.make_result_dict(counts)
+            total_count = counts['total_ok'] + counts['total_blocked']
+            self.all_percentages[(asn, country)] = self.make_result_dict(counts, total_count)
 
     def unit_test(self):
         return super().unit_test(['CENSORED'])
