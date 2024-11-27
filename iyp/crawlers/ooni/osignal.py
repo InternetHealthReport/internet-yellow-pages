@@ -8,6 +8,8 @@ from iyp.crawlers.ooni import OoniCrawler
 
 ORG = 'OONI'
 URL = 's3://ooni-data-eu-fra/raw/'
+# This crawler is not called 'signal' to prevent name collision with Python's built-in
+# module.
 NAME = 'ooni.osignal'
 
 label = 'OONI Signal Test'
@@ -17,7 +19,7 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'signal')
-        self.categories = ['OK', 'Failure']
+        self.categories = ['ok', 'blocked']
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
@@ -28,18 +30,8 @@ class Crawler(OoniCrawler):
             self.all_results.pop()
             return
 
-        # Normalize result to be either 'OK' or 'Failure'
-        if signal_backend_status == 'ok':
-            result = 'OK'
-        elif signal_backend_status == 'blocked':
-            result = 'Failure'
-        else:
-            logging.warning(f'Unexpected backend status: "{signal_backend_status}"')
-            self.all_results.pop()
-            return
-
         # Using the last result from the base class, add our unique variables
-        self.all_results[-1] = self.all_results[-1] + (result,)
+        self.all_results[-1] = self.all_results[-1] + (signal_backend_status,)
 
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()

@@ -17,11 +17,18 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'telegram')
+        # 'total' and 'no_total' are meta categories that indicate if any of the three
+        # main categories is blocked.
         self.categories = [
-            'unblocked',
+            'total_blocked',
+            'total_ok',
             'web_blocked',
+            'web_none',
+            'web_ok',
             'http_blocked',
+            'http_ok',
             'tcp_blocked',
+            'tcp_ok',
         ]
 
     def process_one_line(self, one_line):
@@ -37,15 +44,20 @@ class Crawler(OoniCrawler):
         if telegram_web_status == 'blocked':
             result_web = 'web_blocked'
         elif telegram_web_status == 'ok':
-            result_web = 'unblocked'
+            result_web = 'web_ok'
         else:
-            result_web = None
+            result_web = 'web_none'
 
-        result_http = 'http_blocked' if telegram_http_blocking else 'unblocked'
-        result_tcp = 'tcp_blocked' if telegram_tcp_blocking else 'unblocked'
+        result_http = 'http_blocked' if telegram_http_blocking else 'http_ok'
+        result_tcp = 'tcp_blocked' if telegram_tcp_blocking else 'tcp_ok'
+
+        total = 'total_ok'
+        if result_web == 'web_blocked' or result_http == 'http_blocked' or result_tcp == 'tcp_blocked':
+            total = 'total_blocked'
 
         # Using the last result from the base class, add our unique variables
         self.all_results[-1] = self.all_results[-1] + (
+            total,
             result_web,
             result_http,
             result_tcp,
@@ -78,14 +90,15 @@ class Crawler(OoniCrawler):
 
         # Populate the target_dict with counts
         for entry in self.all_results:
-            asn, country, result_web, result_http, result_tcp = entry
-            if result_web is not None:
-                target_dict[(asn, country)][result_web] += 1
+            asn, country, total, result_web, result_http, result_tcp = entry
+            target_dict[(asn, country)][total] += 1
+            target_dict[(asn, country)][result_web] += 1
             target_dict[(asn, country)][result_http] += 1
             target_dict[(asn, country)][result_tcp] += 1
 
         for (asn, country), counts in target_dict.items():
-            self.all_percentages[(asn, country)] = self.make_result_dict(counts)
+            total_count = counts['total_ok'] + counts['total_blocked']
+            self.all_percentages[(asn, country)] = self.make_result_dict(counts, total_count)
 
     def unit_test(self):
         return super().unit_test(['CENSORED'])

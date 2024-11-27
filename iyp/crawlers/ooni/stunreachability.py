@@ -20,7 +20,7 @@ class Crawler(OoniCrawler):
         super().__init__(organization, url, name, 'stunreachability')
         self.all_urls = set()
         self.all_hostname_ips = set()
-        self.categories = ['OK', 'Failure']
+        self.categories = ['ok', 'failure']
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
@@ -33,7 +33,7 @@ class Crawler(OoniCrawler):
 
         stun_url = one_line['input']
         failure = one_line['test_keys']['failure']
-        result = 'OK' if failure is None else 'Failure'
+        result = 'ok' if failure is None else 'failure'
 
         # Extract the hostname from the STUN endpoint URL if it's not an IP address
         stun_hostname = None

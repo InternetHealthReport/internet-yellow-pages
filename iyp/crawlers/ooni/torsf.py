@@ -17,7 +17,7 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'torsf')
-        self.categories = ['OK', 'Failure']
+        self.categories = ['ok', 'failure']
 
     def process_one_line(self, one_line):
         """Process a single line from the JSONL file."""
@@ -26,8 +26,7 @@ class Crawler(OoniCrawler):
         if 'success' not in one_line['test_keys']:
             self.all_results.pop()
             return
-        # Normalize result to be either "OK" or "Failure"
-        result = 'OK' if one_line['test_keys']['success'] else 'Failure'
+        result = 'ok' if one_line['test_keys']['success'] else 'failure'
 
         # Update the last entry in all_results with the new test-specific data
         self.all_results[-1] = self.all_results[-1] + (result,)
