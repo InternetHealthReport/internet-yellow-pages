@@ -81,7 +81,7 @@ class Crawler(OoniCrawler):
             link['src_id'] = self.node_ids['ip'][link['src_id']]
             link['dst_id'] = self.node_ids['tag'][link['dst_id']]
 
-        for (asn, ip), result_dict in self.all_percentages.items():
+        for (asn, country, ip), result_dict in self.all_percentages.items():
             asn_id = self.node_ids['asn'][asn]
             ip_id = self.node_ids['ip'][ip]
             props = dict()
@@ -89,6 +89,7 @@ class Crawler(OoniCrawler):
                 props[f'percentage_{category}'] = result_dict['percentages'][category]
                 props[f'count_{category}'] = result_dict['category_counts'][category]
             props['total_count'] = result_dict['total_count']
+            props['country_code'] = country
             censored_links.append(
                 {'src_id': asn_id, 'dst_id': ip_id, 'props': [props, self.reference]}
             )
@@ -100,10 +101,10 @@ class Crawler(OoniCrawler):
         target_dict = defaultdict(lambda: defaultdict(int))
         for entry in self.all_results:
             asn, country, ip, result = entry
-            target_dict[(asn, ip)][result] += 1
+            target_dict[(asn, country, ip)][result] += 1
 
-        for (asn, ip), counts in target_dict.items():
-            self.all_percentages[(asn, ip)] = self.make_result_dict(counts)
+        for (asn, country, ip), counts in target_dict.items():
+            self.all_percentages[(asn, country, ip)] = self.make_result_dict(counts)
 
     def unit_test(self):
         return super().unit_test(['CENSORED', 'CATEGORIZED'])
