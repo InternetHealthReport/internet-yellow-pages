@@ -111,6 +111,15 @@ We use the [extended allocation and assignment
 reports](https://www.nro.net/about/rirs/statistics/) provided by the [Number Resource
 Organization](https://www.nro.net/).
 
+## Open Observatory of Network Interference
+
+We use [Internet censorship measurements](https://explorer.ooni.org/) provided by the
+[Open Observatory of Network Interference](https://ooni.org/).
+
+This data is licensed under [CC BY-NC-SA
+4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). The data is aggregated for
+display in the graph.
+
 ## OpenINTEL
 
 We use several datasets from [OpenINTEL](https://www.openintel.nl/), a joint project of
