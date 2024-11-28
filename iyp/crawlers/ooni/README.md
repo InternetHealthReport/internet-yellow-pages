@@ -1,73 +1,301 @@
-# IYP OONI Implementation Tracker
-This Crawler pulls the censorship data provided by the [Open
-Observatory of Network Interference (OONI)](https://ooni.org/) into
-the IYP. OONI runs a number of tests on devices provided by
-volunteers, each test has their own crawler and they are specified
-below.
+# OONI -- https://ooni.org/
 
-As for the implementation:
+The [Open Observatory of Network Interference](https://ooni.org/) (OONI) is a non-profit
+free software project that aims to empower decentralized efforts in documenting internet
+censorship around the world.  OONI runs a number of tests from devices provided by
+volunteers, and we import a subset of these into IYP.
 
-The OoniCrawler baseclass, which extends the BaseCrawler, is defined
-in the init.py. Each crawler then extends the base class with their
-unique attributes. Common among all crawlers are the attributes reference, repo,
-dataset, all_asns, all_countries, all_results, all_percentages, 
-all_dns_resolvers and unique_links.
+Since most of these crawlers create the same graph representation, we first briefly
+describe the function of all tests and link to their detailed test specification. Then
+we give one combined description of the graph representation at the end.
 
-- reference and repo are set to OONI to identify the crawler.
-- dataset needs to be set to the dataset that specific crawler is pulling, e.g. whatsapp.
-- all_asns tracks all asns in the dataset and is added to by the
-  process_one_line() function
-- all_countries tracks all countries in the dataset and is added to by the
-process_one_line() function
-- all_results contains all results the process_one_line() function
-  produces, but as there are crawler-specific attributes, the
-  process_one_line() function is extended in each crawler and also
-  modifies this variable. To do that, we first run the base function
-  and then acess the last result in the extended crawler class.
-  Therefore, if we choose not to proceed with a given result in the
-  process_one_line() class for any reason, e.g. invalid parameters,
-  one has to be careful to pop() the last result in all_results or it
-  will contain an invalid result.
-- all_percentages is calculated by each crawler-specific
-  calculate_percentages() function, which highly depend on the OONI
-  test implementation. See each tests' github page for that
-  implementation.
-- all_dns_resolvers is handled in the base OoniCrawler class to track
-  dns resolvers and add them to the IYP. No changes need be made in
-  extended crawlers.
-- unique_links is a dictionary of currently the following sets: 
-            'COUNTRY': set(),
-            'CENSORED': set(),
-            'RESOLVES_TO': set(),
-            'PART_OF': set(),
-            'CATEGORIZED': set(),
-  if you are adding a new link, make sure to add it to this
-  dictionary. This is done to prevent link duplication stemming from
-  the same crawler, e.g. if multiple result files add the same PART_OF
-  relationship, the link would be duplicated if we do not track
-  existing links. Whenever you create a link in the extended
-  batch_add_to_iyp() class, make sure you add it to the corresponding
-  unique_links set, and before you create a link, check the set for
-  the existence of the link.
+## Crawlers
 
-Functions:
+### Facebook Messenger (facebookmessenger.py)
 
-- Each run starts by calling the download_and_extract() function of the grabber class.
-  This function is shared amongst all OONI crawlers, and takes the
-  repo, a directory and the dataset as the input. If implementing a
-  new crawler, only set the dataset correctly to the same name OONI
-  uses and you do not need to interact with this class.
-- Then, each line in the downloaded and extracted results files is
-  processed in process_one_line(). This needs to be done in both the
-  base and the extended class, as there are test specific attributes
-  the extended class needs to process. See above, all_results(), and
-  comments in the init.py code for implementation specifics.
-- calculate_percentages() calculates the link percentages based on
-  test-specific attributes. This is entirely done in the extended
-  crawler and needs to be implemented by you if you're adding a new
-  crawler.
-- Finally, batch_add_to_iyp() is called to add the results to the IYP.
+Specification:
+[ts-019-facebook-messenger.md](https://github.com/ooni/spec/blob/master/nettests/ts-019-facebook-messenger.md)
 
+This test verifies if a set of Facebook Messenger endpoints resolve to consistent IPs
+and if it is possible to establish a TCP connection to them on port 443.
+
+### Header Field Manipulation Test (httpheaderfieldmanipulation.py)
+
+Specification:
+[ts-006-header-field-manipulation.md](https://github.com/ooni/spec/blob/master/nettests/ts-006-header-field-manipulation.md)
+
+This test performs HTTP requests with request headers that vary capitalization towards a
+backend. If the headers reported by the server differ from the ones that were sent, then
+tampering is detected.
+
+### Signal (osignal.py)
+
+Specification:
+[ts-029-signal.md](https://github.com/ooni/spec/blob/master/nettests/ts-029-signal.md)
+
+This test checks if it is possible to establish a TLS connection with the Signal server
+backend and perform an HTTP GET request.
+
+### Psiphon (psiphon.py)
+
+Specification:
+[ts-015-psiphon.md](https://github.com/ooni/spec/blob/master/nettests/ts-015-psiphon.md)
+
+This test creates a Psiphon tunnel and then uses it to fetch the
+https://www.google.com/humans.txt webpage.
+
+### RiseupVPN (riseupvpn.py)
+
+Specification:
+[ts-026-riseupvpn.md](https://github.com/ooni/spec/blob/master/nettests/ts-026-riseupvpn.md)
+
+This test checks if a LEAP-platform-based VPN service like RiseupVPN is working as
+expected. It first performs a HTTP GET request to the RiseupVPN API service, followed by
+a TCP connection to the VPN gateways.
+
+### STUN reachability (stunreachability.py)
+
+Specification:
+[ts-025-stun-reachability.md](https://github.com/ooni/spec/blob/master/nettests/ts-025-stun-reachability.md)
+
+For each STUN input URL, this test sends a binding request to the given URL's endpoint
+and receives the corresponding response. If a valid response is received, then the test
+is successful, otherwise it failed.
+
+### Telegram (telegram.py)
+
+Specification:
+[ts-020-telegram.md](https://github.com/ooni/spec/blob/master/nettests/ts-020-telegram.md)
+
+This test checks if two services are working as they should:
+
+1. The Telegram access points (the addresses used by the Telegram desktop client)
+1. The Telegram web version
+
+### Tor (tor.py)
+
+Specification:
+[ts-023-tor.md](https://github.com/ooni/spec/blob/master/nettests/ts-023-tor.md)
+
+This test loops through the list of  measurement targets. The measurement action depends
+on the target type:
+
+- for dir_port targets, the test will GET the /tor/status-vote/current/consensus.z
+  resource using the HTTP protocol;
+- for or_port and or_port_dirauth targets, the test will connect to the address and
+  perform a TLS handshake;
+- for obfs4 targets, the test will connect to the address and perform an OBFS4
+  handshake;
+- otherwise, the test will TCP connect to the address.
+
+### Tor using snowflake (torsf.py)
+
+Specification:
+[ts-030-torsf.md](https://github.com/ooni/spec/blob/master/nettests/ts-030-torsf.md)
+
+This test detects detect if tor bootstraps using the Snowflake pluggable transport
+(PT) within a reasonable timeout.
+
+### Vanilla Tor (vanillator.py)
+
+Specification:
+[ts-016-vanilla-tor.md](https://github.com/ooni/spec/blob/master/nettests/ts-016-vanilla-tor.md)
+
+This test runs the Tor executable and collect logs. The bootstrap will either succeed
+or eventually time out.
+
+### Web Connectivity (webconnectivity.py)
+
+Specification:
+[ts-017-web-connectivity.md](https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
+
+This test checks if a website is censored using a sequence of steps. For more details,
+please check the specification.
+
+### WhatsApp (whatsapp.py)
+
+Specification:
+[ts-018-whatsapp.md](https://github.com/ooni/spec/blob/master/nettests/ts-018-whatsapp.md)
+
+This test checks if three services are working as they should:
+
+1. The WhatsApp endpoints used by the WhatsApp mobile app;
+1. The registration service, i.e. the service used to register a new account;
+1. The WhatsApp web interface.
+
+## Graph Representation
+
+All crawlers create `CENSORED` relationships from `AS` nodes to either a `Tag`, `URL` or
+`IP` node, indicating that there exists a censorship test result from at least one probe
+in this AS.
+
+We aggregate test results on an AS-country basis, i.e., if an AS contains probes from
+multiple countries, we create one `CENSORED` relationship per country. This results in
+multiple `CENSORED` relationships between the same AS and target, which can be
+distinguished by using the `country_code` property of the relationship.
+
+The result categories differ per test and are described in more detail below. However
+all relationships contain the following two properties:
+
+- `total_count`: The total number of aggregated test results. Note that this is
+  different from the `count_total` field present for some crawlers.
+- `country_code`: The country code of the country for which results were aggregated
+
+For each result category we create two properties:
+
+- `count_*`: The number of results in this category
+- `percentage_*`: The relative size in percent of this category
+
+For many tests the result is derived from a combination of fields. In order to aggregate
+the results we group them into categories and chose a name that should be recognizable
+when looking at the OONI documentation as well.
+
+### `(:AS)-[:CENSORED]->(:Tag)` Crawlers
+
+As mentioned above most crawlers create `(:AS)-[:CENSORED]->(:Tag)` relationships. The
+`Tag` node represents a specific OONI test (e.g.,
+[WhatsApp](https://github.com/ooni/spec/blob/master/nettests/ts-018-whatsapp.md)) and
+the `CENSORED` relationship represents aggregated results. For brevity we only discuss
+the result categories for each crawler here.
+
+If a result category is binary, it has a counterpart prefixed with `no_*` indicating a
+negative result.
+
+#### facebookmessenger.py
+
+- `unblocked`: No blocking
+- `dns_blocking`: Endpoints are DNS blocked
+- `tcp_blocking`: Endpoints are TCP blocked
+- `both_blocked`: Endpoints are blocked via both DNS & TCP
+
+#### httpheaderfieldmanipulation.py
+
+This test performs multiple measurements at once, which is why we introduce a meta
+category.
+
+- `[no_]total`: Meta category indicating that any of the following results was positive
+- `[no_]request_line_capitalization`: Request line was manipulated
+- `[no_]header_name_capitalization`: Header field names were manipulated
+- `[no_]header_field_value`: Header field values were manipulated
+- `[no_]header_field_number`: Number of headers was manipulated
+
+#### httpinvalidrequestline.py
+
+- `[no_]tampering`: Tampering detected
+
+#### osignal.py
+
+- `ok`: Connection succeeded
+- `blocked`: Connection failed
+
+#### psiphon.py
+
+- `bootstrapping_error`: Error in bootstrapping Psiphon
+- `usage_error`: Error in using Psiphon
+- `working`: Bootstrap worked
+- `invalid`: Invalid (should not happen)
+
+#### riseupvpn.py
+
+- `ok`: VPN API is functional and reachable
+- `failure`: Connection to VPN API failed
+
+#### telegram.py
+
+- `total_[ok|blocked]`: Meta category indicating that any of the following results was
+  blocked (`total_blocked`) or all are ok (`total_ok`)
+- `web_[ok|blocked|none]`: Telegram web version is blocked. `web_none` should not really
+  happen but is kept for completeness.
+- `http_[ok|blocked]`: Telegram access point blocked at HTTP level
+- `tcp_[ok|blocked]`: Telegram access point blocked at TCP level
+
+#### torsf.py
+
+- `ok`: Bootstrap succeeded
+- `failure`: Bootstrap failed
+
+#### vanillator.py
+
+- `ok`: Bootstrap succeeded
+- `failure`: Bootstrap failed
+
+#### whatsapp.py
+
+- `total_[ok|blocked]`: Meta category indicating that any of the following results was
+  blocked (`total_blocked`) or all are ok (`total_ok`)
+- `endpoint_[ok|blocked]`: Failed to connect to any endpoint
+- `registration_server_[ok|blocked]`: Cannot connect to registration service
+- `web_[ok|blocked]`: WhatsApp web is blocked
+
+### stunreachability.py
+
+This crawler connects `AS` with `URL` nodes and also adds hostnames and the IPs they
+resolve to for the URL if available. The URL will be connected to the hostname by the
+[`url2hostname`](../../post/url2hostname.py) postprocessing script.
+
+```Cypher
+(:AS {asn: 2497})-[:CENSORED {country_code: 'JP'}]->(:URL {url: 'stun://stun.l.google.com:19302'})
+(:HostName {name: 'stun.l.google.com'})-[:RESOLVES_TO]->(:IP {ip: '198.18.5.122'})
+```
+
+Result categories:
+
+- `ok`: STUN is working
+- `failure`: STUN is not working
+
+### tor.py
+
+This crawler connects `AS` with `IP` nodes and tags IPs as Tor directories or bridges.
+
+```Cypher
+(:AS {asn: 2497})-[:CENSORED {country_code: 'JP'}]->(:IP {ip: '192.95.36.142'})-[:CATEGORIZED]->(:Tag {label: 'OONI Probe Tor Tag obfs4'})
+```
+
+Result categories:
+
+- `ok`: Target reachable
+- `failure`: Target not reachable
+
+Tag names:
+
+- `OONI Probe Tor Tag dir_port`
+- `OONI Probe Tor Tag obfs4`
+- `OONI Probe Tor Tag or_port`
+- `OONI Probe Tor Tag or_port_dirauth`
+
+### webconnectivity.py
+
+This crawler connects `AS` with `URL` nodes and also adds hostnames and the IPs they
+resolve to for the URL if available. The URL will be connected to the hostname by the
+[`url2hostname`](../../post/url2hostname.py) postprocessing script.
+
+Since this test sometimes targets URLs which contain an IP instead of a normal hostname,
+it also adds a `PART_OF` relationship between `IP` and `URL` nodes in rare cases.
+
+```Cypher
+(:AS {asn: 2497})-[:CENSORED {country_code: 'JP'}]->(:URL {url: 'https://www.reddit.com/'})
+(:HostName {name: 'www.reddit.com'})-[:RESOLVES_TO]->(:IP {ip: '199.232.73.140'})
+(:IP {ip: '180.215.14.121'})-[:PART_OF]->(:URL {url: 'http://180.215.14.121/'})
+```
+
+Result categories
+
+- `ok`: Website reachable
+- `confirmed`: Confirmed censorship by some form of blocking
+- `failure`: Failed to reach website, but could be caused by normal connectivity issues
+- `anomaly`: Default if no other case matches
+
+The webconnectivity crawler is also responsible for adding AS-to-country mapping and
+`Resolver` nodes to the graph. Since this information is based on probes it does make
+sense to add it from multiple crawlers. In addition, the webconnectivity test is
+excecuted the most.
+
+```Cypher
+(:AS {asn: 2497})-[:COUNTRY {reference_name: 'ooni.webconnectivity'}]->(:Country)
+(:IP & Resolver {ip: '210.138.77.93'})
+```
+
+## Implemented Tests
 
 | Test Name                                | Implementation Tracker       | GitHub URL                                                                                                    |
 |------------------------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------|

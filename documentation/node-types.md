@@ -25,6 +25,7 @@
 | PeeringdbOrgID          | Unique identifier for an Organization as assigned by PeeringDB.                                                                   |
 | Prefix                  | An IPv4 or IPv6 prefix uniquely identified by the **prefix** property. The **af** property (address family) provides the IP version of the prefix.|
 | Ranking                 | Represent a specific ranking of Internet resources (e.g. CAIDA's ASRank or Tranco ranking). The rank value for each resource is given by the RANK relationship.|
+| Resolver                | An additional label added to IP nodes if they are a DNS resolver. |
 | Tag                     | The output of a classification. A tag can be the result of a manual or automated classification. Uniquely identified by the **label** property.|
 | URL                     | The full URL for an Internet resource, uniquely identified by the **url** property.                                               |
 
