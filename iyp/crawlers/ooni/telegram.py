@@ -17,131 +17,88 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'telegram')
+        # 'total' and 'no_total' are meta categories that indicate if any of the three
+        # main categories is blocked.
+        self.categories = [
+            'total_blocked',
+            'total_ok',
+            'web_blocked',
+            'web_none',
+            'web_ok',
+            'http_blocked',
+            'http_ok',
+            'tcp_blocked',
+            'tcp_ok',
+        ]
 
     def process_one_line(self, one_line):
         """Process a single line from the jsonl file and store the results locally."""
-        super().process_one_line(one_line)
+        if super().process_one_line(one_line):
+            return
 
-        telegram_http_blocking = one_line.get('test_keys', {}).get(
-            'telegram_http_blocking', False
-        )
-        telegram_tcp_blocking = one_line.get('test_keys', {}).get(
-            'telegram_tcp_blocking', False
-        )
-        telegram_web_status = (
-            one_line.get('test_keys', {}).get('telegram_web_status', 'null').lower()
-        )
+        telegram_http_blocking = one_line['test_keys']['telegram_http_blocking']
+        telegram_tcp_blocking = one_line['test_keys']['telegram_tcp_blocking']
+        telegram_web_status = one_line['test_keys']['telegram_web_status']
 
         # Normalize result
         if telegram_web_status == 'blocked':
             result_web = 'web_blocked'
         elif telegram_web_status == 'ok':
-            result_web = 'unblocked'
+            result_web = 'web_ok'
         else:
-            result_web = 'unblocked'
+            result_web = 'web_none'
 
-        result_http = 'http_blocked' if telegram_http_blocking else 'unblocked'
-        result_tcp = 'tcp_blocked' if telegram_tcp_blocking else 'unblocked'
+        result_http = 'http_blocked' if telegram_http_blocking else 'http_ok'
+        result_tcp = 'tcp_blocked' if telegram_tcp_blocking else 'tcp_ok'
+
+        total = 'total_ok'
+        if result_web == 'web_blocked' or result_http == 'http_blocked' or result_tcp == 'tcp_blocked':
+            total = 'total_blocked'
 
         # Using the last result from the base class, add our unique variables
-        self.all_results[-1] = self.all_results[-1][:2] + (
+        self.all_results[-1] = self.all_results[-1] + (
+            total,
             result_web,
             result_http,
             result_tcp,
         )
-
-        if len(self.all_results[-1]) != 5:
-            self.all_results.pop()
 
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
         telegram_id = self.iyp.get_node('Tag', {'label': label}, create=True)
 
-        censored_links = []
+        censored_links = list()
 
-        # Accumulate properties for each ASN-country pair
-        link_properties = defaultdict(lambda: defaultdict(int))
+        # Create one link per ASN-country pair.
+        for (asn, country), result_dict in self.all_percentages.items():
+            asn_id = self.node_ids['asn'][asn]
+            props = dict()
+            for category in self.categories:
+                props[f'percentage_{category}'] = result_dict['percentages'][category]
+                props[f'count_{category}'] = result_dict['category_counts'][category]
+            props['total_count'] = result_dict['total_count']
+            props['country_code'] = country
+            censored_links.append(
+                {'src_id': asn_id, 'dst_id': telegram_id, 'props': [props, self.reference]}
+            )
 
-        # Ensure all IDs are present and process results
-        for asn, country, result_web, result_http, result_tcp in self.all_results:
-            asn_id = self.node_ids['asn'].get(asn)
-            country_id = self.node_ids['country'].get(country)
-
-            if asn_id and country_id:
-                props = self.reference.copy()
-                if (asn, country) in self.all_percentages:
-                    percentages = self.all_percentages[(asn, country)].get(
-                        'percentages', {}
-                    )
-                    counts = self.all_percentages[(asn, country)].get(
-                        'category_counts', {}
-                    )
-                    total_count = self.all_percentages[(asn, country)].get(
-                        'total_count', 0
-                    )
-
-                    for category in [
-                        'unblocked',
-                        'web_blocked',
-                        'http_blocked',
-                        'tcp_blocked',
-                    ]:
-                        props[f'percentage_{category}'] = percentages.get(category, 0)
-                        props[f'count_{category}'] = counts.get(category, 0)
-                    props['total_count'] = total_count
-
-                # Accumulate properties
-                link_properties[(asn_id, telegram_id)] = props
-
-        for (asn_id, telegram_id), props in link_properties.items():
-            if (asn_id, telegram_id) not in self.unique_links['CENSORED']:
-                self.unique_links['CENSORED'].add((asn_id, telegram_id))
-                censored_links.append(
-                    {'src_id': asn_id, 'dst_id': telegram_id, 'props': [props]}
-                )
-
-        # Batch add the links (this is faster than adding them one by one)
         self.iyp.batch_add_links('CENSORED', censored_links)
 
-    def calculate_percentages(self):
+    def aggregate_results(self):
         target_dict = defaultdict(lambda: defaultdict(int))
-
-        # Initialize counts for all categories
-        categories = [
-            'unblocked',
-            'web_blocked',
-            'http_blocked',
-            'tcp_blocked',
-        ]
 
         # Populate the target_dict with counts
         for entry in self.all_results:
-            asn, country, result_web, result_http, result_tcp = entry
+            asn, country, total, result_web, result_http, result_tcp = entry
+            target_dict[(asn, country)][total] += 1
             target_dict[(asn, country)][result_web] += 1
             target_dict[(asn, country)][result_http] += 1
             target_dict[(asn, country)][result_tcp] += 1
 
-        self.all_percentages = {}
-
         for (asn, country), counts in target_dict.items():
-            total_count = sum(counts.values())
-            for category in categories:
-                counts[category] = counts.get(category, 0)
-
-            percentages = {
-                category: (
-                    (counts[category] / total_count) * 100 if total_count > 0 else 0
-                )
-                for category in categories
-            }
-
-            result_dict = {
-                'total_count': total_count,
-                'category_counts': dict(counts),
-                'percentages': percentages,
-            }
-            self.all_percentages[(asn, country)] = result_dict
+            total_count = counts['total_ok'] + counts['total_blocked']
+            self.all_percentages[(asn, country)] = self.make_result_dict(counts, total_count)
 
     def unit_test(self):
         return super().unit_test(['CENSORED'])

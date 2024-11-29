@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import tldextract
 
-from iyp.crawlers.ooni import OoniCrawler
+from iyp.crawlers.ooni import OoniCrawler, process_dns_queries
 
 ORG = 'OONI'
 URL = 's3://ooni-data-eu-fra/raw/'
@@ -22,241 +22,135 @@ class Crawler(OoniCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'webconnectivity')
         self.all_urls = set()
-        self.all_hostnames = set()
+        self.all_hostname_ips = set()
+        self.all_ip_urls = set()
+        self.categories = ['ok', 'confirmed', 'failure', 'anomaly']
 
     # Process a single line from the jsonl file and store the results locally
     def process_one_line(self, one_line):
-        super().process_one_line(one_line)
+        if super().process_one_line(one_line):
+            return
 
-        ips = {'ipv4': [], 'ipv6': []}
-        input_url = one_line.get('input')
-        test_keys = one_line.get('test_keys', {})
-        blocking = test_keys.get('blocking')
-        accessible = test_keys.get('accessible')
+        input_url = one_line['input']
+        test_keys = one_line['test_keys']
+        blocking = test_keys['blocking']
+        accessible = test_keys['accessible']
 
-        # Extract the IPs from the DNS replies, if they exist
-        queries = test_keys.get('queries', [])
-        if queries is not None:
-            for query in queries:
-                answers = query.get('answers')
-                if answers:
-                    for answer in answers:
-                        ipv4 = answer.get('ipv4', [])
-                        ipv6 = answer.get('ipv6', [])
-                        ips['ipv4'].extend(ipv4 if isinstance(ipv4, list) else [ipv4])
-                        ips['ipv6'].extend(ipv6 if isinstance(ipv6, list) else [ipv6])
-
-        # Remove duplicates if necessary
-        ips['ipv4'] = list(set(ips['ipv4']))
-        ips['ipv6'] = list(set(ips['ipv6']))
+        if not input_url.startswith('http'):
+            logging.warning(f'No HTTP URL: {input_url}')
 
         # Extract the hostname from the URL if it's not an IP address
         hostname = urlparse(input_url).hostname
-        hostname = (
-            tldextract.extract(input_url).fqdn
-            if hostname
-            and not (
-                hostname.replace('.', '').isdigit() and ipaddress.ip_address(hostname)
-            )
-            else hostname
+        try:
+            hostname = ipaddress.ip_address(hostname).compressed
+            hostname_is_ip = True
+        except ValueError:
+            hostname = tldextract.extract(input_url).fqdn
+            hostname_is_ip = False
+
+        host_ip_set = set()
+        if not hostname_is_ip:
+            # The test performs DNS queries even if the hostname is an IP, but this
+            # does not make sense so we want to ignore it.
+            host_ip_set = process_dns_queries(test_keys['queries'])
+
+        # Determine the result based on the table
+        # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
+        if blocking is None and accessible is None:
+            result = 'failure'  # Could not assign values to the fields
+        elif blocking is False and accessible is False:
+            result = 'failure'  # Expected failures (e.g., the website down)
+        elif blocking is False and accessible is True:
+            result = 'ok'  # Expected success (i.e., no censorship)
+        elif blocking == 'dns' and accessible is False:
+            result = 'confirmed'  # DNS-based blocking
+        elif blocking == 'tcp_ip' and accessible is False:
+            result = 'confirmed'  # TCP-based blocking
+        elif blocking == 'http-failure' and accessible is False:
+            result = 'confirmed'  # HTTP or TLS based blocking
+        elif blocking == 'http-diff' and accessible is False:
+            result = 'confirmed'  # Blockpage rather than legit page
+        else:
+            result = 'anomaly'  # Default case if no other case matches
+
+        # Using the last result from the base class, add our unique variables
+        self.all_urls.add(input_url)
+        if hostname_is_ip:
+            self.all_ip_urls.add((hostname, input_url))
+        else:
+            self.all_hostname_ips.update(host_ip_set)
+        self.all_results[-1] = self.all_results[-1] + (
+            input_url,
+            result,
         )
-
-        # Ensure all required fields are present
-        if (
-            self.all_results[-1][0]
-            and self.all_results[-1][1]
-            and input_url
-            and test_keys
-        ):
-            # Determine the result based on the table
-            # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
-            if blocking is None and accessible is None:
-                result = 'Failure'  # Could not assign values to the fields
-            elif blocking is False and accessible is False:
-                result = 'Failure'  # Expected failures (e.g., the website down)
-            elif blocking is False and accessible is True:
-                result = 'OK'  # Expected success (i.e., no censorship)
-            elif blocking == 'dns' and accessible is False:
-                result = 'Confirmed'  # DNS-based blocking
-            elif blocking == 'tcp_ip' and accessible is False:
-                result = 'Confirmed'  # TCP-based blocking
-            elif blocking == 'http-failure' and accessible is False:
-                result = 'Confirmed'  # HTTP or TLS based blocking
-            elif blocking == 'http-diff' and accessible is False:
-                result = 'Confirmed'  # Blockpage rather than legit page
-            else:
-                result = 'Anomaly'  # Default case if no other case matches
-
-            # Using the last result from the base class, add our unique variables
-            self.all_urls.add(input_url)
-            self.all_hostnames.add(hostname)
-            self.all_results[-1] = self.all_results[-1][:2] + (
-                input_url,
-                result,
-                hostname,
-                ips,
-            )
-
-        if len(self.all_results[-1]) != 6:
-            self.all_results.pop()
 
     def batch_add_to_iyp(self):
         super().batch_add_to_iyp()
 
-        censored_links = []
-        resolves_to_links = []
-        part_of_links = []
+        censored_links = list()
+        resolves_to_links = list()
+        part_of_links = list()
+        ips = set()
+        hostnames = set()
 
-        # Collect all IP addresses first
-        all_ips = []
-        for asn, country, url, result, hostname, ips in self.all_results:
-            if result == 'OK' and hostname and ips:
-                for ip_type in ips.values():
-                    all_ips.extend(
-                        ipaddress.ip_address(ip).compressed for ip in ip_type
-                    )
+        for hostname, ip in self.all_hostname_ips:
+            hostnames.add(hostname)
+            ips.add(ip)
+            resolves_to_links.append({'src_id': hostname, 'dst_id': ip, 'props': [self.reference]})
 
-        # Fetch all IP nodes in one batch
-        ip_id_map = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', all_ips, all=False)
+        for ip, url in self.all_ip_urls:
+            ips.add(ip)
+            part_of_links.append({'src_id': ip, 'dst_id': url, 'props': [self.reference]})
 
         self.node_ids.update(
             {
-                'url': self.iyp.batch_get_nodes_by_single_prop(
-                    'URL', 'url', self.all_urls, all=False
+                'ip': self.iyp.batch_get_nodes_by_single_prop(
+                    'IP', 'ip', ips, all=False
                 ),
                 'hostname': self.iyp.batch_get_nodes_by_single_prop(
-                    'HostName', 'name', self.all_hostnames, all=False
+                    'HostName', 'name', hostnames, all=False
+                ),
+                'url': self.iyp.batch_get_nodes_by_single_prop(
+                    'URL', 'url', self.all_urls, all=False
                 ),
             }
         )
 
-        # Ensure all IDs are present and process results
-        for asn, country, url, result, hostname, ips in self.all_results:
-            asn_id = self.node_ids['asn'].get(asn)
-            url_id = self.node_ids['url'].get(url)
-            hostname_id = self.node_ids['hostname'].get(hostname)
+        for link in resolves_to_links:
+            link['src_id'] = self.node_ids['hostname'][link['src_id']]
+            link['dst_id'] = self.node_ids['ip'][link['dst_id']]
 
-            if asn_id and url_id:
-                props = self.reference.copy()
-                if (asn, country, url) in self.all_percentages:
-                    percentages = self.all_percentages[(asn, country, url)].get(
-                        'percentages', {}
-                    )
-                    counts = self.all_percentages[(asn, country, url)].get(
-                        'category_counts', {}
-                    )
-                    total_count = self.all_percentages[(asn, country, url)].get(
-                        'total_count', 0
-                    )
+        for link in part_of_links:
+            link['src_id'] = self.node_ids['ip'][link['src_id']]
+            link['dst_id'] = self.node_ids['url'][link['dst_id']]
 
-                    for category in ['OK', 'Confirmed', 'Failure', 'Anomaly']:
-                        props[f'percentage_{category}'] = percentages.get(category, 0)
-                        props[f'count_{category}'] = counts.get(category, 0)
-                    props['total_count'] = total_count
+        for (asn, country, url), result_dict in self.all_percentages.items():
+            asn_id = self.node_ids['asn'][asn]
+            url_id = self.node_ids['url'][url]
+            props = dict()
+            for category in self.categories:
+                props[f'percentage_{category}'] = result_dict['percentages'][category]
+                props[f'count_{category}'] = result_dict['category_counts'][category]
+            props['total_count'] = result_dict['total_count']
+            props['country_code'] = country
+            censored_links.append(
+                {'src_id': asn_id, 'dst_id': url_id, 'props': [props, self.reference]}
+            )
 
-                censored_links.append(
-                    {'src_id': asn_id, 'dst_id': url_id, 'props': [props]}
-                )
-
-            if result == 'OK' and hostname and ips:
-                compressed_ips = [
-                    ipaddress.ip_address(ip).compressed
-                    for ip_type in ips.values()
-                    for ip in ip_type
-                ]
-                for ip in compressed_ips:
-                    ip_id = ip_id_map.get(ip)
-                    if (
-                        hostname_id
-                        and ip_id
-                        and (hostname_id, ip_id) not in self.unique_links['RESOLVES_TO']
-                    ):
-                        self.unique_links['RESOLVES_TO'].add((hostname_id, ip_id))
-                        resolves_to_links.append(
-                            {
-                                'src_id': hostname_id,
-                                'dst_id': ip_id,
-                                'props': [self.reference],
-                            }
-                        )
-                    if url_id and ip_id:
-                        if lambda ip: True if ipaddress.ip_address(ip) else False:
-                            if (
-                                ip_id
-                                and url_id
-                                and (ip_id, url_id) not in self.unique_links['PART_OF']
-                            ):
-                                self.unique_links['PART_OF'].add((ip_id, url_id))
-                                part_of_links.append(
-                                    {
-                                        'src_id': ip_id,
-                                        'dst_id': url_id,
-                                        'props': [self.reference],
-                                    }
-                                )
-
-            if hostname_id and url_id:
-                # Check if the url is a valid IP address
-                if not (
-                    lambda url: (
-                        lambda hostname: (
-                            True
-                            if hostname
-                            and not isinstance(
-                                ValueError, type(ipaddress.ip_address(hostname))
-                            )
-                            else False
-                        )
-                    )(urlparse(url).hostname)
-                ):
-                    if (url_id, hostname_id) not in self.unique_links['PART_OF']:
-                        self.unique_links['PART_OF'].add((url_id, hostname_id))
-                        part_of_links.append(
-                            {
-                                'src_id': url_id,
-                                'dst_id': hostname_id,
-                                'props': [self.reference],
-                            }
-                        )
-
-        # Batch add the links (this is faster than adding them one by one)
         self.iyp.batch_add_links('CENSORED', censored_links)
         self.iyp.batch_add_links('RESOLVES_TO', resolves_to_links)
         self.iyp.batch_add_links('PART_OF', part_of_links)
 
-    def calculate_percentages(self):
+    def aggregate_results(self):
         target_dict = defaultdict(lambda: defaultdict(int))
 
         # Populate the target_dict with counts
         for entry in self.all_results:
-            asn, country, target, result, hostname, ips = entry
+            asn, country, target, result = entry
             target_dict[(asn, country, target)][result] += 1
 
-        self.all_percentages = {}
-
-        # Define all possible result categories to ensure they are included
-        possible_results = ['OK', 'Confirmed', 'Failure', 'Anomaly']
-
         for (asn, country, target), counts in target_dict.items():
-            total_count = sum(counts.values())
-
-            # Initialize counts for all possible results to ensure they are included
-            for result in possible_results:
-                counts[result] = counts.get(result, 0)
-
-            percentages = {
-                category: (
-                    (counts[category] / total_count) * 100 if total_count > 0 else 0
-                )
-                for category in possible_results
-            }
-
-            result_dict = {
-                'total_count': total_count,
-                'category_counts': dict(counts),
-                'percentages': percentages,
-            }
-            self.all_percentages[(asn, country, target)] = result_dict
+            self.all_percentages[(asn, country, target)] = self.make_result_dict(counts)
 
     def unit_test(self):
         return super().unit_test(['CENSORED', 'RESOLVES_TO', 'PART_OF', 'COUNTRY'])

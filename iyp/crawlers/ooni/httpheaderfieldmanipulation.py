@@ -17,116 +17,7 @@ class Crawler(OoniCrawler):
 
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'httpheaderfieldmanipulation')
-
-    def process_one_line(self, one_line):
-        """Process a single line from the jsonl file and store the results locally."""
-        super().process_one_line(one_line)
-
-        test_keys = one_line.get('test_keys', {}).get('tampering', {})
-
-        total = 'total' if test_keys.get('total', False) else 'no_total'
-        request_line_capitalization = (
-            'request_line_capitalization'
-            if test_keys.get('request_line_capitalization', False)
-            else 'no_request_line_capitalization'
-        )
-        header_name_capitalization = (
-            'header_name_capitalization'
-            if test_keys.get('header_name_capitalization', False)
-            else 'no_header_name_capitalization'
-        )
-        header_field_value = (
-            'header_field_value'
-            if test_keys.get('header_field_value', False)
-            else 'no_header_field_value'
-        )
-        header_field_number = (
-            'header_field_number'
-            if test_keys.get('header_field_number', False)
-            else 'no_header_field_number'
-        )
-
-        # Using the last result from the base class, add our unique variables
-        self.all_results[-1] = self.all_results[-1][:2] + (
-            total,
-            request_line_capitalization,
-            header_name_capitalization,
-            header_field_value,
-            header_field_number,
-        )
-
-        if len(self.all_results[-1]) != 7:
-            self.all_results.pop()
-
-    def batch_add_to_iyp(self):
-        super().batch_add_to_iyp()
-
-        httpheader_id = self.iyp.get_node('Tag', {'label': label}, create=True)
-
-        censored_links = []
-
-        # Accumulate properties for each ASN-country pair
-        link_properties = defaultdict(lambda: defaultdict(int))
-
-        for (
-            asn,
-            country,
-            total,
-            request_line_capitalization,
-            header_name_capitalization,
-            header_field_value,
-            header_field_number,
-        ) in self.all_results:
-            asn_id = self.node_ids['asn'].get(asn)
-            country_id = self.node_ids['country'].get(country)
-
-            if asn_id and country_id:
-                props = self.reference.copy()
-                if (asn, country) in self.all_percentages:
-                    percentages = self.all_percentages[(asn, country)].get(
-                        'percentages', {}
-                    )
-                    counts = self.all_percentages[(asn, country)].get(
-                        'category_counts', {}
-                    )
-                    total_count = self.all_percentages[(asn, country)].get(
-                        'total_count', 0
-                    )
-
-                    for category in [
-                        'total',
-                        'no_total',
-                        'request_line_capitalization',
-                        'no_request_line_capitalization',
-                        'header_name_capitalization',
-                        'no_header_name_capitalization',
-                        'header_field_value',
-                        'no_header_field_value',
-                        'header_field_number',
-                        'no_header_field_number',
-                    ]:
-                        props[f'percentage_{category}'] = percentages.get(category, 0)
-                        props[f'count_{category}'] = counts.get(category, 0)
-                    props['total_count'] = total_count
-
-                # Accumulate properties
-                link_properties[(asn_id, httpheader_id)] = props
-
-        for (asn_id, httpheader_id), props in link_properties.items():
-            if (asn_id, httpheader_id) not in self.unique_links['CENSORED']:
-                self.unique_links['CENSORED'].add((asn_id, httpheader_id))
-                censored_links.append(
-                    {'src_id': asn_id, 'dst_id': httpheader_id, 'props': [props]}
-                )
-
-        # Batch add the links (this is faster than adding them one by one)
-        self.iyp.batch_add_links('CENSORED', censored_links)
-
-    def calculate_percentages(self):
-        target_dict = defaultdict(lambda: defaultdict(int))
-
-        # Initialize counts for all categories
-        categories = [
+        self.categories = [
             'total',
             'no_total',
             'request_line_capitalization',
@@ -138,6 +29,72 @@ class Crawler(OoniCrawler):
             'header_field_number',
             'no_header_field_number',
         ]
+
+    def process_one_line(self, one_line):
+        """Process a single line from the jsonl file and store the results locally."""
+        if super().process_one_line(one_line):
+            return
+
+        test_keys = one_line['test_keys']['tampering']
+
+        # "total" is true if an invalid response was received from the backend server,
+        # i.e., any tampering occurred, but also if there was no valid response.
+        # In this case, the individual fields are all false, but total is true, which
+        # can seem confusing.
+        total = 'total' if test_keys['total'] else 'no_total'
+        request_line_capitalization = (
+            'request_line_capitalization'
+            if test_keys['request_line_capitalization']
+            else 'no_request_line_capitalization')
+        header_name_capitalization = (
+            'header_name_capitalization'
+            if test_keys['header_name_capitalization']
+            else 'no_header_name_capitalization'
+        )
+        header_field_value = (
+            'header_field_value'
+            if test_keys['header_field_value']
+            else 'no_header_field_value'
+        )
+        header_field_number = (
+            'header_field_number'
+            if test_keys['header_field_number']
+            else 'no_header_field_number'
+        )
+
+        # Using the last result from the base class, add our unique variables
+        self.all_results[-1] = self.all_results[-1] + (
+            total,
+            request_line_capitalization,
+            header_name_capitalization,
+            header_field_value,
+            header_field_number,
+        )
+
+    def batch_add_to_iyp(self):
+        super().batch_add_to_iyp()
+
+        httpheader_id = self.iyp.get_node('Tag', {'label': label}, create=True)
+
+        censored_links = list()
+
+        # Create one link per ASN-country pair.
+        for (asn, country), result_dict in self.all_percentages.items():
+            asn_id = self.node_ids['asn'][asn]
+            props = dict()
+            for category in self.categories:
+                props[f'percentage_{category}'] = result_dict['percentages'][category]
+                props[f'count_{category}'] = result_dict['category_counts'][category]
+            props['total_count'] = result_dict['total_count']
+            props['country_code'] = country
+            censored_links.append(
+                {'src_id': asn_id, 'dst_id': httpheader_id, 'props': [props, self.reference]}
+            )
+
+        self.iyp.batch_add_links('CENSORED', censored_links)
+
+    def aggregate_results(self):
+        target_dict = defaultdict(lambda: defaultdict(int))
 
         # Populate the target_dict with counts
         for entry in self.all_results:
@@ -156,26 +113,11 @@ class Crawler(OoniCrawler):
             target_dict[(asn, country)][header_field_value] += 1
             target_dict[(asn, country)][header_field_number] += 1
 
-        self.all_percentages = {}
-
         for (asn, country), counts in target_dict.items():
-            total_count = sum(counts.values())
-            for category in categories:
-                counts[category] = counts.get(category, 0)
-
-            percentages = {
-                category: (
-                    (counts[category] / total_count) * 100 if total_count > 0 else 0
-                )
-                for category in categories
-            }
-
-            result_dict = {
-                'total_count': total_count,
-                'category_counts': dict(counts),
-                'percentages': percentages,
-            }
-            self.all_percentages[(asn, country)] = result_dict
+            # This test tests multiple things with one result, i.e., the categories are
+            # not disjunct so we have to use our own total count.
+            total_count = counts['total'] + counts['no_total']
+            self.all_percentages[(asn, country)] = self.make_result_dict(counts, total_count)
 
     def unit_test(self):
         return super().unit_test(['CENSORED'])
