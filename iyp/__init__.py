@@ -269,7 +269,8 @@ class IYP(object):
 
         if all:
             logging.info(f'Fetching all {label_str} nodes.')
-            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id')
+            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{
+                                         prop_name} AS {prop_name}, elementId(n) AS _id')
         else:
             logging.info(f'Fetching up to {len(prop_set)} {label_str} nodes.')
             list_prop = list(prop_set)
@@ -277,7 +278,7 @@ class IYP(object):
             WITH $list_prop AS list_prop
             MATCH (n:{label_str})
             WHERE n.{prop_name} IN list_prop
-            RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id""", list_prop=list_prop)
+            RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id""", list_prop=list_prop)
 
         ids = {node[prop_name]: node['_id'] for node in existing_nodes}
         existing_nodes_set = set(ids.keys())
@@ -292,7 +293,7 @@ class IYP(object):
 
                 create_query = f"""WITH $batch AS batch
                 UNWIND batch AS item CREATE (n:{label_str})
-                SET n = item RETURN n.{prop_name} AS {prop_name}, ID(n) AS _id"""
+                SET n = item RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id"""
 
                 new_nodes = self.tx.run(create_query, batch=batch)
 
@@ -405,7 +406,7 @@ class IYP(object):
         query = f"""UNWIND $props AS prop
                     {action} (a:{label_str} {where_clause_str})
                     {set_line}
-                    RETURN {return_clause_str}, ID(a) AS _id"""
+                    RETURN {return_clause_str}, elementId(a) AS _id"""
 
         ids = dict()
         for i in range(0, len(properties), BATCH_SIZE):
@@ -461,11 +462,11 @@ class IYP(object):
             result = self.tx.run(
                 f"""MERGE (a:{label} {dict2str(id_property_dict)})
                 SET a += {dict2str(properties)}
-                RETURN ID(a)"""
+                RETURN elementId(a)"""
             ).single()
         else:
             # MATCH node
-            result = self.tx.run(f'MATCH (a:{label_str} {dict2str(properties)}) RETURN ID(a)').single()
+            result = self.tx.run(f'MATCH (a:{label_str} {dict2str(properties)}) RETURN elementId(a)').single()
 
         if result is not None:
             return result[0]
@@ -489,7 +490,7 @@ class IYP(object):
 
             self.tx.run(f"""WITH $batch AS batch
                         MATCH (n)
-                        WHERE ID(n) IN batch
+                        WHERE elementId(n) IN batch
                         SET n:{label_str}""",
                         batch=batch)
             self.commit()
@@ -501,7 +502,7 @@ class IYP(object):
         Return None if the node does not exist.
         """
 
-        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, ID(a) AS nodeid')
+        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, elementId(a) AS nodeid')
 
         ids = {}
         for node in result:
@@ -516,7 +517,7 @@ class IYP(object):
         Return None if the node does not exist.
         """
 
-        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN ID(a)').single()
+        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN elementId(a)').single()
 
         if result is not None:
             return result[0]
@@ -547,7 +548,7 @@ class IYP(object):
             create_query = f"""WITH $batch AS batch
             UNWIND batch AS link
                 MATCH (x), (y)
-                WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
+                WHERE ID(x) = link.src_id AND elementId(y) = link.dst_id
                 CREATE (x)-[l:{type}]->(y)
                 WITH l, link
                 UNWIND link.props AS prop
@@ -557,7 +558,7 @@ class IYP(object):
                 create_query = f"""WITH $batch AS batch
                 UNWIND batch AS link
                     MATCH (x), (y)
-                    WHERE ID(x) = link.src_id AND ID(y) = link.dst_id
+                    WHERE ID(x) = link.src_id AND elementId(y) = link.dst_id
                     MERGE (x)-[l:{type}]-(y)
                     WITH l,  link
                     UNWIND link.props AS prop
@@ -619,7 +620,7 @@ class IYP(object):
             add_query = """WITH $batch AS batch
             UNWIND batch AS item
             MATCH (n)
-            WHERE ID(n) = item.id
+            WHERE elementId(n) = item.id
             SET n += item.props"""
 
             res = self.tx.run(add_query, batch=batch)
