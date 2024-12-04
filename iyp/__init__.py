@@ -54,7 +54,7 @@ def batch_format_link_properties(links: list, inplace=True) -> Optional[list]:
                 link['props'][idx] = format_properties(prop_dict)
         return None
     return [{'src_id': link['src_id'],
-             'dst_id': link['dst_id'],
+            'dst_id': link['dst_id'],
              'props': [format_properties(d) for d in link['props']]}
             for link in links]
 
@@ -99,8 +99,7 @@ def set_modification_time_from_last_modified_header(reference, response):
         last_modified_str = response.headers['Last-Modified']
         # All HTTP dates are in UTC:
         # https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1
-        last_modified = datetime.strptime(last_modified_str,
-                                          '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+        last_modified = datetime.strptime(last_modified_str, '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
         reference['reference_time_modification'] = last_modified
     except KeyError:
         logging.warning('No Last-Modified header; will not set modification time.')
