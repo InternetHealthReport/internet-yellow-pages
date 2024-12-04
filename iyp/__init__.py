@@ -272,8 +272,8 @@ class IYP(object):
 
         if all:
             logging.info(f'Fetching all {label_str} nodes.')
-            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{
-                                         prop_name} AS {prop_name}, elementId(n) AS _id')
+            existing_nodes = self.tx.run(
+                f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id')
         else:
             logging.info(f'Fetching up to {len(prop_set)} {label_str} nodes.')
             list_prop = list(prop_set)
