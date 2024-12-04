@@ -268,7 +268,8 @@ class IYP(object):
 
         if all:
             logging.info(f'Fetching all {label_str} nodes.')
-            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id')
+            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{
+                                         prop_name} AS {prop_name}, elementId(n) AS _id')
         else:
             logging.info(f'Fetching up to {len(prop_set)} {label_str} nodes.')
             list_prop = list(prop_set)
@@ -635,7 +636,7 @@ class BasePostProcess(object):
             'reference_org': 'Internet Yellow Pages',
             'reference_url_data': 'https://iyp.iijlab.net',
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.combine(datetime.now(timezone.utc), time.min, timezone.utc),
             'reference_time_modification': None
         }
 
@@ -663,7 +664,7 @@ class BaseCrawler(object):
             'reference_org': organization,
             'reference_url_data': url,
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.combine(datetime.now(timezone.utc), time.min, timezone.utc),
             'reference_time_modification': None
         }
 
