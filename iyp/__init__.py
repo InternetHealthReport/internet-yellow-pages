@@ -54,7 +54,7 @@ def batch_format_link_properties(links: list, inplace=True) -> Optional[list]:
                 link['props'][idx] = format_properties(prop_dict)
         return None
     return [{'src_id': link['src_id'],
-            'dst_id': link['dst_id'],
+             'dst_id': link['dst_id'],
              'props': [format_properties(d) for d in link['props']]}
             for link in links]
 
@@ -99,15 +99,13 @@ def set_modification_time_from_last_modified_header(reference, response):
         last_modified_str = response.headers['Last-Modified']
         # All HTTP dates are in UTC:
         # https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1
-        last_modified = datetime.strptime(
-            last_modified_str, '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+        last_modified = datetime.strptime(last_modified_str,
+                                          '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
         reference['reference_time_modification'] = last_modified
     except KeyError:
-        logging.warning(
-            'No Last-Modified header; will not set modification time.')
+        logging.warning('No Last-Modified header; will not set modification time.')
     except ValueError as e:
-        logging.error(
-            f'Failed to parse Last-Modified header "{last_modified_str}": {e}')
+        logging.error(f'Failed to parse Last-Modified header "{last_modified_str}": {e}')
 
 
 class RequestStatusError(requests.HTTPError):
@@ -255,8 +253,7 @@ class IYP(object):
         This method commits changes to the database.
         """
         if isinstance(label, list) and create:
-            raise NotImplementedError(
-                'Can not implicitly create multi-label nodes.')
+            raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
         if create:
             # Ensure UNIQUE constraint on id property.
@@ -272,8 +269,7 @@ class IYP(object):
 
         if all:
             logging.info(f'Fetching all {label_str} nodes.')
-            existing_nodes = self.tx.run(
-                f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id')
+            existing_nodes = self.tx.run(f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id')
         else:
             logging.info(f'Fetching up to {len(prop_set)} {label_str} nodes.')
             list_prop = list(prop_set)
@@ -359,8 +355,7 @@ class IYP(object):
         #     {1: x, 2: y}
 
         if isinstance(label, list) and create:
-            raise NotImplementedError(
-                'Can not implicitly create multi-label nodes.')
+            raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
         properties = [format_properties(props) for props in properties]
 
@@ -378,8 +373,7 @@ class IYP(object):
                 # here we return a map of id_properties to id. If there is more than one
                 # property, the order of the keys in the dictionary is not really clear,
                 # so the user should pass an explicit order in id_properties instead.
-                raise ValueError(
-                    'batch_get_nodes only supports implicit id property if a single property is passed.')
+                raise ValueError('batch_get_nodes only supports implicit id property if a single property is passed.')
             id_properties = list(example_props.keys())
 
         # Assemble "WHERE" and RETURN clauses.
@@ -447,8 +441,7 @@ class IYP(object):
         """
 
         if isinstance(label, list) and create:
-            raise NotImplementedError(
-                'Can not implicitly create multi-label nodes.')
+            raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
         properties = format_properties(properties)
 
@@ -463,10 +456,8 @@ class IYP(object):
             if not id_properties:
                 id_property_dict = properties
             else:
-                id_property_dict = {
-                    prop: properties[prop] for prop in id_properties}
-            self.__create_unique_constraint(
-                label, list(id_property_dict.keys()))
+                id_property_dict = {prop: properties[prop] for prop in id_properties}
+            self.__create_unique_constraint(label, list(id_property_dict.keys()))
             result = self.tx.run(
                 f"""MERGE (a:{label} {dict2str(id_property_dict)})
                 SET a += {dict2str(properties)}
@@ -474,8 +465,7 @@ class IYP(object):
             ).single()
         else:
             # MATCH node
-            result = self.tx.run(
-                f'MATCH (a:{label_str} {dict2str(properties)}) RETURN elementId(a)').single()
+            result = self.tx.run(f'MATCH (a:{label_str} {dict2str(properties)}) RETURN elementId(a)').single()
 
         if result is not None:
             return result[0]
@@ -511,8 +501,7 @@ class IYP(object):
         Return None if the node does not exist.
         """
 
-        result = self.tx.run(
-            f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, elementId(a) AS nodeid')
+        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, elementId(a) AS nodeid')
 
         ids = {}
         for node in result:
@@ -527,8 +516,7 @@ class IYP(object):
         Return None if the node does not exist.
         """
 
-        result = self.tx.run(
-            f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN elementId(a)').single()
+        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN elementId(a)').single()
 
         if result is not None:
             return result[0]
@@ -559,7 +547,7 @@ class IYP(object):
             create_query = f"""WITH $batch AS batch
             UNWIND batch AS link
                 MATCH (x), (y)
-                WHERE ID(x) = link.src_id AND elementId(y) = link.dst_id
+                WHERE elementId(x) = link.src_id AND elementId(y) = link.dst_id
                 CREATE (x)-[l:{type}]->(y)
                 WITH l, link
                 UNWIND link.props AS prop
@@ -569,7 +557,7 @@ class IYP(object):
                 create_query = f"""WITH $batch AS batch
                 UNWIND batch AS link
                     MATCH (x), (y)
-                    WHERE ID(x) = link.src_id AND elementId(y) = link.dst_id
+                    WHERE elementId(x) = link.src_id AND elementId(y) = link.dst_id
                     MERGE (x)-[l:{type}]-(y)
                     WITH l,  link
                     UNWIND link.props AS prop
@@ -594,11 +582,10 @@ class IYP(object):
 
         relationship_types = {e[0] for e in links}
         for relationship_type in relationship_types:
-            self.__create_range_index(
-                relationship_type, 'reference_name', on_relationship=True)
+            self.__create_range_index(relationship_type, 'reference_name', on_relationship=True)
 
         matches = ' MATCH (x)'
-        where = f' WHERE ID(x) = {src_node}'
+        where = f' WHERE elementId(x) = {src_node}'
         merges = ''
 
         for i, (type, dst_node, prop) in enumerate(links):
@@ -624,8 +611,7 @@ class IYP(object):
         node id and the dict contains the properties that should be added to the node.
         """
         # Ensure proper formatting and transform into dict.
-        formatted_props = [{'id': node_id, 'props': format_properties(
-            props)} for node_id, props in id_prop_list]
+        formatted_props = [{'id': node_id, 'props': format_properties(props)} for node_id, props in id_prop_list]
 
         for i in range(0, len(formatted_props), BATCH_SIZE):
             batch = formatted_props[i: i + BATCH_SIZE]
@@ -650,7 +636,7 @@ class BasePostProcess(object):
             'reference_org': 'Internet Yellow Pages',
             'reference_url_data': 'https://iyp.iijlab.net',
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.combine(datetime.now(timezone.utc), time.min, timezone.utc),
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
             'reference_time_modification': None
         }
 
@@ -678,7 +664,7 @@ class BaseCrawler(object):
             'reference_org': organization,
             'reference_url_data': url,
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.combine(datetime.now(timezone.utc), time.min, timezone.utc),
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
             'reference_time_modification': None
         }
 
@@ -761,19 +747,16 @@ class CacheHandler:
         self.cache_file_suffix = '.pickle.bz2'
 
     def cached_object_exists(self, object_name: str) -> bool:
-        cache_file = f'{self.cache_file_prefix}{
-            object_name}{self.cache_file_suffix}'
+        cache_file = f'{self.cache_file_prefix}{object_name}{self.cache_file_suffix}'
         return os.path.exists(cache_file)
 
     def load_cached_object(self, object_name: str):
-        cache_file = f'{self.cache_file_prefix}{
-            object_name}{self.cache_file_suffix}'
+        cache_file = f'{self.cache_file_prefix}{object_name}{self.cache_file_suffix}'
         with bz2.open(cache_file, 'rb') as f:
             return pickle.load(f)
 
     def save_cached_object(self, object_name: str, object) -> None:
-        cache_file = f'{self.cache_file_prefix}{
-            object_name}{self.cache_file_suffix}'
+        cache_file = f'{self.cache_file_prefix}{object_name}{self.cache_file_suffix}'
         with bz2.open(cache_file, 'wb') as f:
             pickle.dump(object, f)
 
