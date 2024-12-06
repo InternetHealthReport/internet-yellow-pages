@@ -10,7 +10,7 @@ from typing import Optional
 
 import requests
 from github import Github
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, NotificationMinimumSeverity
 
 BATCH_SIZE = 50000
 
@@ -159,7 +159,9 @@ class IYP(object):
 
         # Connect to the database
         uri = f'neo4j://{self.server}:{self.port}'
-        self.db = GraphDatabase.driver(uri, auth=(self.login, self.password))
+        self.db = GraphDatabase.driver(uri,
+                                       auth=(self.login, self.password),
+                                       notifications_min_severity=NotificationMinimumSeverity.WARNING)
 
         if self.db is None:
             raise ConnectionError('Could not connect to the Neo4j database!')
