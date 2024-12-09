@@ -206,7 +206,7 @@ class Crawler(BaseCrawler):
             if 'ixlan_set' in ix:
                 for ixlan in ix['ixlan_set']:
                     if ixlan['id'] not in self.ixlans:
-                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in {self.ixlans}')
+                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in self.ixlans dict')
                         continue
 
                     lan = self.ixlans[ixlan['id']]
@@ -249,7 +249,7 @@ class Crawler(BaseCrawler):
             if 'ixlan_set' in ix:
                 for ixlan in ix['ixlan_set']:
                     if ixlan['id'] not in self.ixlans:
-                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in {self.ixlans}')
+                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in self.ixlans dict')
                         continue
 
                     ix_qid = self.ix_id[ix['id']]
