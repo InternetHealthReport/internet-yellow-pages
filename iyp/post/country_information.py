@@ -24,7 +24,7 @@ class PostProcess(BasePostProcess):
                          'alpha3': country_info.alpha3}
             self.iyp.tx.run("""
                             MATCH (n:Country)
-                            WHERE ID(n) = $id
+                            WHERE elementId(n) = $id
                             SET n += $props
                             """,
                             id=country_id[country_code],

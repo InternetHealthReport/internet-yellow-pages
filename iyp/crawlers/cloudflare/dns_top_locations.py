@@ -53,7 +53,7 @@ class Crawler(BaseCrawler):
         existing_dn = self.iyp.tx.run(
             f"""MATCH (dn:DomainName)-[r:RANK]-(:Ranking)
                 WHERE r.rank < {RANK_THRESHOLD}
-                RETURN ID(dn) AS _id, dn.name AS dname;""")
+                RETURN elementId(dn) AS _id, dn.name AS dname;""")
 
         self.domain_names_id = {node['dname']: node['_id'] for node in existing_dn}
         self.domain_names = list(self.domain_names_id.keys())

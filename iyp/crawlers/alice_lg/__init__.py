@@ -52,7 +52,7 @@ from iyp import BaseCrawler, CacheHandler
 #     (:AS)-[:MEMBER_OF]->(:IXP)
 #     Get IXP peering LANs:
 #       MATCH (p:Prefix)-[:MANAGED_BY]->(i:IXP)
-#       RETURN p.prefix AS peering_lan, ID(i) AS ixp_qid
+#       RETURN p.prefix AS peering_lan, elementId(i) AS ixp_qid
 #     neighbors -> list of neighbors
 #       neighbor['address'] -> map to prefix
 #   /routeservers/:id/neighbors/:neighborId/routes/received
@@ -338,7 +338,7 @@ class Crawler(BaseCrawler):
         """Get IXP peering LANs from IYP and return a radix tree containing the QID of
         the IXP node in the data['ixp_qid'] field of each tree node."""
         query = """MATCH (p:Prefix)-[:MANAGED_BY]->(i:IXP)
-                   RETURN p.prefix AS peering_lan, ID(i) AS ixp_qid"""
+                   RETURN p.prefix AS peering_lan, elementId(i) AS ixp_qid"""
         peering_lans = radix.Radix()
         for res in self.iyp.tx.run(query):
             n = peering_lans.add(res['peering_lan'])
