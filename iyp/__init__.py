@@ -588,7 +588,7 @@ class IYP(object):
             self.__create_range_index(relationship_type, 'reference_name', on_relationship=True)
 
         matches = ' MATCH (x)'
-        where = f' WHERE elementId(x) = {src_node}'
+        where = f' WHERE elementId(x) = "{src_node}"'
         merges = ''
 
         for i, (type, dst_node, prop) in enumerate(links):
@@ -601,7 +601,7 @@ class IYP(object):
             prop = format_properties(prop)
 
             matches += f', (x{i})'
-            where += f' AND ID(x{i}) = {dst_node}'
+            where += f' AND elementId(x{i}) = "{dst_node}"'
             merges += f' MERGE (x)-[:{type}  {dict2str(prop)}]->(x{i}) '
 
         self.tx.run(matches + where + merges).consume()

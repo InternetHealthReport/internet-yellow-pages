@@ -29,7 +29,7 @@ class PostProcess(BasePostProcess):
         query = f"""
         MATCH (src)-[r:{link_type}]->(dst)
         WHERE {prop_conditions}
-        RETURN ID(r) AS link_id, ID(src) AS src_id, ID(dst) AS dst_id, {prop_str}
+        RETURN elementId(r) AS link_id, elementId(src) AS src_id, elementId(dst) AS dst_id, {prop_str}
         """
         result = self.iyp.tx.run(query)
         if result:
@@ -49,7 +49,7 @@ class PostProcess(BasePostProcess):
         query = """
         UNWIND $link_ids AS link_id
         MATCH ()-[r]->()
-        WHERE ID(r) = link_id
+        WHERE elementId(r) = link_id
         DELETE r
         """
         self.iyp.tx.run(query, link_ids=link_ids)
