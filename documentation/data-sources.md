@@ -23,6 +23,7 @@
 | Citizen Lab                 | URL testing lists                            | https://github.com/citizenlab/test-lists                        |
 | Cloudflare                  | Cloudflare Radar API endpoints radar/dns/top/ases, radar/dns/top/locations, radar/ranking/top, radar/datasets   | https://radar.cloudflare.com                                   |
 | Emile Aben                  | AS names                                     | https://github.com/emileaben/asnames                                 |
+| Google                      | CrUX top 1M websites per country             |  https://developer.chrome.com/docs/crux |
 | IHR                         | Country Dependency, AS Hegemony, ROV         | https://ihr.iijlab.net                                               |
 | Internet Intelligence Lab   | AS to Organization Mapping                   | https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping      |
 | NRO                         | Extended allocation and assignment reports   | https://www.nro.net/about/rirs/statistics                            |

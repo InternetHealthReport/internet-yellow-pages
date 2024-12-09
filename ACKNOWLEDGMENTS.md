@@ -84,6 +84,14 @@ This data is licensed under [CC BY-NC
 We use [AS names](https://github.com/emileaben/asnames) provided by Emile Aben and
 others with permission (Hi Emile!).
 
+## Google
+
+We use [Crux's](https://developer.chrome.com/docs/crux) top 1M websites per country
+from Google.
+
+This data is licensed under  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+No changes were made to the data.
+
 ## Internet Health Report
 
 We use three datasets from the [Internet Health Report](https://ihr.iijlab.net/) (that's
