@@ -13,7 +13,7 @@ from scp import SCPClient
 
 from send_email import send_email
 
-NEO4J_VERSION = '5.16.0'
+NEO4J_VERSION = '5.21.2'
 
 STATUS_OK = 'OK'
 
