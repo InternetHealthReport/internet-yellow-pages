@@ -19,7 +19,7 @@ dataset using the hostname.
 ## Graph representation
 
 ```cypher
-(:HostName {name:'www.iij.ad.jp'})-[:RANK {rank: 50000, origin:'https://www.iij.ad.jp'}]-(r:Ranking {name:'CrUX top 1M (JP)'})
+(:HostName {name:'www.iij.ad.jp'})-[:RANK {rank: 50000, origin:'https://www.iij.ad.jp'}]-(r:Ranking {name:'CrUX top 1M (JP)'})-[:COUNTRY]-(:Country {country_code:'JP'})
 ```
 
 The `RANK` relationship contains the property `origin` to recover the origin
