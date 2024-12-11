@@ -92,6 +92,7 @@
             "iyp.crawlers.alice_lg.netnod",
             "iyp.crawlers.worldbank.country_pop",
             "iyp.crawlers.simulamet.rirdata_rdns",
+            "iyp.crawlers.google.crux_top1m_country",
             "iyp.crawlers.openintel.dnsgraph_nl",
             "iyp.crawlers.openintel.dnsgraph_rdns",
             "iyp.crawlers.cloudflare.dns_top_locations",
