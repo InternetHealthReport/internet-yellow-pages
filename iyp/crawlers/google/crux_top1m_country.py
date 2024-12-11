@@ -10,7 +10,7 @@ import pandas as pd
 
 from iyp import BaseCrawler
 
-# Data source Google (archived on github by IHR)
+# Data source Google (archived on GitHub by IHR)
 ORG = 'Google'
 URL = 'https://github.com/InternetHealthReport/crux-top-lists-country/raw/refs/heads/main/data/country'
 NAME = 'google.crux_top1m_country'
@@ -35,11 +35,13 @@ class Crawler(BaseCrawler):
 
         country_links = list()
         rank_links = list()
+
+        end = arrow.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start = end.shift(months=-3)
+
         for country in iso3166.countries:
             country_code = country.alpha2
 
-            end = arrow.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            start = end.shift(months=-3)
             df = None
 
             for date in reversed(list(arrow.Arrow.range('month', start, end))):
@@ -66,7 +68,6 @@ class Crawler(BaseCrawler):
 
             ranking_name = f'CrUX top 1M ({country_code})'
 
-            # Create/fetch corresponding nodes in IYP
             hostnames.update(df['hostname'].unique())
             rankings.add(ranking_name)
             countries.add(country_code)
@@ -89,10 +90,12 @@ class Crawler(BaseCrawler):
                     ]
                 })
 
+        # Create/fetch corresponding nodes in IYP
         ranking_id = self.iyp.batch_get_nodes_by_single_prop('Ranking', 'name', rankings, all=False)
         hostname_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', hostnames, all=False)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
 
+        # Replace link ends with QIDs
         for link in country_links:
             link['src_id'] = ranking_id[link['src_id']]
             link['dst_id'] = country_id[link['dst_id']]
