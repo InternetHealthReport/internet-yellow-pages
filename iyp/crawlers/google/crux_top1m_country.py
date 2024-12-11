@@ -38,7 +38,7 @@ class Crawler(BaseCrawler):
         for country in iso3166.countries:
             country_code = country.alpha2
 
-            end = arrow.utcnow().replace(day=1, hour=0, minute=0, microsecond=0)
+            end = arrow.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             start = end.shift(months=-3)
             df = None
 
