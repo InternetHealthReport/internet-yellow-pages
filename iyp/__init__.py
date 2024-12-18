@@ -4,7 +4,7 @@ import ipaddress
 import logging
 import os
 import pickle
-from datetime import datetime, time, timezone
+from datetime import datetime, timezone
 from shutil import rmtree
 from typing import Optional
 
@@ -639,7 +639,7 @@ class BasePostProcess(object):
             'reference_org': 'Internet Yellow Pages',
             'reference_url_data': 'https://iyp.iijlab.net',
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0),
             'reference_time_modification': None
         }
 
@@ -667,7 +667,7 @@ class BaseCrawler(object):
             'reference_org': organization,
             'reference_url_data': url,
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0),
             'reference_time_modification': None
         }
 
