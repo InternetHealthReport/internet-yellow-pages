@@ -631,11 +631,11 @@ class IYP(object):
 
 
 class BasePostProcess(object):
-    def __init__(self):
+    def __init__(self, name):
         """IYP and references initialization."""
 
         self.reference = {
-            'reference_name': 'iyp',
+            'reference_name': f'iyp.{name}',
             'reference_org': 'Internet Yellow Pages',
             'reference_url_data': 'https://iyp.iijlab.net',
             'reference_url_info': str(),

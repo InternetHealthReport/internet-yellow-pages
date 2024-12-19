@@ -151,10 +151,11 @@ def main():
     logging.info('Post-processing...')
     for module_name in conf['iyp']['post']:
         module = importlib.import_module(module_name)
+        name = module_name.replace('iyp.post.', '')
 
         try:
             logging.info(f'start {module}')
-            post = module.PostProcess()
+            post = module.PostProcess(name)
             post.run()
             post.close()
             status[module_name] = STATUS_OK
