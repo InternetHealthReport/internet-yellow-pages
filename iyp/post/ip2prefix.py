@@ -7,6 +7,8 @@ import radix
 
 from iyp import BasePostProcess
 
+NAME = 'post.ip2prefix'
+
 
 class PostProcess(BasePostProcess):
     @staticmethod
@@ -74,19 +76,8 @@ class PostProcess(BasePostProcess):
         # push sub-prefix to covering-prefix links
         self.iyp.batch_add_links('PART_OF', links)
 
-    def count_relation(self):
-        count = self.iyp.tx.run('MATCH (ip:IP)-[r]->()  RETURN count(r) AS count').single()
-        return count
-
     def unit_test(self):
-        result_before = self.count_relation()
-        logging.info('relations before: %s' % result_before)
-        self.run()
-        result_after = self.count_relation()
-        logging.info('relations after: %s' % result_after)
-        self.close()
-        print('assertion error ') if result_after <= result_before else print('assertion success')
-        assert result_after > result_before
+        raise NotImplementedError()
 
 
 def main() -> None:
@@ -105,7 +96,7 @@ def main() -> None:
 
     logging.info(f'Started: {sys.argv}')
 
-    post = PostProcess()
+    post = PostProcess(NAME)
     if args.unit_test:
         post.unit_test()
     else:

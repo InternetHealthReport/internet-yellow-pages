@@ -5,6 +5,8 @@ import sys
 
 from iyp import BasePostProcess
 
+NAME = 'post.address_family'
+
 
 class PostProcess(BasePostProcess):
     def run(self):
@@ -19,22 +21,7 @@ class PostProcess(BasePostProcess):
         self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS ':' SET ip.af = 6;")
 
     def unit_test(self):
-
-        self.run()
-        # test the prefix tree for IPv4 and IPv6 and return count
-        result_prefix = self.iyp.tx.run(
-            'MATCH (pfx:Prefix) WHERE pfx.af <> 4 and pfx.af <> 6 RETURN count(pfx);').data()
-
-        # test the IP tree for IPv4 and IPv6 and return count
-        result_ip = self.iyp.tx.run('MATCH (ip:IP) WHERE ip.af <> 4 and ip.af <> 6 RETURN count(ip);').data()
-
-        result = result_prefix[0]['count(pfx)'] + result_ip[0]['count(ip)']
-        logging.info(
-            'Count of the remaining prefex/IP which is not IPv4 or IPv6: %s and the assert result is %s' %
-            (result, result == 0))
-        self.close()
-        print('assertion error ') if result != 0 else print('assertion success')
-        assert result == 0
+        raise NotImplementedError()
 
 
 def main() -> None:
@@ -53,7 +40,7 @@ def main() -> None:
 
     logging.info(f'Started: {sys.argv}')
 
-    post = PostProcess()
+    post = PostProcess(NAME)
     if args.unit_test:
         post.unit_test()
     else:

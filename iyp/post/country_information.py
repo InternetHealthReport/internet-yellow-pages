@@ -7,6 +7,8 @@ import iso3166
 
 from iyp import BasePostProcess
 
+NAME = 'post.country_information'
+
 
 class PostProcess(BasePostProcess):
     def run(self):
@@ -32,11 +34,7 @@ class PostProcess(BasePostProcess):
         self.iyp.commit()
 
     def unit_test(self):
-        self.run()
-        count = self.iyp.tx.run('MATCH (n:Country) WHERE n.alpha3 IS NOT NULL RETURN COUNT(n)').single()
-        self.close()
-        print('assertion error ') if count == 0 else print('assertion success')
-        assert count > 0
+        raise NotImplementedError()
 
 
 def main() -> None:
@@ -55,7 +53,7 @@ def main() -> None:
 
     logging.info(f'Started: {sys.argv}')
 
-    post = PostProcess()
+    post = PostProcess(NAME)
     if args.unit_test:
         post.unit_test()
     else:

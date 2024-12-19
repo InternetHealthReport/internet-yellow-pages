@@ -5,6 +5,8 @@ import sys
 
 from iyp import BasePostProcess
 
+NAME = 'post.clean_links'
+
 
 class PostProcess(BasePostProcess):
     def get_links_of_type(self, link_type, prop_dict=None):
@@ -78,6 +80,9 @@ class PostProcess(BasePostProcess):
         for link_type in link_types:
             self.clean_links_of_type(link_type, {'reference_org': 'OONI'})
 
+    def unit_test(self):
+        raise NotImplementedError()
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -95,7 +100,7 @@ def main() -> None:
 
     logging.info(f'Started: {sys.argv}')
 
-    post = PostProcess()
+    post = PostProcess(NAME)
     if args.unit_test:
         post.unit_test()
     else:
