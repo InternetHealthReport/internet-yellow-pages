@@ -128,11 +128,10 @@ if __name__ == '__main__':
     parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
 
-    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename=f'log/{scriptname}.log',
+        filename=f'log/{NAME}.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
