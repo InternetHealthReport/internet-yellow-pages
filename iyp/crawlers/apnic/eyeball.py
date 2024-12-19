@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 import sys
 
 import iso3166
@@ -94,11 +93,10 @@ def main() -> None:
     parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
 
-    scriptname = os.path.basename(sys.argv[0]).replace('/', '_')[0:-3]
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/' + scriptname + '.log',
+        filename='log/' + NAME + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S'
     )
