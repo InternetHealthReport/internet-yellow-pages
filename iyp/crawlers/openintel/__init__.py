@@ -424,6 +424,12 @@ class DnsgraphCrawler(BaseCrawler):
             return IPv6Address(address).compressed
         return address
 
+    @staticmethod
+    def recurse_cnames(source: str, cnames: set, ips: set, state: dict):
+        for target in cnames[source]:
+            state[target].update(ips)
+            DnsgraphCrawler.recurse_cnames(target, cnames, ips, state)
+
     def run(self):
         # Extract current date for partitioning
         logging.info('Probing available data')
@@ -486,6 +492,8 @@ class DnsgraphCrawler(BaseCrawler):
         links_managed_by = list()
         links_resolves_to = list()
         unique_relationships = set()
+        resolves_to = defaultdict(set)
+        cnames = defaultdict(set)
 
         logging.info('Computing relationships...')
         for connection in connections.itertuples():
@@ -517,19 +525,43 @@ class DnsgraphCrawler(BaseCrawler):
                     'props': [self.reference, connection.properties],
                 })
             elif connection.relation_name == 'ALIAS_OF':
+                # Keep reverse map of CNAMES.
+                cnames[connection.to_nodeKey].add(connection.from_nodeKey)
                 links_alias_of.append({
                     'src_id': hosts_id[connection.from_nodeKey],
                     'dst_id': hosts_id[connection.to_nodeKey],
                     'props': [self.reference, connection.properties],
                 })
             elif connection.relation_name == 'RESOLVES_TO':
+                resolves_to[connection.from_nodeKey].add(connection.to_nodeKey)
+                source = 'AAAA' if ':' in connection.to_nodeKey else 'A'
                 links_resolves_to.append({
                     'src_id': hosts_id[connection.from_nodeKey],
                     'dst_id': ips_id[connection.to_nodeKey],
-                    'props': [self.reference, connection.properties],
+                    'props': [self.reference, connection.properties, {'source': source}],
                 })
             else:
                 logging.error(f'Unknown relationship type: {connection.relation_name}')
+
+        normal_resolve_to_links = len(links_resolves_to)
+
+        # Start at the A/AAAA records and work backwards up to all CNAMES potentially
+        # pointing to it.
+        cname_resolves = defaultdict(set)
+        for name, ips in resolves_to.items():
+            self.recurse_cnames(name, cnames, ips, cname_resolves)
+        for hostname, ips in cname_resolves.items():
+            host_qid = hosts_id[hostname]
+            for ip in ips:
+                links_resolves_to.append({
+                    'src_id': host_qid,
+                    'dst_id': ips_id[ip],
+                    'props': [self.reference, {'source': 'CNAME'}],
+                })
+
+        cname_resolve_to_links = len(links_resolves_to) - normal_resolve_to_links
+        logging.info(f'Calculated {normal_resolve_to_links} A/AAAA and '
+                     f'{cname_resolve_to_links} CNAME RESOLVES_TO links')
 
         # Push all links to IYP
         self.iyp.batch_add_links('PARENT', links_parent)
