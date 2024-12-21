@@ -356,6 +356,8 @@ class OpenIntelCrawler(BaseCrawler):
                                       'props': [self.reference, {'source': row.response_type}]})
                     unique_res.add((host_qid, ip_qid, row.response_type))
 
+        normal_resolve_to_links = len(res_links)
+
         # Process CNAMES
         # RESOLVES_TO relationships
         for hostname, entries in cname_resolves_to.items():
@@ -389,7 +391,10 @@ class OpenIntelCrawler(BaseCrawler):
         for hd in host_names.intersection(domain_names):
             partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
 
-        logging.info(f'Computed {len(res_links)} RESOLVES_TO links and {len(mng_links)} MANAGED_BY links')
+        cname_resolve_to_links = len(res_links) - normal_resolve_to_links
+
+        logging.info(f'Computed {normal_resolve_to_links} A/AAAA and {cname_resolve_to_links} CNAME RESOLVES_TO links '
+                     f'and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
         self.iyp.batch_add_links('RESOLVES_TO', res_links)
