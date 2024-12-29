@@ -12,7 +12,7 @@ import requests
 from iyp import BaseCrawler, DataNotAvailableError
 
 # URL to the API
-URL = 'https://ihr-archive.iijlab.net/ihr/rov/%Y/%m/%d/ihr_rov_%Y-%m-%d.csv.lz4'
+URL = 'https://archive.ihr.live/ihr/rov/%Y/%m/%d/ihr_rov_%Y-%m-%d.csv.lz4'
 ORG = 'IHR'
 NAME = 'ihr.rov'
 
@@ -26,7 +26,7 @@ def replace_link_ids(links: list, src_id: dict, dst_id: dict):
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://ihr-archive.iijlab.net/ihr/rov/README.txt'
+        self.reference['reference_url_info'] = 'https://archive.ihr.live/ihr/rov/README.txt'
 
     def run(self):
         """Fetch data from file and push to IYP."""
