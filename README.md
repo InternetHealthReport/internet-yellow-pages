@@ -24,12 +24,12 @@ commands see the [database documentation](documentation/database-management.md).
 
 ### Download the database dump
 
-Visit the [database dump repository](https://ihr-archive.iijlab.net/ihr/iyp/).
+Visit the [database dump repository](https://archive.ihr.live/ihr/iyp/).
 
 Dumps are organized by year, month, and day in this format:
 
 ```text
-https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump
+https://archive.ihr.live/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump
 ```
 
 Replace `YYYY`, `MM`, and `DD` in the URL with the desired date to access a specific
@@ -41,7 +41,7 @@ To create the folder and download a dump with `curl`:
 
 ```bash
 mkdir dumps
-curl https://ihr-archive.iijlab.net/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
+curl https://archive.ihr.live/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump -o dumps/neo4j.dump
 ```
 
 ### Set up IYP
