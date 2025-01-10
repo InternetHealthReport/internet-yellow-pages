@@ -25,19 +25,44 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://developer.chrome.com/docs/crux/methodology'
+        self.__reset_data()
+
+    def __reset_data(self):
+        self.rankings = set()
+        self.hostnames = set()
+        self.countries = set()
+        self.country_links = list()
+        self.rank_links = list()
+
+    def __push_data(self):
+        # Create/fetch corresponding nodes in IYP
+        ranking_id = self.iyp.batch_get_nodes_by_single_prop('Ranking', 'name', self.rankings, all=False)
+        hostname_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', self.hostnames, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', self.countries, all=False)
+
+        # Replace link ends with QIDs
+        for link in self.country_links:
+            link['src_id'] = ranking_id[link['src_id']]
+            link['dst_id'] = country_id[link['dst_id']]
+
+        for link in self.rank_links:
+            link['src_id'] = hostname_id[link['src_id']]
+            link['dst_id'] = ranking_id[link['dst_id']]
+
+        # Create the (:Ranking)-[:COUNTRY]-(:Country) relationship
+        self.iyp.batch_add_links('COUNTRY', self.country_links)
+        # Create the (:HostName)-[:RANK]-(:Ranking) relationship
+        self.iyp.batch_add_links('RANK', self.rank_links)
 
     def run(self):
         """Fetch data and push to IYP."""
-
-        rankings = set()
-        hostnames = set()
-        countries = set()
-
-        country_links = list()
-        rank_links = list()
-
         end = arrow.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         start = end.shift(months=-3)
+
+        # Process data in batches, since fetching all hostnames at once crashes the
+        # script.
+        country_batch_size = 50
+        count = 0
 
         for country in iso3166.countries:
             country_code = country.alpha2
@@ -68,11 +93,11 @@ class Crawler(BaseCrawler):
 
             ranking_name = f'CrUX top 1M ({country_code})'
 
-            hostnames.update(df['hostname'].unique())
-            rankings.add(ranking_name)
-            countries.add(country_code)
+            self.hostnames.update(df['hostname'].unique())
+            self.rankings.add(ranking_name)
+            self.countries.add(country_code)
 
-            country_links.append({
+            self.country_links.append({
                 'src_id': ranking_name,
                 'dst_id': country_code,
                 'props': [
@@ -81,7 +106,7 @@ class Crawler(BaseCrawler):
             })
 
             for row in df.itertuples():
-                rank_links.append({
+                self.rank_links.append({
                     'src_id': row.hostname,
                     'dst_id': ranking_name,
                     'props': [
@@ -89,25 +114,14 @@ class Crawler(BaseCrawler):
                         {'rank': row.rank, 'origin': row.origin, 'country_code': country_code}
                     ]
                 })
+            count += 1
+            if count == country_batch_size:
+                count = 0
+                self.__push_data()
+                self.__reset_data()
 
-        # Create/fetch corresponding nodes in IYP
-        ranking_id = self.iyp.batch_get_nodes_by_single_prop('Ranking', 'name', rankings, all=False)
-        hostname_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', hostnames, all=False)
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
-
-        # Replace link ends with QIDs
-        for link in country_links:
-            link['src_id'] = ranking_id[link['src_id']]
-            link['dst_id'] = country_id[link['dst_id']]
-
-        for link in rank_links:
-            link['src_id'] = hostname_id[link['src_id']]
-            link['dst_id'] = ranking_id[link['dst_id']]
-
-        # Create the (:Ranking)-[:COUNTRY]-(:Country) relationship
-        self.iyp.batch_add_links('COUNTRY', country_links)
-        # Create the (:HostName)-[:RANK]-(:Ranking) relationship
-        self.iyp.batch_add_links('RANK', rank_links)
+        # Push remaining data.
+        self.__push_data()
 
     def unit_test(self):
         # Unit test checks for existence of relationships created by this crawler.
