@@ -123,6 +123,11 @@ class Crawler(BaseCrawler):
                 # remove the property instead.
                 probe.pop('country_code')
 
+            # An empty tag list causes a FlatterDict instance to remain in the object,
+            # which neo4j does not like.
+            if not probe['tags']:
+                probe.pop('tags')
+
         # push nodes
         probe_id = dict()
         # Each probe is a JSON object with nested fields, so we need to flatten it.
