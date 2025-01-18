@@ -165,6 +165,9 @@ class OpenIntelCrawler(BaseCrawler):
                     state[link][record_type].update(ips)
         if chain_tail in chain_links:
             for link in chain_links[chain_tail]:
+                if link in current_chain:
+                    # Prevent infinite recursion due to CNAME loops.
+                    continue
                 current_chain.append(link)
                 OpenIntelCrawler.recurse_chain(current_chain, chain_links, records, state)
                 current_chain.pop()
@@ -430,10 +433,14 @@ class DnsgraphCrawler(BaseCrawler):
         return address
 
     @staticmethod
-    def recurse_cnames(source: str, cnames: set, ips: set, state: dict):
+    def recurse_cnames(source: str, cnames: dict, ips: set, state: dict, processed_cnames: set):
         for target in cnames[source]:
+            if target in processed_cnames:
+                # Prevent infinite recursion due to CNAME loops.
+                continue
+            processed_cnames.add(target)
             state[target].update(ips)
-            DnsgraphCrawler.recurse_cnames(target, cnames, ips, state)
+            DnsgraphCrawler.recurse_cnames(target, cnames, ips, state, processed_cnames)
 
     def run(self):
         # Extract current date for partitioning
@@ -554,7 +561,7 @@ class DnsgraphCrawler(BaseCrawler):
         # pointing to it.
         cname_resolves = defaultdict(set)
         for name, ips in resolves_to.items():
-            self.recurse_cnames(name, cnames, ips, cname_resolves)
+            self.recurse_cnames(name, cnames, ips, cname_resolves, {name})
         for hostname, ips in cname_resolves.items():
             host_qid = hosts_id[hostname]
             for ip in ips:
