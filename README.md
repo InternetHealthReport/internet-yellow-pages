@@ -20,7 +20,8 @@ commands see the [database documentation](documentation/database-management.md).
 - [Curl](https://curl.se/download.html)
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- about 50GB of free disk space
+- about 100GB of free disk space
+- at least 2GB of RAM
 
 ### Download the database dump
 
