@@ -51,7 +51,7 @@ To uncompress the dump and start the database run the following command:
 
 ```bash
 mkdir -p data
-gid="$(id -u)" gid="$(id -g)" docker compose --profile local up
+uid="$(id -u)" gid="$(id -g)" docker compose --profile local up
 ```
 
 This creates a `data` directory containing the database, load the database dump, and
