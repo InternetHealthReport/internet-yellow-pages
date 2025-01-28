@@ -2,7 +2,7 @@ services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.21.2
     profiles: ["local", "public_tls", "public_notls"]
-    user: "${UID}:${GID}"
+    user: "${uid}:${gid}"
     container_name: iyp_loader
     tty: true
     stdin_open: true
@@ -14,7 +14,7 @@ services:
   iyp:
     image: neo4j:5.21.2
     profiles: ["local"]
-    user: "${UID}:${GID}"
+    user: "${uid}:${gid}"
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -31,7 +31,7 @@ services:
   iyp_readonly_tls:
     image: neo4j:5.21.2
     profiles: ["public_tls"]
-    user: "${UID}:${GID}"
+    user: "${uid}:${gid}"
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -51,7 +51,7 @@ services:
   iyp_readonly_notls:
     image: neo4j:5.21.2
     profiles: ["public_notls"]
-    user: "${UID}:${GID}"
+    user: "${uid}:${gid}"
     container_name: iyp
     restart: unless-stopped
     ports:
@@ -70,7 +70,7 @@ services:
   caddy:
     image: caddy:latest
     profiles: ["caddy"]
-    user: "${UID}:${GID}"
+    user: "${uid}:${gid}"
     container_name: caddy
     restart: unless-stopped
     ports:
