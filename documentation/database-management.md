@@ -28,7 +28,7 @@ use the loader for this. For example, to dump the database into a folder called
 ```bash
 # Directory has to exist or it will be created as root by Docker.
 mkdir -p backups
-UID="$(id -u)" GID="$(id -g)" docker compose run --rm -i -v "$PWD/backups:/backups" iyp_loader neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
+uid="$(id -u)" gid="$(id -g)" docker compose run --rm -i -v "$PWD/backups:/backups" iyp_loader neo4j-admin database dump neo4j --to-path=/backups --verbose --overwrite-destination
 ```
 
 This will create a file called `neo4j.dump` in the `backups` folder. **Note that this
