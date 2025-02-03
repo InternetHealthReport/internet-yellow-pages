@@ -26,6 +26,7 @@
 | Google                      | CrUX top 1M websites per country             |  https://developer.chrome.com/docs/crux |
 | IHR                         | Country Dependency, AS Hegemony, ROV         | https://ihr.iijlab.net                                               |
 | Internet Intelligence Lab   | AS to Organization Mapping                   | https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping      |
+| IPinfo                      | IP to Country Mapping                        | https://ipinfo.io
 | NRO                         | Extended allocation and assignment reports   | https://www.nro.net/about/rirs/statistics                            |
 | OONI                        | Internet censorship measurements             | https://ooni.org/                                               |
 | OpenINTEL                   | tranco1m, umbrella1m, ns                     | https://data.openintel.nl/data                                       |
