@@ -26,20 +26,30 @@ class PostProcess(BasePostProcess):
         """Fetch all IP and Prefix nodes, then link IPs to their most specific
         prefix."""
 
-        # Get all prefixes in a radix tree
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix')
-        additional_properties = list()
+        # Find all different types of prefixes
+        prefixes_labels = self.iyp.tx.run(
+            f"""MATCH (pfx:Prefix)
+                RETURN collect(DISTINCT labels(pfx));""")
 
-        rtree = radix.Radix()
-        for prefix, prefix_qid in prefix_id.items():
-            rnode = rtree.add(prefix)
-            rnode.data['id'] = prefix_qid
-            prefix_split = self.__get_network_and_prefixlen(prefix)
-            if prefix_split is not None:
-                additional_properties.append((prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]}))
+        all_labels = set([label for labels in prefixes_labels for label in labels])
+        rtrees = {}
 
-        # Add network and prefixlen properties
-        self.iyp.batch_add_properties(additional_properties)
+        for label in all_labels:
+            # Get all prefixes in a radix tree
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop(label, 'prefix', all=True)
+            additional_properties = list()
+
+            rtrees[label] = radix.Radix()
+            for prefix, prefix_qid in prefix_id.items():
+                rnode = rtrees[label].add(prefix)
+                rnode.data['id'] = prefix_qid
+                prefix_split = self.__get_network_and_prefixlen(prefix)
+                if prefix_split is not None:
+                    additional_properties.append(
+                            (prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]}))
+
+            # Add network and prefixlen properties
+            self.iyp.batch_add_properties(additional_properties)
 
         # Get all IP nodes
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip')
@@ -48,29 +58,30 @@ class PostProcess(BasePostProcess):
         links = []
         for ip, ip_qid in ip_id.items():
             if ip:
-                rnode = rtree.search_best(ip)
-
-                if rnode:
-                    links.append({
-                        'src_id': ip_qid,
-                        'dst_id': rnode.data['id'],
-                        'props': [self.reference]
-                    })
+                for rtree in rtrees.values():
+                    rnode = rtree.search_best(ip)
+                    if rnode:
+                        links.append({
+                            'src_id': ip_qid,
+                            'dst_id': rnode.data['id'],
+                            'props': [self.reference]
+                        })
 
         # push IP to prefix links to IYP
         self.iyp.batch_add_links('PART_OF', links)
 
         # Compute links sub-prefix and covering prefix
         links = []
-        for rnode in rtree:
-            covering = rnode.parent
+        for rtree in rtrees.values():
+            for rnode in rtree:
+                covering = rnode.parent
 
-            if covering:
-                links.append({
-                    'src_id': rnode.data['id'],
-                    'dst_id': covering.data['id'],
-                    'props': [self.reference]
-                })
+                if covering:
+                    links.append({
+                        'src_id': rnode.data['id'],
+                        'dst_id': covering.data['id'],
+                        'props': [self.reference]
+                    })
 
         # push sub-prefix to covering-prefix links
         self.iyp.batch_add_links('PART_OF', links)

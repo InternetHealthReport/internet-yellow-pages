@@ -18,7 +18,7 @@ not be visible in route collectors from Route Views or RIPE RIS.
 ## Graph representation
 
 ```Cypher
-(:AS {asn: 2497})-[:ORIGINATE {count: 4}]->(:Prefix {prefix: '101.128.128.0/17'})
+(:AS {asn: 2497})-[:ORIGINATE {count: 4}]->(:BGPPrefix {prefix: '101.128.128.0/17'})
 
 ```
 
@@ -28,5 +28,5 @@ A detailed list of collector names is also available via the `seen_by_collectors
 
 ## Dependence
 
-This crawler may create new `Prefix` nodes that miss the `af` property, so the
+This crawler may create new `BGPPrefix` nodes that miss the `af` property, so the
 `iyp.post.address_family` postprocessing script should be run after this.

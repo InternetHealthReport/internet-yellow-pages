@@ -48,7 +48,7 @@ Nodes:
 
 - `(:IXP {name})`: IXP node
 - `(:Name {name})`: Name of IXP
-- `(:Prefix {prefix})`: Prefix of IXP peering LAN
+- `(:PeeringLAN {prefix})`: Prefix of IXP peering LAN
 - `(:CaidaIXID {id})`: ID of the IXP assigned by CAIDA
 - `(:Country {country_code})`: Country code
 - `(:URL {url})`: Website of IXP
@@ -60,7 +60,7 @@ Relationships:
 (:IXP)-[:EXTERNAL_ID]->(:CaidaIXID)
 (:IXP)-[:NAME]->(:Name)
 (:IXP)-[:WEBSITE]->(:URL)
-(:Prefix)-[:MANAGED_BY]->(:IXP)
+(:PeeringLAN)-[:MANAGED_BY]->(:IXP)
 ```
 
 ### Dependence

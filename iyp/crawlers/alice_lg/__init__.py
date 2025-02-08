@@ -51,12 +51,12 @@ from iyp import BaseCrawler, CacheHandler
 #   /routeservers/:id/neighbors
 #     (:AS)-[:MEMBER_OF]->(:IXP)
 #     Get IXP peering LANs:
-#       MATCH (p:Prefix)-[:MANAGED_BY]->(i:IXP)
+#       MATCH (p:PeeringLAN)-[:MANAGED_BY]->(i:IXP)
 #       RETURN p.prefix AS peering_lan, elementId(i) AS ixp_qid
 #     neighbors -> list of neighbors
 #       neighbor['address'] -> map to prefix
 #   /routeservers/:id/neighbors/:neighborId/routes/received
-#     (:AS)-[:ORIGINATE]->(:Prefix)
+#     (:AS)-[:ORIGINATE]->(:BGPPrefix)
 #     received['imported'] -> list of routes
 #       route['network'] -> prefix
 #       route['bgp']['as_path'][-1] -> originating ASN
@@ -337,7 +337,7 @@ class Crawler(BaseCrawler):
     def __get_peering_lans(self) -> radix.Radix:
         """Get IXP peering LANs from IYP and return a radix tree containing the QID of
         the IXP node in the data['ixp_qid'] field of each tree node."""
-        query = """MATCH (p:Prefix)-[:MANAGED_BY]->(i:IXP)
+        query = """MATCH (p:PeeringLAN)-[:MANAGED_BY]->(i:IXP)
                    RETURN p.prefix AS peering_lan, elementId(i) AS ixp_qid"""
         peering_lans = radix.Radix()
         for res in self.iyp.tx.run(query):
@@ -422,6 +422,8 @@ class Crawler(BaseCrawler):
         prefix_id = dict()
         if prefixes:
             prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
+            # Add the BGPPrefix label
+            self.iyp.batch_add_node_label(prefix_id, 'BGPPrefix')
 
         # Translate raw values to QID.
         for relationship in member_of_rels:
