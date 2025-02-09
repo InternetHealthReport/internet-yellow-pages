@@ -35,10 +35,18 @@ class DnsTopCrawler(BaseCrawler):
                 WHERE r.rank <= $rank_threshold
                 RETURN elementId(dn) AS _id, dn.name AS dname""",
             rank_threshold=RANK_THRESHOLD)
+        existing_hn = self.iyp.tx.run(
+            """MATCH (hn:HostName)-[r:RANK]-(:Ranking)
+                WHERE r.rank <= $rank_threshold
+                RETURN elementId(hn) AS _id, hn.name AS hname""",
+            rank_threshold=RANK_THRESHOLD)
 
         self.domain_names_id = {node['dname']: node['_id'] for node in existing_dn}
-        self.domain_names = list(sorted(self.domain_names_id.keys()))
-        # Contains unique values that connect to the domains, depending on the crawler.
+        self.host_names_id = {node['hname']: node['_id'] for node in existing_hn}
+        # There might be overlap between these two, but we don't want to fetch the same
+        # data twice.
+        self.names = list(sorted(set(self.domain_names_id.keys()).union(self.host_names_id.keys())))
+        # Contains unique values that connect to the names, depending on the crawler.
         # ASNs for top_ases, country codes for top_locations.
         self.to_nodes = set()
         self.links = list()
@@ -64,26 +72,42 @@ class DnsTopCrawler(BaseCrawler):
         queries = list()
 
         # Query Cloudflare API in batches.
-        for i in range(0, len(self.domain_names), BATCH_SIZE):
-
-            batch_domains = self.domain_names[i: i + BATCH_SIZE]
-
+        i = 0
+        batch = list()
+        fpaths = dict()
+        while i < len(self.names):
+            name = self.names[i]
+            i += 1
             # Do not override existing files.
-            fname = 'data_' + '_'.join(batch_domains) + '.json'
+            fname = f'data_{name}.json'
             fpath = os.path.join(tmp_dir, fname)
 
             if os.path.exists(fpath):
                 continue
 
+            fpaths[name] = fpath
+
+            batch.append(name)
+            if len(batch) < BATCH_SIZE and i < len(self.names):
+                # Batch not yet full and not in last iteration.
+                continue
+
+            if not batch:
+                # If the number of batches perfectly lines up, we do not want to send a
+                # broken request without names.
+                break
+
             get_params = f'?limit={TOP_LIMIT}'
-            for domain in batch_domains:
+            for domain in batch:
                 get_params += f'&dateRange=7d&domain={domain}&name={domain}'
 
             url = self.url + get_params
             future = req_session.get(url)
-            future.domains = batch_domains
-            future.fpath = fpath
+            future.domains = batch
+            future.fpaths = fpaths
             queries.append(future)
+            batch = list()
+            fpaths = dict()
 
         for query in as_completed(queries):
             try:
@@ -94,8 +118,22 @@ class DnsTopCrawler(BaseCrawler):
                 if not data['success']:
                     raise ValueError('Response contains success=False')
 
-                with open(query.fpath, 'wb') as fp:
-                    fp.write(res.content)
+                data = data['result']
+
+                if not self.reference['reference_time_modification']:
+                    # Get the reference time from the first file.
+                    try:
+                        date_str = data['meta']['dateRange'][0]['endTime']
+                        date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+                        self.reference['reference_time_modification'] = date
+                    except (KeyError, ValueError, TypeError) as e:
+                        logging.warning(f'Failed to get modification time: {e}')
+
+                for domain, result in data.items():
+                    if domain == 'meta':
+                        continue
+                    with open(query.fpaths[domain], 'w') as fp:
+                        json.dump(result, fp)
 
             except Exception as e:
                 logging.error(f'Failed to fetch data for domains: {query.domains}: {e}')
@@ -112,15 +150,9 @@ class DnsTopCrawler(BaseCrawler):
             file = os.path.join(tmp_dir, entry.name)
 
             with open(file, 'rb') as fp:
-                results = json.load(fp)['result']
-                if not self.reference['reference_time_modification']:
-                    # Get the reference time from the first file.
-                    try:
-                        date_str = results['meta']['dateRange'][0]['endTime']
-                        date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
-                        self.reference['reference_time_modification'] = date
-                    except (KeyError, ValueError, TypeError) as e:
-                        logging.warning(f'Failed to get modification time: {e}')
+                results = json.load(fp)
+                if not results:
+                    continue
 
                 for domain_top in results.items():
                     self.compute_link(domain_top)

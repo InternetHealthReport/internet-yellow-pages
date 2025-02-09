@@ -19,13 +19,17 @@ class Crawler(DnsTopCrawler):
 
     def compute_link(self, param):
 
-        domain, ases = param
+        name, ases = param
 
         # 'meta' result it not a domain, but contains metadata so skip.
-        if domain == 'meta':
+        if name == 'meta':
             return
 
-        domain_qid = self.domain_names_id[domain]
+        qids = list()
+        if name in self.domain_names_id:
+            qids.append(self.domain_names_id[name])
+        if name in self.host_names_id:
+            qids.append(self.host_names_id[name])
 
         for entry in ases:
             if not entry:
@@ -37,11 +41,12 @@ class Crawler(DnsTopCrawler):
             entry['value'] = float(entry['value'])
 
             flat_prop = dict(flatdict.FlatDict(entry))
-            self.links.append({
-                'src_id': domain_qid,
-                'dst_id': asn,
-                'props': [flat_prop, self.reference]
-            })
+            for qid in qids:
+                self.links.append({
+                    'src_id': qid,
+                    'dst_id': asn,
+                    'props': [flat_prop, self.reference]
+                })
 
     def map_links(self):
         as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.to_nodes, all=False)
