@@ -125,7 +125,7 @@ class Crawler(BaseCrawler):
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
         url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls)
         prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-        self.iyp.batch_add_node_label(prefix_id, 'PeeringLAN')
+        self.iyp.batch_add_node_label(list(prefix_id.values()), 'PeeringLAN')
 
         # Compute links and add them to neo4j
         caida_id_links = []

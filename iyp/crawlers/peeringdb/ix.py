@@ -228,7 +228,7 @@ class Crawler(BaseCrawler):
                         handle_social_media(network, net_website)
 
         self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-        self.iyp.batch_add_node_label(self.prefix_id, 'PeeringLAN')
+        self.iyp.batch_add_node_label(list(self.prefix_id.values()), 'PeeringLAN')
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', net_names)
         self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', net_website)
         self.netid_id = self.iyp.batch_get_nodes_by_single_prop(NETID_LABEL, 'id', net_extid)

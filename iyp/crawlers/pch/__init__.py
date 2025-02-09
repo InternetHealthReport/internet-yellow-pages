@@ -296,7 +296,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         # Get/push nodes.
         as_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
         prefix_ids = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-        self.iyp.batch_add_node_label(prefix_ids, 'BGPPrefix')
+        self.iyp.batch_add_node_label(list(prefix_ids.values()), 'BGPPrefix')
 
         # Push relationships.
         relationships = list()
