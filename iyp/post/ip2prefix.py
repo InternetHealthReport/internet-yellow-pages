@@ -28,13 +28,14 @@ class PostProcess(BasePostProcess):
 
         # Find all different types of prefixes
         prefixes_labels = self.iyp.tx.run(
-            f"""MATCH (pfx:Prefix)
-                RETURN collect(DISTINCT labels(pfx));""")
+            'MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels;')
 
-        all_labels = set([label for labels in prefixes_labels for label in labels])
+        all_labels = set([label for row in prefixes_labels for label in row['pfx_labels']])
         rtrees = {}
 
         for label in all_labels:
+            if label == 'Prefix':
+                continue
             # Get all prefixes in a radix tree
             prefix_id = self.iyp.batch_get_nodes_by_single_prop(label, 'prefix', all=True)
             additional_properties = list()
@@ -46,7 +47,7 @@ class PostProcess(BasePostProcess):
                 prefix_split = self.__get_network_and_prefixlen(prefix)
                 if prefix_split is not None:
                     additional_properties.append(
-                            (prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]}))
+                        (prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]}))
 
             # Add network and prefixlen properties
             self.iyp.batch_add_properties(additional_properties)
@@ -55,20 +56,23 @@ class PostProcess(BasePostProcess):
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip')
 
         # Compute links for IPs
-        links = []
+        # We use a dictionary to avoid having duplicate links
+        links = {}
         for ip, ip_qid in ip_id.items():
             if ip:
                 for rtree in rtrees.values():
                     rnode = rtree.search_best(ip)
                     if rnode:
-                        links.append({
-                            'src_id': ip_qid,
-                            'dst_id': rnode.data['id'],
+                        src = ip_qid
+                        dst = rnode.data['id']
+                        links[(src, dst)] = {
+                            'src_id': src,
+                            'dst_id': dst,
                             'props': [self.reference]
-                        })
+                        }
 
         # push IP to prefix links to IYP
-        self.iyp.batch_add_links('PART_OF', links)
+        self.iyp.batch_add_links('PART_OF', list(links.values()))
 
         # Compute links sub-prefix and covering prefix
         links = []
