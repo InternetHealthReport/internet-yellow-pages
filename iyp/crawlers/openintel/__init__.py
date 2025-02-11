@@ -32,8 +32,7 @@ if os.path.exists('config.json'):
 # We use the AWS interface to get data, but can not provide AWS URLs as data source, so
 # at least for the Tranco and Umbrella datasets we can point to the publicly available
 # archives.
-TRANCO_REFERENCE_URL_DATA_FMT = 'https://data.openintel.nl/data/tranco1m/%Y/openintel-tranco1m-%Y%m%d.tar'
-UMBRELLA_REFERENCE_URL_DATA_FMT = 'https://data.openintel.nl/data/umbrella1m/%Y/openintel-umbrella1m-%Y%m%d.tar'
+REF_URL_DATA = 'https://openintel.nl/download/forward-dns/basis=toplist/source={dataset}/year=%Y/month=%m/day=%d'
 
 
 class OpenIntelCrawler(BaseCrawler):
@@ -43,13 +42,92 @@ class OpenIntelCrawler(BaseCrawler):
 
         self.dataset = dataset
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://www.openintel.nl/'
-        if dataset == 'tranco':
-            self.reference['reference_url_info'] = 'https://data.openintel.nl/data/tranco1m'
-        elif dataset == 'umbrella':
-            self.reference['reference_url_info'] = 'https://data.openintel.nl/data/umbrella1m'
+        self.reference['reference_url_info'] = 'https://openintel.nl/data/forward-dns/top-lists/'
 
-    def get_parquet(self):
+    def get_parquet_public(self):
+        """Fetch the forward DNS data, populate a data frame, and process lines one by
+        one."""
+
+        # Get a boto3 resource
+        S3A_OPENINTEL_ENDPOINT = 'https://object.openintel.nl'
+        S3R_OPENINTEL = boto3.resource(
+            's3',
+            'nl-utwente',
+            endpoint_url=S3A_OPENINTEL_ENDPOINT,
+            config=botocore.config.Config(
+                signature_version=botocore.UNSIGNED
+            )
+        )
+
+        # Prevent some request going to AWS instead of the OpenINTEL server
+        S3R_OPENINTEL.meta.client.meta.events.unregister('before-sign.s3', botocore.utils.fix_s3_host)
+
+        # The OpenINTEL bucket
+        WAREHOUSE_BUCKET = S3R_OPENINTEL.Bucket('openintel-public')
+
+        # OpenINTEL measurement data objects base prefix
+        FDNS_WAREHOUSE_S3 = 'fdns/basis=toplist'
+
+        # Get latest available data.
+        date = arrow.utcnow()
+        for lookback_days in range(6):
+            objects = list(WAREHOUSE_BUCKET.objects.filter(
+                # Build a partition path for the given source and date
+                Prefix=os.path.join(
+                    FDNS_WAREHOUSE_S3,
+                    'source={}'.format(self.dataset),
+                    'year={}'.format(date.year),
+                    'month={:02d}'.format(date.month),
+                    'day={:02d}'.format(date.day)
+                )).all())
+            if len(objects) > 0:
+                break
+            date = date.shift(days=-1)
+        else:
+            logging.error('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+        self.reference['reference_time_modification'] = \
+            date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=self.dataset))
+
+        logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
+
+        # Iterate objects in bucket with given (source, date)-partition prefix
+        for i_obj in objects:
+
+            # Open a temporary file to download the Parquet object into
+            with tempfile.NamedTemporaryFile(mode='w+b',
+                                             dir=TMP_DIR,
+                                             prefix='{}.'.format(date.date().isoformat()),
+                                             suffix='.parquet',
+                                             delete=True) as tempFile:
+
+                logging.info("Opened temporary file for object download: '{}'.".format(tempFile.name))
+                WAREHOUSE_BUCKET.download_fileobj(
+                    Key=i_obj.key, Fileobj=tempFile, Config=boto3.s3.transfer.TransferConfig(
+                        multipart_chunksize=128 * 1024 * 1024))
+                logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
+                    os.path.join(S3A_OPENINTEL_ENDPOINT, WAREHOUSE_BUCKET.name, i_obj.key),
+                    os.path.getsize(tempFile.name) / (1024 * 1024),
+                    tempFile.name
+                ))
+                # Use Pandas to read file into a DF and append to list
+                self.pandas_df_list.append(
+                    pd.read_parquet(tempFile.name,
+                                    engine='fastparquet',
+                                    columns=[
+                                        'query_type',
+                                        'query_name',
+                                        'response_type',
+                                        'response_name',
+                                        'ip4_address',
+                                        'ip6_address',
+                                        'ns_address',
+                                        'cname_name',
+                                    ])
+                )
+
+    def get_parquet_closed(self):
         """Fetch the forward DNS data, populate a data frame, and process lines one by
         one."""
 
@@ -95,10 +173,6 @@ class OpenIntelCrawler(BaseCrawler):
             raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
         self.reference['reference_time_modification'] = \
             date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
-        if self.dataset == 'tranco':
-            self.reference['reference_url_data'] = date.strftime(TRANCO_REFERENCE_URL_DATA_FMT)
-        elif self.dataset == 'umbrella':
-            self.reference['reference_url_data'] = date.strftime(UMBRELLA_REFERENCE_URL_DATA_FMT)
 
         logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
@@ -115,7 +189,7 @@ class OpenIntelCrawler(BaseCrawler):
                 logging.info("Opened temporary file for object download: '{}'.".format(tempFile.name))
                 WAREHOUSE_BUCKET.download_fileobj(
                     Key=i_obj.key, Fileobj=tempFile, Config=boto3.s3.transfer.TransferConfig(
-                        multipart_chunksize=16 * 1024 * 1024))
+                        multipart_chunksize=128 * 1024 * 1024))
                 logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
                     os.path.join(S3A_OPENINTEL_ENDPOINT, WAREHOUSE_BUCKET.name, i_obj.key),
                     os.path.getsize(tempFile.name) / (1024 * 1024),
@@ -179,7 +253,12 @@ class OpenIntelCrawler(BaseCrawler):
         self.pandas_df_list = list()  # List of Parquet file-specific Pandas DataFrames
 
         while len(self.pandas_df_list) == 0 and attempt > 0:
-            self.get_parquet()
+            if self.dataset == 'tranco':
+                self.get_parquet_public()
+            elif self.dataset == 'umbrella':
+                self.get_parquet_public()
+            elif self.dataset == 'infra:ns':
+                self.get_parquet_closed()
             attempt -= 1
 
         # Concatenate Parquet file-specific DFs
@@ -584,7 +663,7 @@ class DnsgraphCrawler(BaseCrawler):
 
         # Push the Authoritative NS Label
         ns_id = [link['dst_id'] for link in links_managed_by]
-        self.iyp.batch_add_node_label(ns_id, 'AuthoritativeNameServer')
+        self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
 
     def unit_test(self):
         return super().unit_test(['PARENT', 'PART_OF', 'ALIAS_OF', 'MANAGED_BY', 'RESOLVES_TO'])
