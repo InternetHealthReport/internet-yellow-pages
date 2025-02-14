@@ -105,15 +105,15 @@ class Crawler(BaseCrawler):
 
         names = set(org_names.values())
         countries = set(org_countries.values())
-        as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', org_as.keys())
-
-        organizations = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', names)
+        ases = org_as.keys()
+        as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases)
+        organization_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', names)
         name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
         managed_links = []
 
         for asn in org_as:
-            org_qid = organizations.get(org_names[org_as[asn]])
+            org_qid = organization_id.get(org_names[org_as[asn]])
             asn_qid = as_id.get(asn)
             managed_links.append({'src_id': asn_qid, 'dst_id': org_qid,
                                  'props': [self.reference]})
@@ -126,7 +126,7 @@ class Crawler(BaseCrawler):
         for org in org_names:
             name = org_names[org]
             country = org_countries[org]
-            org_qid = organizations.get(name)
+            org_qid = organization_id.get(name)
             name_qid = name_id.get(name)
             country_qid = country_id.get(country)
 
