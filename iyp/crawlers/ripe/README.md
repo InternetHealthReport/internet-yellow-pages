@@ -28,7 +28,7 @@ to extract ROA information. The max length specification of the ROA is added as 
 property on the relationship.
 
 ```Cypher
-(:AS {asn: 2497})-[:ROUTE_ORIGIN_AUTHORIZATION {maxLength: 18}]->(:Prefix {prefix: '49.239.64.0/18'})
+(:AS {asn: 2497})-[:ROUTE_ORIGIN_AUTHORIZATION {maxLength: 18}]->(:RPKIPrefix {prefix: '49.239.64.0/18'})
 ```
 
 ### Atlas Probes - `atlas_probes.py`

@@ -81,7 +81,7 @@ Nodes:
 - `(:Name {name})`: Names of IXPs and networks
 - `(:PeeringdbIXID {id})`: ID of the IXP
 - `(:PeeringdbNetID {id})`: ID of the network
-- `(:Prefix {prefix})`: Prefix of IXP peering LAN
+- `(:PeeringLAN {prefix})`: Prefix of IXP peering LAN
 - `(:URL {url})`: Websites of IXPs and networks
 
 Relationships:
@@ -101,7 +101,7 @@ Relationships:
 (:AS)-[:NAME]->(:Name)
 (:AS)-[:WEBSITE]->(:URL)
 
-(:Prefix)-[:MANAGED_BY]->(:IXP)
+(:PeeringLAN)-[:MANAGED_BY]->(:IXP)
 ```
 
 Raw data attached to relationships:
@@ -127,7 +127,7 @@ MATCH (iij)-[r2:MANAGED_BY]->(n2:Organization)
 MATCH (iij)-[r3:MEMBER_OF]->(ix:IXP {name: 'DE-CIX Frankfurt'})
 MATCH (iij)-[r4:NAME {reference_org: 'PeeringDB'}]->(n3:Name)
 MATCH (iij)-[r5:WEBSITE]->(n4:URL)
-MATCH (pfx:Prefix {af: 4})-[r6:MANAGED_BY]->(ix)
+MATCH (pfx:PeeringLAN {af: 4})-[r6:MANAGED_BY]->(ix)
 MATCH (ix)-[r7:COUNTRY]->(n5:Country)
 MATCH (ix)-[r8:EXTERNAL_ID]->(n6:PeeringdbIXID)
 MATCH (ix)-[r9:LOCATED_IN]->(n7:Facility {name: 'Global Switch Frankfurt'})

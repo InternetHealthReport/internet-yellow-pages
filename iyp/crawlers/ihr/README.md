@@ -52,10 +52,10 @@ Connect prefixes to their origin AS, their AS dependencies, their RPKI/IRR statu
 (provided by Maxmind).
 
 ```Cypher
-(:Prefix {prefix: '8.8.8.0/24'})<-[:ORIGINATE]-(:AS {asn: 15169})
-(:Prefix {prefix: '8.8.8.0/24'})-[:DEPENDS_ON]->(:AS {asn: 15169})
-(:Prefix {prefix: '8.8.8.0/24'})-[:CATEGORIZED]->(:Tag {label: 'RPKI Valid'})
-(:Prefix {prefix: '8.8.8.0/24'})-[:COUNTRY]->(:Country {country_code: 'US'})
+(:BGPPrefix {prefix: '8.8.8.0/24'})<-[:ORIGINATE]-(:AS {asn: 15169})
+(:BGPPrefix {prefix: '8.8.8.0/24'})-[:DEPENDS_ON]->(:AS {asn: 15169})
+(:BGPPrefix {prefix: '8.8.8.0/24'})-[:CATEGORIZED]->(:Tag {label: 'RPKI Valid'})
+(:BGPPrefix {prefix: '8.8.8.0/24'})-[:COUNTRY]->(:Country {country_code: 'US'})
 ```
 
 Tag labels (possibly) added by this crawler:

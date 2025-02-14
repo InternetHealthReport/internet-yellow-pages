@@ -12,7 +12,7 @@ hierarchy but instead add a simple MANAGED_BY link.
 ## Graph representation
 
 ```cypher
-(:Prefix {prefix: '103.2.57.0/24'})-[:MANAGED_BY {source: 'APNIC', ttl: 172800}]->(:AuthoritativeNameServer {name: 'dns0.iij.ad.jp'})
+(:RDNSPrefix {prefix: '103.2.57.0/24'})-[:MANAGED_BY {source: 'APNIC', ttl: 172800}]->(:AuthoritativeNameServer {name: 'dns0.iij.ad.jp'})
 ```
 
 The `source` property indicates from which RIR the information was obtained, the `ttl`

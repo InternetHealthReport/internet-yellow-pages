@@ -31,7 +31,7 @@ a route collector hence participating in the RIS or RouteViews projects.
 Connect AS nodes to prefix nodes representing the prefixes originated by an AS.
 For example:
 ```
-(:AS  {asn:2497})-[:ORIGINATE]-(:Prefix {prefix: '101.128.128.0/17'})
+(:AS  {asn:2497})-[:ORIGINATE]-(:BGPPrefix {prefix: '101.128.128.0/17'})
 ```
 
 ## Dependence
