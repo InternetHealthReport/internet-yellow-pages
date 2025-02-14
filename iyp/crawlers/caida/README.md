@@ -107,3 +107,21 @@ relationship, BGPKIT uses `rel: 1` for customer-provider, whereas CAIDA uses `re
 ### Dependence
 
 The as_relatonship crawler does not depend on other crawlers.
+
+## AS Organizations (as2org.py)
+
+Mapping of ASes to their respective organizations
+
+### Graph representation
+
+
+This integration introduces no new node or relationship types, it only connects existing nodes as follows:
+```cypher
+(:AS)-[:MANAGED_BY]->(:Organization)
+(:Organization)-[:COUNTRY]->(:Country)
+(:Organization)-[:NAME]->(:Name)
+```
+
+### Dependence
+
+The as2org crawler doesn't depend on other datasets
