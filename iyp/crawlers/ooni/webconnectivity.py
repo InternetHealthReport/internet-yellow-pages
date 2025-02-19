@@ -32,6 +32,10 @@ class Crawler(OoniCrawler):
 
         input_url = one_line['input']
         test_keys = one_line['test_keys']
+        if 'blocking' not in test_keys or 'accessible' not in test_keys:
+            logging.warning('Skipping entry with missing keys')
+            logging.warning(one_line)
+            return
         blocking = test_keys['blocking']
         accessible = test_keys['accessible']
 
