@@ -612,7 +612,7 @@ class DnsgraphCrawler(BaseCrawler):
 
         # Push the Authoritative NS Label
         ns_id = [link['dst_id'] for link in links_managed_by]
-        self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
+        self.iyp.batch_add_node_label(ns_id, 'AuthoritativeNameServer')
 
     def unit_test(self):
         return super().unit_test(['PARENT', 'PART_OF', 'ALIAS_OF', 'MANAGED_BY', 'RESOLVES_TO'])
