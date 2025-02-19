@@ -9,6 +9,7 @@
 | AuthoritativeNameServer | Authoritative DNS nameserver for a set of domain names, uniquely identified with the **name** property.                           |
 | BGPCollector            | A RIPE RIS or RouteViews BGP collector, uniquely identified with the **name** property.                                           |
 | CaidaIXID               | Unique identifier for IXPs from CAIDA's IXP dataset.                                                                              |
+| CaidaOrgID              | Identifier for Organizations from CAIDA's AS to organization dataset.                                                             |
 | Country                 | Represent an economy, uniquely identified by either its two or three character code (properties **country_code** and **alpha3**). |
 | DomainName              | Any DNS domain name that is not a FQDN (see HostName), uniquely identified by the **name** property.                              |
 | Estimate                | Represent a report that approximate a quantity, for example the World Bank population estimate.                                   |
