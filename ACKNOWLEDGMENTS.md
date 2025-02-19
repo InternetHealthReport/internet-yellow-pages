@@ -58,7 +58,7 @@ and
 
 and
 
-> AS Organizations, https://catalog.caida.org/dataset/as_organizations/
+> AS to organization mappings, https://catalog.caida.org/dataset/as_organizations/
 
 ## Cisco
 

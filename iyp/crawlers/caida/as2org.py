@@ -3,12 +3,13 @@ import gzip
 import json
 import logging
 import sys
+from collections import defaultdict
 from datetime import datetime, timezone
 
 import arrow
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler, DataNotAvailableError
 
 # URL to AS2Org API
 URL = 'https://publicdata.caida.org/datasets/as-organizations/'
@@ -26,9 +27,19 @@ class Crawler(BaseCrawler):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://publicdata.caida.org/datasets/as-organizations/README.txt'
 
+    def __set_modification_time_from_metadata_line(self, date_str):
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+            self.reference['reference_time_modification'] = date
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logging.warning(f'Failed to get modification date from metadata line: {date_str.strip()}')
+            logging.warning(e)
+            logging.warning('Using date from filename.')
+
+    def run(self):
         date = arrow.now()
         for _ in range(6):
-            full_url = url + f'{date.year}{date.month:02d}01.as-org2info.txt.gz'
+            full_url = URL + f'{date.year}{date.month:02d}01.as-org2info.txt.gz'
             req = requests.head(full_url)
 
             # Found the latest file
@@ -40,26 +51,16 @@ class Crawler(BaseCrawler):
 
         else:
             # for loop was not 'broken', no file available
-            raise Exception('No recent CAIDA as2org file available')
+            raise DataNotAvailableError('No recent CAIDA as2org file available')
         date = date.datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
-
-        logging.info('going to use this URL: ' + url)
-        super().__init__(organization, url, name)
         self.reference['reference_time_modification'] = date
+        self.reference['reference_url_data'] = url
 
-    def __set_modification_time_from_metadata_line(self, date_str):
-        try:
-            date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-            self.reference['reference_time_modification'] = date
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
-            logging.warning(f'Failed to get modification date from metadata line: {date_str.strip()}')
-            logging.warning(e)
-            logging.warning('Using date from filename.')
-
-    def run(self):
+        logging.info(f'Fetching data from: {url}')
         req = requests.get(self.url)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching CAIDA as2org file')
+        req.raise_for_status()
+
+        logging.info('Processing data...')
 
         data = gzip.decompress(req.content).decode()
         lines = data.split('\n')
@@ -67,9 +68,11 @@ class Crawler(BaseCrawler):
         lines = [line for line in lines if line.strip()]
 
         orgs_mode = True
-        org_as = {}
-        org_countries = {}
-        org_names = {}
+        asn_orgid = dict()
+        name_country_orgids = defaultdict(lambda: defaultdict(set))
+        name_orgids = defaultdict(set)
+        orgid_name = dict()
+        countries = set()
         for line in lines:
             if line == '# format:org_id|changed|org_name|country|source':
                 orgs_mode = True
@@ -89,55 +92,78 @@ class Crawler(BaseCrawler):
             # org_id|changed|org_name|country|source
             # NB changed and source fields not used
             if orgs_mode:
-                orgid = fields[0]
+                org_id = fields[0]
+                if org_id.startswith('@del'):
+                    # There are some placeholder organizations with no name and IDs
+                    # starting with @del, which probably indicate some old relationship
+                    # that no longer exists. Does not make sense to model them, since
+                    # they all map to the same Organization node with an empty name.
+                    continue
                 org_name = fields[2]
                 country = fields[3]
-                org_countries[orgid] = country
-                org_names[orgid] = org_name
+                # Index by name, since this the identifier of the Organization node.
+                # Keep track of which org ID is the source for a country. Some orgs have
+                # multiple IDs mapping them to different countries,
+                name_country_orgids[org_name][country].add(org_id)
+                countries.add(country)
+                # Some orgs (with the same name) map to multiple IDs.
+                name_orgids[org_name].add(org_id)
+                orgid_name[org_id] = org_name
 
             # extract org to as mapping with format:
             # aut|changed|aut_name|org_id|opaque_id|source
             # NB changed, aut_name, opaque_id, and source fields not used
             else:
                 asn = int(fields[0])
-                orgid = fields[3]
-                org_as[asn] = orgid
+                org_id = fields[3]
+                if org_id.startswith('@del'):
+                    continue
+                asn_orgid[asn] = org_id
 
-        names = set(org_names.values())
-        countries = set(org_countries.values())
-        ases = org_as.keys()
+        names = set(name_orgids.keys())
+        org_ids = set(orgid_name.keys())
+        ases = set(asn_orgid.keys())
+        caida_org_id = self.iyp.batch_get_nodes_by_single_prop('CaidaOrgID', 'id', org_ids)
         as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases)
         organization_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', names)
         name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
-        managed_links = []
 
-        for asn in org_as:
-            org_qid = organization_id.get(org_names[org_as[asn]])
-            asn_qid = as_id.get(asn)
+        managed_links = list()
+        for asn, org_id in asn_orgid.items():
+            org_qid = organization_id[orgid_name[org_id]]
+            asn_qid = as_id[asn]
             managed_links.append({'src_id': asn_qid, 'dst_id': org_qid,
-                                 'props': [self.reference]})
+                                 'props': [self.reference, {'org_id': org_id}]})
 
-        self.iyp.batch_add_links('MANAGED_BY', managed_links)
+        name_links = list()
+        country_links = list()
+        external_id_links = list()
 
-        named_links = []
-        country_links = []
+        for name in name_orgids:
+            org_ids = name_orgids[name]
+            org_qid = organization_id[name]
+            name_qid = name_id[name]
 
-        for org in org_names:
-            name = org_names[org]
-            country = org_countries[org]
-            org_qid = organization_id.get(name)
-            name_qid = name_id.get(name)
-            country_qid = country_id.get(country)
+            name_links.append({'src_id': org_qid, 'dst_id': name_qid,
+                               'props': [self.reference, {'org_ids': list(org_ids)}]})
 
-            named_links.append({'src_id': org_qid, 'dst_id': name_qid, 'props': [self.reference]})
-            country_links.append({'src_id': org_qid, 'dst_id': country_qid, 'props': [self.reference]})
+            for org_id in org_ids:
+                caida_org_id_qid = caida_org_id[org_id]
+                external_id_links.append({'src_id': org_qid, 'dst_id': caida_org_id_qid, 'props': [self.reference]})
 
-        self.iyp.batch_add_links('NAME', named_links)
+            for country, org_ids in name_country_orgids[name].items():
+                country_qid = country_id[country]
+                country_links.append({'src_id': org_qid, 'dst_id': country_qid,
+                                      'props': [self.reference, {'org_ids': list(org_ids)}]})
+
         self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('EXTERNAL_ID', external_id_links)
+        self.iyp.batch_add_links('MANAGED_BY', managed_links)
+        self.iyp.batch_add_links('NAME', name_links)
 
     def unit_test(self):
-        return super().unit_test(['NAME', 'COUNTRY', 'MANAGED_BY'])
+        return super().unit_test(['COUNTRY', 'EXTERNAL_ID', 'MANAGED_BY', 'NAME'])
 
 
 def main() -> None:

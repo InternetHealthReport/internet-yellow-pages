@@ -110,18 +110,21 @@ The as_relatonship crawler does not depend on other crawlers.
 
 ## AS Organizations (as2org.py)
 
-Mapping of ASes to their respective organizations
+AS to organization mappings derived from the quarterly WHOIS dumps.
 
 ### Graph representation
 
-
-This integration introduces no new node or relationship types, it only connects existing nodes as follows:
 ```cypher
-(:AS)-[:MANAGED_BY]->(:Organization)
-(:Organization)-[:COUNTRY]->(:Country)
-(:Organization)-[:NAME]->(:Name)
+(:AS {asn: 2497})-[:MANAGED_BY {org_id: '@aut-2497-JPNIC'}]->(:Organization {name: 'Internet Initiative Japan Inc.'})
+(:Organization {name: 'Internet Initiative Japan Inc.'})-[:COUNTRY {org_ids: ['@aut-2497-JPNIC']}]->(:Country {country_code: 'JP'})
+(:Organization {name: 'Internet Initiative Japan Inc.'})-[:NAME {org_ids: ['@aut-2497-JPNIC']}]->(:Name {name: 'Internet Initiative Japan Inc.'})
+(:Organization {name: 'Internet Initiative Japan Inc.'})-[:EXTERNAL_ID]->(:CaidaOrgID {id: '@aut-2497-JPNIC'})
 ```
+
+We keep track of the org_id assigned by CAIDA in both the relationships and by adding a
+`CaidaOrgID` node. The main reason for this is that there are organizations with the
+same name but different IDs that may map to different countries.
 
 ### Dependence
 
-The as2org crawler doesn't depend on other datasets
+The as2org crawler does not depend on other crawlers.
