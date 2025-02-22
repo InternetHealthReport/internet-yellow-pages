@@ -1,35 +1,53 @@
-# OpenINTEL -- [https://www.openintel.nl/](https://www.openintel.nl/)
+# **OpenINTEL** – [https://www.openintel.nl/](https://www.openintel.nl/)
 
-The OpenINTEL measurement platform captures daily snapshots of the state of large parts of the global Domain Name System (DNS) by running a number of forward and reverse DNS measurements.
+## **Introduction**  
+OpenINTEL is a measurement platform that **collects daily snapshots** of the Domain Name System (DNS) across the internet. This helps researchers and developers understand changes in the DNS ecosystem over time.  
 
-## Overview
+Currently, OpenINTEL **fetches data only for two major domain ranking lists**:  
+- [**Tranco Top 1 Million**](https://tranco-list.eu/)  
+- [**CISCO Umbrella Top 1 Million**](https://umbrella.cisco.com/)  
 
-OpenINTEL performs DNS measurements for various domain names. Currently, **IYP only fetches data for the [Tranco top 1 million list](https://tranco-list.eu/) and the [CISCO Umbrella top 1 million list](https://umbrella.cisco.com/)** since it merges rankings. Additionally, IYP retrieves authoritative name servers observed by OpenINTEL.
+This ensures that only **popular domains** are analyzed to maintain efficiency. Additionally, OpenINTEL also retrieves **authoritative name servers** for these domains.
 
-A **mail server crawler exists but is currently not in use**, as it generates a very large number of links and has not been requested by anyone.
+> ⚠️ **Note:** A separate mail server crawler **exists** but is **disabled** because it generates an **extremely large** number of links, and no one has requested it so far.
 
-## Graph Representation
+---
 
-### IP Resolution for Popular Host Names
+## **Graph Representation (How Data is Stored)**  
+OpenINTEL represents its data in a **graph format**, making it easy to visualize connections between domain names, IP addresses, and services.
+
+### **1️⃣ IP Resolution for Popular Host Names**  
+How domain names resolve to IP addresses:
 
 ```cypher
 (:HostName {name: 'google.com'})-[:RESOLVES_TO]->(:IP {ip: '142.250.179.142'})
-
 ```
+This means that `google.com` is mapped to the IP address `142.250.179.142`.
 
-IP resolution of authoritative name servers:
+---
 
-```Cypher
+### **2️⃣ IP Resolution of Authoritative Name Servers**  
+Mapping of name servers to IP addresses:
+
+```cypher
 (:HostName:AuthoritativeNameServer {name: 'ns1.google.com'})-[:RESOLVES_TO]->(:IP {ip: '216.239.32.10'})
 (:IP {ip: '216.239.32.10'})-[:SERVE]->(:Service {name: 'DNS'})
 ```
+Here, `ns1.google.com` resolves to `216.239.32.10`, which provides a DNS service.
 
-Domain names managed by name servers:
+---
 
-```Cypher
+### **3️⃣ Domain Names Managed by Name Servers**  
+Shows which name servers manage which domains:
+
+```cypher
 (:DomainName {name: 'google.com'})-[:MANAGED_BY]->(:HostName:AuthoritativeNameServer {name: 'ns1.google.com'})
 ```
+This indicates that `google.com` is managed by `ns1.google.com`.
 
-## Dependence
+---
 
-This crawler is not depending on other crawlers.
+## **Dependencies**  
+✅ **This crawler does NOT depend on any other crawlers.**  
+
+This means it can run independently without requiring other systems.
