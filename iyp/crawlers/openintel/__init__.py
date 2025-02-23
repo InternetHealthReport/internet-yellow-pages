@@ -29,11 +29,9 @@ if os.path.exists('config.json'):
     OPENINTEL_ACCESS_KEY = config['openintel']['access_key']
     OPENINTEL_SECRET_KEY = config['openintel']['secret_key']
 
-# We use the AWS interface to get data, but can not provide AWS URLs as data source, so
-# at least for the Tranco and Umbrella datasets we can point to the publicly available
-# archives.
-TRANCO_REFERENCE_URL_DATA_FMT = 'https://data.openintel.nl/data/tranco1m/%Y/openintel-tranco1m-%Y%m%d.tar'
-UMBRELLA_REFERENCE_URL_DATA_FMT = 'https://data.openintel.nl/data/umbrella1m/%Y/openintel-umbrella1m-%Y%m%d.tar'
+REF_URL_DATA = 'https://openintel.nl/download/forward-dns/basis=toplist/source={dataset}/year=%Y/month=%m/day=%d'
+
+S3A_OPENINTEL_ENDPOINT = 'https://object.openintel.nl'
 
 
 class OpenIntelCrawler(BaseCrawler):
@@ -43,18 +41,40 @@ class OpenIntelCrawler(BaseCrawler):
 
         self.dataset = dataset
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://www.openintel.nl/'
-        if dataset == 'tranco':
-            self.reference['reference_url_info'] = 'https://data.openintel.nl/data/tranco1m'
-        elif dataset == 'umbrella':
-            self.reference['reference_url_info'] = 'https://data.openintel.nl/data/umbrella1m'
+        self.reference['reference_url_info'] = 'https://openintel.nl/data/forward-dns/top-lists/'
+        self.warehouse_bucket = None
+        self.fdns_warehouse_s3 = str()
 
-    def get_parquet(self):
+    def get_parquet_public(self):
         """Fetch the forward DNS data, populate a data frame, and process lines one by
         one."""
 
         # Get a boto3 resource
-        S3A_OPENINTEL_ENDPOINT = 'https://object.openintel.nl'
+        S3R_OPENINTEL = boto3.resource(
+            's3',
+            'nl-utwente',
+            endpoint_url=S3A_OPENINTEL_ENDPOINT,
+            config=botocore.config.Config(
+                signature_version=botocore.UNSIGNED
+            )
+        )
+
+        # Prevent some request going to AWS instead of the OpenINTEL server
+        S3R_OPENINTEL.meta.client.meta.events.unregister('before-sign.s3', botocore.utils.fix_s3_host)
+
+        # The OpenINTEL bucket
+        self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel-public')
+
+        # OpenINTEL measurement data objects base prefix
+        self.fdns_warehouse_s3 = 'fdns/basis=toplist'
+
+        self.fetch_warehouse_data()
+
+    def get_parquet_closed(self):
+        """Fetch the forward DNS data, populate a data frame, and process lines one by
+        one."""
+
+        # Get a boto3 resource
         S3R_OPENINTEL = boto3.resource(
             's3',
             'nl-utwente',
@@ -70,18 +90,21 @@ class OpenIntelCrawler(BaseCrawler):
         S3R_OPENINTEL.meta.client.meta.events.unregister('before-sign.s3', botocore.utils.fix_s3_host)
 
         # The OpenINTEL bucket
-        WAREHOUSE_BUCKET = S3R_OPENINTEL.Bucket('openintel')
+        self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel')
 
         # OpenINTEL measurement data objects base prefix
-        FDNS_WAREHOUSE_S3 = 'category=fdns/type=warehouse'
+        self.fdns_warehouse_s3 = 'category=fdns/type=warehouse'
 
+        self.fetch_warehouse_data()
+
+    def fetch_warehouse_data(self):
         # Get latest available data.
         date = arrow.utcnow()
         for lookback_days in range(6):
-            objects = list(WAREHOUSE_BUCKET.objects.filter(
+            objects = list(self.warehouse_bucket.objects.filter(
                 # Build a partition path for the given source and date
                 Prefix=os.path.join(
-                    FDNS_WAREHOUSE_S3,
+                    self.fdns_warehouse_s3,
                     'source={}'.format(self.dataset),
                     'year={}'.format(date.year),
                     'month={:02d}'.format(date.month),
@@ -95,10 +118,10 @@ class OpenIntelCrawler(BaseCrawler):
             raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
         self.reference['reference_time_modification'] = \
             date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
-        if self.dataset == 'tranco':
-            self.reference['reference_url_data'] = date.strftime(TRANCO_REFERENCE_URL_DATA_FMT)
-        elif self.dataset == 'umbrella':
-            self.reference['reference_url_data'] = date.strftime(UMBRELLA_REFERENCE_URL_DATA_FMT)
+
+        if self.dataset in ['tranco', 'umbrella']:
+            # Set data URL for public datasets.
+            self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=self.dataset))
 
         logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
@@ -113,11 +136,11 @@ class OpenIntelCrawler(BaseCrawler):
                                              delete=True) as tempFile:
 
                 logging.info("Opened temporary file for object download: '{}'.".format(tempFile.name))
-                WAREHOUSE_BUCKET.download_fileobj(
+                self.warehouse_bucket.download_fileobj(
                     Key=i_obj.key, Fileobj=tempFile, Config=boto3.s3.transfer.TransferConfig(
-                        multipart_chunksize=16 * 1024 * 1024))
+                        multipart_chunksize=128 * 1024 * 1024))
                 logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
-                    os.path.join(S3A_OPENINTEL_ENDPOINT, WAREHOUSE_BUCKET.name, i_obj.key),
+                    os.path.join(S3A_OPENINTEL_ENDPOINT, self.warehouse_bucket.name, i_obj.key),
                     os.path.getsize(tempFile.name) / (1024 * 1024),
                     tempFile.name
                 ))
@@ -179,7 +202,12 @@ class OpenIntelCrawler(BaseCrawler):
         self.pandas_df_list = list()  # List of Parquet file-specific Pandas DataFrames
 
         while len(self.pandas_df_list) == 0 and attempt > 0:
-            self.get_parquet()
+            if self.dataset == 'tranco':
+                self.get_parquet_public()
+            elif self.dataset == 'umbrella':
+                self.get_parquet_public()
+            elif self.dataset == 'infra:ns':
+                self.get_parquet_closed()
             attempt -= 1
 
         # Concatenate Parquet file-specific DFs

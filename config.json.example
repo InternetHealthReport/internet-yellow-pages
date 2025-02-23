@@ -70,6 +70,7 @@
             "iyp.crawlers.peeringdb.ix",
             "iyp.crawlers.caida.ixs",
             "iyp.crawlers.caida.ix_asns",
+            "iyp.crawlers.caida.as2org",
             "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.tranco.top1m",
             "iyp.crawlers.openintel.tranco1m",

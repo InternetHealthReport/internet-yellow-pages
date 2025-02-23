@@ -35,8 +35,8 @@ However, this crawler does not add ASes, so if the AS node was not created by an
 should not happen for `allocated` ASes, the relationship is not created.
 
 The IPv4 address ranges in the report are not necessarily aligned with CIDR ranges (prefixes are
-represented by the first IP and a *count of hosts*). However, the crawler rounds down to the next
-CIDR range.
+represented by the first IP and a *count of hosts*). The crawler decomposes these IP blocks into
+valid CIDR prefixes if necessary.
 
 ## Dependence
 
