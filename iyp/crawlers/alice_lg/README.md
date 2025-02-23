@@ -24,7 +24,7 @@ List of supported IXPs:
 ```Cypher
 (:AS {asn: 2497})-[:MEMBER_OF {address: '80.81.193.136', routeserver_id: 'rs1_fra_ipv4'}]->(:IXP {name: 'DE-CIX Frankfurt'})
 // Routes are not crawled by default
-(:AS {asn: 3333})-[:ORIGINATE {neighbor_id: 'pb_0280_as20562', routeserver_id: 'rs01-bcix-v4'}]->(:Prefix {prefix: '193.0.0.0/21'})
+(:AS {asn: 3333})-[:ORIGINATE {neighbor_id: 'pb_0280_as20562', routeserver_id: 'rs01-bcix-v4'}]->(:BGPPrefix {prefix: '193.0.0.0/21'})
 ```
 
 There is the possibility of multiple relationships between the same node. However, these
@@ -39,7 +39,7 @@ This crawler requires peering LAN information to map the neighbor IP to an IXP.
 Therefore, it should be run after crawlers that create
 
 ```Cypher
-(:Prefix)-[:MANAGED_BY]->(:IXP)
+(:PeeringLAN)-[:MANAGED_BY]->(:IXP)
 ```
 
 relationships:
