@@ -202,13 +202,15 @@ class RoutingSnapshotCrawler(BaseCrawler):
         self.reference['reference_url_data'] = self.collector_site_url
 
         # Get the date of the latest available dataset based on the
-        # first collector in the list.
-        # This may be not the best method if only the first collector
+        # specified beacon collector.
+        # This may be not the best method if only the beacon collector
         # is missing the most up-to-date data for some reason, but
         # generally this prevents a lot of requests to non-existing
         # files (one per collector) if the data for the current date
         # is not yet available for all collectors.
-        latest_available_date = self.probe_latest_set(collector_names[0])
+        # The chosen beacon collector has been very stable so far.
+        beacon_collector = 'route-collector.ams.pch.net'
+        latest_available_date = self.probe_latest_set(beacon_collector)
         self.reference['reference_time_modification'] = latest_available_date.replace(hour=0,
                                                                                       minute=0,
                                                                                       second=0,
