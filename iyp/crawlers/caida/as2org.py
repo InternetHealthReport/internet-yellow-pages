@@ -57,7 +57,7 @@ class Crawler(BaseCrawler):
         self.reference['reference_url_data'] = url
 
         logging.info(f'Fetching data from: {url}')
-        req = requests.get(self.url)
+        req = requests.get(url)
         req.raise_for_status()
 
         logging.info('Processing data...')
