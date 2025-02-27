@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 import flatdict
 import requests
+from neo4j.spatial import WGS84Point
 
 from iyp import BaseCrawler, RequestStatusError
 
@@ -58,6 +59,7 @@ class Crawler(BaseCrawler):
         asns = set()
         names = set()
         countries = set()
+        points = set()
         for node in nodes:
             asn = node['node']
             if asn['asnName']:
@@ -65,6 +67,8 @@ class Crawler(BaseCrawler):
             country_code = asn['country']['iso']
             if country_code:
                 countries.add(country_code)
+            if asn['latitude'] and asn['longitude']:
+                points.add(WGS84Point((asn['longitude'], asn['latitude'])))
             asns.add(int(asn['asn']))
 
         # Get/create ASNs, names, and country nodes
@@ -72,9 +76,11 @@ class Crawler(BaseCrawler):
         self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names, all=False)
         self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'})
+        self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
 
         # Compute links
         country_links = list()
+        located_in_links = list()
         name_links = list()
         rank_links = list()
 
@@ -100,13 +106,19 @@ class Crawler(BaseCrawler):
 
             rank_links.append({'src_id': asn_qid, 'dst_id': self.asrank_qid, 'props': [self.reference, flat_asn]})
 
+            if asn['latitude'] and asn['longitude']:
+                position = WGS84Point((asn['longitude'], asn['latitude']))
+                located_in_links.append(
+                        {'src_id': asn_qid, 'dst_id': self.point_id[position], 'props': [self.reference]})
+
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('RANK', rank_links)
+        self.iyp.batch_add_links('LOCATED_IN', located_in_links)
 
     def unit_test(self):
-        return super().unit_test(['NAME', 'COUNTRY', 'RANK'])
+        return super().unit_test(['NAME', 'COUNTRY', 'RANK', 'LOCATED_IN'])
 
 
 def main() -> None:
