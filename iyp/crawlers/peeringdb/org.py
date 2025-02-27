@@ -8,6 +8,7 @@ from datetime import timedelta
 import flatdict
 import iso3166
 import requests_cache
+from neo4j.spatial import WGS84Point
 
 from iyp import BaseCrawler
 from iyp.crawlers.peeringdb.ix import (handle_social_media,
@@ -61,6 +62,7 @@ class Crawler(BaseCrawler):
         names = set()
         websites = set()
         countries = set()
+        points = set()
         orgids = set()
 
         for org in organizations:
@@ -74,6 +76,10 @@ class Crawler(BaseCrawler):
             if org['country'] in iso3166.countries_by_alpha2:
                 countries.add(org['country'])
 
+            if org['latitude'] and org['longitude']:
+                position = WGS84Point((org['longitude'], org['latitude']))
+                points.add(position)
+
             handle_social_media(org, websites)
 
         # push nodes
@@ -81,12 +87,14 @@ class Crawler(BaseCrawler):
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', websites)
         self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
         self.orgid_id = self.iyp.batch_get_nodes_by_single_prop(ORGID_LABEL, 'id', orgids)
 
         # compute links
         name_links = []
         website_links = []
         country_links = []
+        point_links = []
         orgid_links = []
 
         for org in organizations:
@@ -112,14 +120,20 @@ class Crawler(BaseCrawler):
                 country_qid = self.country_id[org['country']]
                 country_links.append({'src_id': org_qid, 'dst_id': country_qid, 'props': [self.reference]})
 
+            if org['latitude'] and org['longitude']:
+                position = WGS84Point((org['longitude'], org['latitude']))
+                point_qid = self.point_id[position]
+                point_links.append({'src_id': org_qid, 'dst_id': point_qid, 'props': [self.reference]})
+
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
         self.iyp.batch_add_links('WEBSITE', website_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('LOCATED_IN', point_links)
         self.iyp.batch_add_links('EXTERNAL_ID', orgid_links)
 
     def unit_test(self):
-        return super().unit_test(['NAME', 'WEBSITE', 'COUNTRY', 'EXTERNAL_ID'])
+        return super().unit_test(['NAME', 'WEBSITE', 'COUNTRY', 'EXTERNAL_ID', 'LOCATED_IN'])
 
 
 def main() -> None:

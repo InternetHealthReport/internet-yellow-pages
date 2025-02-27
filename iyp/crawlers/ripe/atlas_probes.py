@@ -7,6 +7,7 @@ import sys
 import flatdict
 import iso3166
 import requests
+from neo4j.spatial import WGS84Point
 from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -82,6 +83,7 @@ class Crawler(BaseCrawler):
         ips = set()
         ases = set()
         countries = set()
+        points = set()
 
         valid_probes = list()
 
@@ -123,6 +125,11 @@ class Crawler(BaseCrawler):
                 # remove the property instead.
                 probe.pop('country_code')
 
+            if probe['geometry']:
+                geo_coordinates = probe['geometry']['coordinates']
+                if geo_coordinates:
+                    points.add(WGS84Point((geo_coordinates[0], geo_coordinates[1])))
+
             # An empty tag list causes a FlatterDict instance to remain in the object,
             # which neo4j does not like.
             if not probe['tags']:
@@ -136,10 +143,12 @@ class Crawler(BaseCrawler):
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False)
         as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
 
         # compute links
         assigned_links = list()
-        located_in_links = list()
+        located_in_as_links = list()
+        located_in_point_links = list()
         country_links = list()
 
         for probe in valid_probes:
@@ -158,12 +167,14 @@ class Crawler(BaseCrawler):
             asv4 = probe['asn_v4']
             if asv4:
                 as_qid = as_id[asv4]
-                located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]})
+                located_in_as_links.append(
+                        {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]})
 
             asv6 = probe['asn_v6']
             if asv6:
                 as_qid = as_id[asv6]
-                located_in_links.append({'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
+                located_in_as_links.append(
+                        {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
 
             if ('country_code' in probe
                 and (country_code := probe['country_code'])
@@ -171,11 +182,19 @@ class Crawler(BaseCrawler):
                 country_qid = country_id[country_code]
                 country_links.append({'src_id': probe_qid, 'dst_id': country_qid,
                                      'props': [self.reference]})
+            if probe['geometry']:
+                geo_coordinates = probe['geometry']['coordinates']
+                if geo_coordinates:
+                    position = WGS84Point((geo_coordinates[0], geo_coordinates[1]))
+                    point_qid = point_id[position]
+                    located_in_point_links.append(
+                            {'src_id': probe_qid, 'dst_id': point_qid, 'props': [self.reference]})
 
         # Push all links to IYP
         self.iyp.batch_add_links('ASSIGNED', assigned_links)
-        self.iyp.batch_add_links('LOCATED_IN', located_in_links)
+        self.iyp.batch_add_links('LOCATED_IN', located_in_as_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('LOCATED_IN', located_in_point_links)
 
     def unit_test(self):
         return super().unit_test(['ASSIGNED', 'LOCATED_IN', 'COUNTRY'])

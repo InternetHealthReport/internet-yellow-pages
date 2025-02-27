@@ -26,6 +26,7 @@
 | PeeringdbNetID          | Unique identifier for an AS as assigned by PeeringDB.                                                                             |
 | PeeringdbOrgID          | Unique identifier for an Organization as assigned by PeeringDB.                                                                   |
 | PeeringLAN              | An IP prefix used by an IXP for its peering LAN, this is a subtype of Prefix.                                                     |
+| Point                   | A point on the earth surface uniquely identified by the **position** property. The position is expressed in the World Geodesic System, WGS84 (x=longitude, y=latitude).                                                 |
 | Prefix                  | An IPv4 or IPv6 prefix uniquely identified by the **prefix** property. The **af** property (address family) provides the IP version of the prefix.|
 | Ranking                 | Represent a specific ranking of Internet resources (e.g. CAIDA's ASRank or Tranco ranking). The rank value for each resource is given by the RANK relationship. |
 | Resolver                | An additional label added to IP nodes if they are a DNS resolver.                                                                                               |
