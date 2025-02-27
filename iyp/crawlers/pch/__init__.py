@@ -32,7 +32,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
 
     Fetches the latest IPv4/IPv6 snapshots in parallel from the PCH website and converts
     them to prefix-AS maps in parallel. This data is used to populate
-    (:AS)-[:ORIGINATE]->(:Prefix) entries in the graph.
+    (:AS)-[:ORIGINATE]->(:BGPPrefix) entries in the graph.
 
     If there are no results for the current day for some collectors, the crawler tries
     to fetch older results, up to a maximum of 7 days (configured by self.MAX_LOOKBACK).
@@ -298,6 +298,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         # Get/push nodes.
         as_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
         prefix_ids = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
+        self.iyp.batch_add_node_label(list(prefix_ids.values()), 'BGPPrefix')
 
         # Push relationships.
         relationships = list()
