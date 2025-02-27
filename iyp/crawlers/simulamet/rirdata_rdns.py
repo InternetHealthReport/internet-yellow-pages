@@ -111,6 +111,7 @@ class Crawler(BaseCrawler):
         ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', ns_set, all=False)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
         prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefix_set, all=False)
+        self.iyp.batch_add_node_label(list(prefix_id.values()), 'RDNSPrefix')
 
         logging.info('Computing relationship')
         links_managed_by = []
