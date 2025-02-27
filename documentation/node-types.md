@@ -28,9 +28,9 @@
 | PeeringLAN              | An IP prefix used by an IXP for its peering LAN, this is a subtype of Prefix.                                                     |
 | Prefix                  | An IPv4 or IPv6 prefix uniquely identified by the **prefix** property. The **af** property (address family) provides the IP version of the prefix.|
 | Ranking                 | Represent a specific ranking of Internet resources (e.g. CAIDA's ASRank or Tranco ranking). The rank value for each resource is given by the RANK relationship. |
+| RDNSPrefix              | An IP prefix representing a reverse DNS zone that is managed by one or more authoritative name servers. This is a subtype of Prefix. |
 | Resolver                | An additional label added to IP nodes if they are a DNS resolver.                                                                                               |
 | RIRPrefix               | An IP prefix assigned by of the five RIRs' (delegated files), this is a subtype of Prefix.                                                                      |
 | RPKIPrefix              | An IP prefix registered in RPKI, this is a subtype of Prefix.                                                                                                   |
 | Tag                     | The output of a classification. A tag can be the result of a manual or automated classification. Uniquely identified by the **label** property.|
 | URL                     | The full URL for an Internet resource, uniquely identified by the **url** property.                                               |
-

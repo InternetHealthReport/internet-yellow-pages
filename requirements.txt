@@ -23,6 +23,5 @@ flake8
 pre-commit==3.8.0
 PyGithub
 clickhouse_driver
-pyspark
 paramiko
 scp
