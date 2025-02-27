@@ -1,14 +1,16 @@
 import argparse
+import bz2
+import json
 import logging
 import os
 import sys
-import time
+import tempfile
 from datetime import datetime, timedelta, timezone
 from ipaddress import ip_network
 
-import pyspark.sql.functions as psf
-from pyspark import SparkConf
-from pyspark.sql import SparkSession
+import boto3
+import botocore
+import pandas as pd
 
 from iyp import BaseCrawler, DataNotAvailableError
 
@@ -16,105 +18,140 @@ URL = 'https://rir-data.org/'
 ORG = 'SimulaMet'
 NAME = 'simulamet.rirdata_rdns'
 
+S3A_RIR_DATA_ENDPOINT = 'https://data.rir-data.org'
+
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://rir-data.org/#reverse-dns'
 
-    # Function to load data from S3 for current or previous days
+    @staticmethod
+    def __read_json(file_path):
+        data = list()
+        with bz2.open(file_path, 'rt') as f:
+            for line in f:
+                entry = json.loads(line)
+                # If there are multiple sources for a prefix, they will be encoded as a
+                # list of dicts, otherwise it is just a single dict.
+                # To simplify the loop below, wrap single dicts in a list.
+                if isinstance(entry, dict):
+                    entry = [entry]
+                for source_entry in entry:
+                    rdns = source_entry['rdns']
+                    if 'NS' not in rdns['rdatasets']:
+                        continue
+                    ttl = rdns['ttl']
+                    source = source_entry['source']
+                    for prefix in source_entry['prefixes']:
+                        if not prefix:
+                            continue
+                        for nameserver in rdns['rdatasets']['NS']:
+                            if not nameserver:
+                                continue
+                            data.append((nameserver, prefix, ttl, source))
+        df = pd.DataFrame(data, columns=['auth_ns', 'prefix', 'ttl', 'source'])
+        df.drop_duplicates(inplace=True)
+        return df
 
-    def load_data_for_current_or_previous_days(self, spark):
+    def fetch(self):
+        # Modified from https://rir-data.org/pyspark-local.html
+        S3R_RIR_DATA = boto3.resource(
+            's3',
+            'nl-utwente',
+            endpoint_url=S3A_RIR_DATA_ENDPOINT,
+            config=botocore.config.Config(
+                signature_version=botocore.UNSIGNED,
+            )
+        )
+
+        # Get its client, for lower-level actions, if needed
+        S3C_RIR_DATA = S3R_RIR_DATA.meta.client
+        # Prevent some request going to AWS instead of our server
+        S3C_RIR_DATA.meta.events.unregister('before-sign.s3', botocore.utils.fix_s3_host)
+
+        # The RIR data bucket
+        RIR_DATA_BUCKET = S3R_RIR_DATA.Bucket('rir-data')
+
+        # The rDNS data base prefix
+        RIR_DATA_RDNS_BASE = 'rirs-rdns-formatted/type=enriched'
         # Get current date
         current_date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Attempt to load data for current date or up to 8 days back
-        MAX_LOOKBACK_IN_DAYS = 8
-        PATH_FMT = 's3a://rir-data/rirs-rdns-formatted/type=enriched/year=%Y/month=%m/day=%d/'
-        for i in range(MAX_LOOKBACK_IN_DAYS + 1):
-            date_to_load = current_date - timedelta(days=i)
-            try:
-                # Generate path for the given date
-                path = date_to_load.strftime(PATH_FMT)
+        for lookback_days in range(6):
+            objects = list(RIR_DATA_BUCKET.objects.filter(
+                # Build a partition path for the given source and date
+                Prefix=os.path.join(
+                    RIR_DATA_RDNS_BASE,
+                    'year={}'.format(current_date.year),
+                    'month={:02d}'.format(current_date.month),
+                    'day={:02d}'.format(current_date.day)
+                )).all())
+            if len(objects) > 0:
+                break
+            current_date -= timedelta(days=1)
+        else:
+            logging.error('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+        self.reference['reference_time_modification'] = current_date
 
-                # Try to load data
-                data = spark.read.format('json').option('basePath',
-                                                        's3a://rir-data/rirs-rdns-formatted/type=enriched').load(path)
-                logging.info(f'Data loaded successfully for date {date_to_load}')
-                self.reference['reference_time_modification'] = date_to_load
-                return data
-            except Exception as e:
-                # Log error
-                logging.info(e)
-                logging.info(f'Failed to load data for date {date_to_load}. Trying previous day...')
-                continue
-        # If data is still not loaded after attempting for 8 days, throw an Exception
-        logging.error(f'Failed to load data for current date and up to {MAX_LOOKBACK_IN_DAYS} days back.')
-        raise DataNotAvailableError(f'Failed to load data for current date and up to{MAX_LOOKBACK_IN_DAYS} days back.')
+        tmp_dir = self.create_tmp_dir()
+
+        if len(objects) > 1:
+            # We always should have only one file, but the example code uses a loop.
+            # Since we set the reference URL from this, warn if there are multiple
+            # files.
+            logging.warning('More than one object found in bucket.')
+
+        pandas_df_list = list()
+        for obj in objects:
+            # Open a temporary file to download the object into
+            with tempfile.NamedTemporaryFile(mode='w+b',
+                                             dir=tmp_dir,
+                                             prefix=current_date.strftime('%Y-%m-%d.'),
+                                             suffix='.jsonl.bz2',
+                                             delete=False) as tempFile:
+
+                logging.info(f'Opened temporary file for object download: {tempFile.name}')
+                RIR_DATA_BUCKET.download_fileobj(
+                    Key=obj.key,
+                    Fileobj=tempFile,
+                    Config=boto3.s3.transfer.TransferConfig(multipart_chunksize=16 * 1024 * 1024)
+                )
+                data_url = os.path.join(S3A_RIR_DATA_ENDPOINT, RIR_DATA_BUCKET.name, obj.key)
+                self.reference['reference_url_data'] = data_url
+                logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
+                    data_url,
+                    os.path.getsize(tempFile.name) / (1024 * 1024),
+                    tempFile.name
+                ))
+                # Use Pandas to read file into a DF and append to list
+                pandas_df_list.append(self.__read_json(tempFile.name))
+
+        # Concatenate object-specific DFs
+        pandas_df = pd.concat(pandas_df_list)
+        return pandas_df
 
     def run(self):
-        # See https://rir-data.org/pyspark-local.html
-        # Create Spark Config
-        sparkConf = SparkConf()
-        sparkConf.setMaster('local[1]')
-        sparkConf.setAppName('pyspark-{}-{}'.format(os.getuid(), int(time.time())))
-        # executors
-        sparkConf.set('spark.executor.instances', '1')
-        sparkConf.set('spark.executor.cores', '1')
-        sparkConf.set('spark.executor.memory', '4G')
-        sparkConf.set('spark.executor.memoryOverhead', '512M')
-        # driver
-        sparkConf.set('spark.driver.cores', '1')
-        sparkConf.set('spark.driver.memory', '2G')
+        rir_data_df = self.fetch()
 
-        # RIR-data.org Object Storage settings
-        sparkConf.set('spark.jars.packages', 'org.apache.hadoop:hadoop-aws:3.3.2')
-        sparkConf.set('spark.hadoop.fs.s3a.impl', 'org.apache.hadoop.fs.s3a.S3AFileSystem')
-        sparkConf.set('spark.hadoop.fs.s3a.aws.credentials.provider',
-                      'org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider')
-        sparkConf.set('spark.hadoop.fs.s3a.endpoint', 'https://data.rir-data.org')
-        sparkConf.set('spark.hadoop.fs.s3a.connection.ssl.enabled', 'true')
-        sparkConf.set('spark.hadoop.fs.s3a.signing-algorithm', 'S3SignerType')
-        sparkConf.set('spark.hadoop.fs.s3a.path.style.access', 'true')
-        sparkConf.set('spark.hadoop.fs.s3a.block.size', '16M')
-        sparkConf.set('spark.hadoop.fs.s3a.readahead.range', '1M')
-        sparkConf.set('spark.hadoop.fs.s3a.experimental.input.fadvise', 'normal')
-        sparkConf.set('spark.io.file.buffer.size', '67108864')
-        sparkConf.set('spark.buffer.size', '67108864')
-
-        # Initialize our Spark Session
-        spark = SparkSession.builder.config(conf=sparkConf).getOrCreate()
-        spark.sparkContext.setLogLevel('OFF')
-
-        logging.info('Started SparkSession')
-
-        rir_data_df = self.load_data_for_current_or_previous_days(spark)
-
-        rir_data_df = (
-            rir_data_df.withColumn('prefix', psf.explode('prefixes'))
-            .withColumn('auth_ns', psf.explode('rdns.rdatasets.NS'))
-            .select('auth_ns', 'prefix', psf.col('rdns.ttl').name('ttl'), 'source')
-            .where("auth_ns!='' and prefix!=''").distinct().toPandas()
-        )
         # Remove trailing root "."
         rir_data_df['auth_ns'] = rir_data_df['auth_ns'].str[:-1]
         # Normalize prefixes.
         rir_data_df.loc[:, 'prefix'] = rir_data_df.loc[:, 'prefix'].map(lambda pfx: ip_network(pfx).compressed)
 
         logging.info('Reading NSes')
-        # Get unique nameservers and remove trailing root "."
         ns_set = set(rir_data_df['auth_ns'].unique())
         logging.info('Reading Prefixes')
         prefix_set = set(rir_data_df['prefix'].unique())
-        spark.stop()
 
         ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', ns_set, all=False)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
         prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefix_set, all=False)
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'RDNSPrefix')
 
-        logging.info('Computing relationship')
-        links_managed_by = []
+        logging.info('Computing relationships')
+        links_managed_by = list()
         for relationship in rir_data_df.itertuples():
             links_managed_by.append({
                 'src_id': prefix_id[relationship.prefix],
