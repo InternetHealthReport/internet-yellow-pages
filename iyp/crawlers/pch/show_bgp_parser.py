@@ -29,6 +29,7 @@ class ShowBGPParser:
         self.status_codes = {'s': 'suppressed',
                              'd': 'damped',
                              'h': 'history',
+                             'u': 'unsorted',
                              '*': 'valid',
                              '>': 'best',
                              '=': 'multipath',
