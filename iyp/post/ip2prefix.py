@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+from collections import defaultdict
 
 import radix
 
@@ -27,11 +28,10 @@ class PostProcess(BasePostProcess):
         prefix."""
 
         # Find all different types of prefixes
-        prefixes_labels = self.iyp.tx.run(
-            'MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels;')
+        prefixes_labels = self.iyp.tx.run('MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels')
 
         all_labels = set([label for row in prefixes_labels for label in row['pfx_labels']])
-        rtrees = {}
+        rtrees = dict()
 
         for label in all_labels:
             if label == 'Prefix':
@@ -57,35 +57,46 @@ class PostProcess(BasePostProcess):
 
         # Compute links for IPs
         # We use a dictionary to avoid having duplicate links
-        links = {}
+        prefix_types = defaultdict(list)
         for ip, ip_qid in ip_id.items():
             if ip:
-                for rtree in rtrees.values():
+                for prefix_label, rtree in rtrees.items():
                     rnode = rtree.search_best(ip)
                     if rnode:
                         src = ip_qid
                         dst = rnode.data['id']
-                        links[(src, dst)] = {
-                            'src_id': src,
-                            'dst_id': dst,
-                            'props': [self.reference]
-                        }
+                        prefix_types[(src, dst)].append(prefix_label)
+        links = [
+            {
+                'src_id': src,
+                'dst_id': dst,
+                'props': [self.reference,
+                          {'prefix_types': prefix_labels}]
+            }
+            for (src, dst), prefix_labels in prefix_types.items()]
 
         # push IP to prefix links to IYP
-        self.iyp.batch_add_links('PART_OF', list(links.values()))
+        self.iyp.batch_add_links('PART_OF', links)
 
         # Compute links sub-prefix and covering prefix
-        links = []
-        for rtree in rtrees.values():
+        prefix_types = defaultdict(list)
+        for prefix_label, rtree in rtrees.items():
             for rnode in rtree:
                 covering = rnode.parent
 
                 if covering:
-                    links.append({
-                        'src_id': rnode.data['id'],
-                        'dst_id': covering.data['id'],
-                        'props': [self.reference]
-                    })
+                    src = rnode.data['id']
+                    dst = covering.data['id']
+                    prefix_types[(src, dst)].append(prefix_label)
+
+        links = [
+            {
+                'src_id': src,
+                'dst_id': dst,
+                'props': [self.reference,
+                          {'prefix_types': prefix_labels}]
+            }
+            for (src, dst), prefix_labels in prefix_types.items()]
 
         # push sub-prefix to covering-prefix links
         self.iyp.batch_add_links('PART_OF', links)
