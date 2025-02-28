@@ -117,6 +117,13 @@ Tech](https://inetintel.notion.site/Internet-Intelligence-Research-Lab-d18618456
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS-to-Organization-Mapping/master/LICENSE).
 
+## IPinfo
+
+We use the free [IP-to-country](https://ipinfo.io/products/free-ip-database) mapping
+provided by [IPinfo](https://ipinfo.io) and released the under [Creative Commons
+Attribution-ShareAlike 4.0 International
+License](https://creativecommons.org/licenses/by-sa/4.0/).
+
 ## Number Resource Organization
 
 We use the [extended allocation and assignment

@@ -15,6 +15,7 @@
 | DomainName              | Any DNS domain name that is not a FQDN (see HostName), uniquely identified by the **name** property.                              |
 | Estimate                | Represent a report that approximate a quantity, for example the World Bank population estimate.                                   |
 | Facility                | Co-location facility for IXPs and ASes, uniquely identified by the **name** property.                                             |
+| GeoPrefix               | An IP prefix obtained from a geolocation data source. This is a subtype of Prefix.                                                |
 | HostName                | A fully qualified domain name uniquely identified by the **name** property.                                                       |
 | IP                      | An IPv4 or IPv6 address uniquely identified by the **ip** property. The **af** property (address family) provides the IP version of the prefix.|
 | IXP                     | An Internet Exchange Point, loosely identified by the **name** property or using related IDs (see the EXTERNAL_ID relationship).  |

@@ -29,6 +29,10 @@
         "password": ""
     },
 
+    "ipinfo": {
+        "token": ""
+    },
+
     "pch": {
         "parallel_downloads": 8,
         "parallel_parsers": 40
@@ -91,6 +95,7 @@
             "iyp.crawlers.alice_lg.linx",
             "iyp.crawlers.alice_lg.megaport",
             "iyp.crawlers.alice_lg.netnod",
+            "iyp.crawlers.ipinfo.ip_country",
             "iyp.crawlers.worldbank.country_pop",
             "iyp.crawlers.simulamet.rirdata_rdns",
             "iyp.crawlers.google.crux_top1m_country",
