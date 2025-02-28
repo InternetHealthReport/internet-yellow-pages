@@ -109,7 +109,7 @@ class Crawler(BaseCrawler):
             if asn['latitude'] and asn['longitude']:
                 position = WGS84Point((asn['longitude'], asn['latitude']))
                 located_in_links.append(
-                        {'src_id': asn_qid, 'dst_id': self.point_id[position], 'props': [self.reference]})
+                    {'src_id': asn_qid, 'dst_id': self.point_id[position], 'props': [self.reference]})
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)

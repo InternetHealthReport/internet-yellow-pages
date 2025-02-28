@@ -168,13 +168,13 @@ class Crawler(BaseCrawler):
             if asv4:
                 as_qid = as_id[asv4]
                 located_in_as_links.append(
-                        {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]})
+                    {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]})
 
             asv6 = probe['asn_v6']
             if asv6:
                 as_qid = as_id[asv6]
                 located_in_as_links.append(
-                        {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
+                    {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
 
             if ('country_code' in probe
                 and (country_code := probe['country_code'])
@@ -188,7 +188,7 @@ class Crawler(BaseCrawler):
                     position = WGS84Point((geo_coordinates[0], geo_coordinates[1]))
                     point_qid = point_id[position]
                     located_in_point_links.append(
-                            {'src_id': probe_qid, 'dst_id': point_qid, 'props': [self.reference]})
+                        {'src_id': probe_qid, 'dst_id': point_qid, 'props': [self.reference]})
 
         # Push all links to IYP
         self.iyp.batch_add_links('ASSIGNED', assigned_links)
