@@ -170,7 +170,7 @@ def main():
     # ######### Stop container and dump DB ##########
 
     logging.info('Stopping container...')
-    container.stop(timeout=180)
+    container.stop(timeout=1800)
 
     logging.info('Dumping database...')
     dump_file = os.path.join(dump_dir, 'neo4j.dump')
