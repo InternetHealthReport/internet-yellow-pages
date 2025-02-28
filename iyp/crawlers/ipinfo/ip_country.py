@@ -28,7 +28,7 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch data and push to IYP."""
 
-        headers = {'Authorization': f"Bearer {IPINFO_TOKEN}"}
+        headers = {'Authorization': f'Bearer {IPINFO_TOKEN}'}
         req = requests.get(self.reference['reference_url_data'], headers=headers)
         if req.status_code != 200:
             logging.error(f'Cannot download data {req.status_code}: {req.text}')
