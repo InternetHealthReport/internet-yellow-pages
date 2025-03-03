@@ -35,6 +35,7 @@ class Crawler(OoniCrawler):
         if 'blocking' not in test_keys or 'accessible' not in test_keys:
             logging.warning('Skipping entry with missing keys')
             logging.warning(one_line)
+            self.all_results.pop()
             return
         blocking = test_keys['blocking']
         accessible = test_keys['accessible']
@@ -43,7 +44,12 @@ class Crawler(OoniCrawler):
             logging.warning(f'No HTTP URL: {input_url}')
 
         # Extract the hostname from the URL if it's not an IP address
-        hostname = urlparse(input_url).hostname
+        try:
+            hostname = urlparse(input_url).hostname
+        except ValueError as e:
+            logging.error(f'Failed to extract hostname from URL "{input_url}": {e}')
+            self.all_results.pop()
+            return
         try:
             hostname = ipaddress.ip_address(hostname).compressed
             hostname_is_ip = True
