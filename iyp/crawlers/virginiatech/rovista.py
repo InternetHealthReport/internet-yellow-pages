@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 URL = 'https://api.rovista.netsecurelab.org/rovista/api/overview'
 ORG = 'Virginia Tech'
@@ -35,8 +35,7 @@ class Crawler(BaseCrawler):
         while True:
             # Make a request with the current offset
             response = requests.get(URL, params={'offset': offset, 'count': batch_size})
-            if response.status_code != 200:
-                raise RequestStatusError(f'Error while fetching RoVista data: {response.status_code}')
+            response.raise_for_status()
 
             data = response.json().get('data', [])
             for entry in data:

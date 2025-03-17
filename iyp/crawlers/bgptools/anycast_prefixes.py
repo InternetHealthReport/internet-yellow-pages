@@ -7,8 +7,7 @@ from ipaddress import ip_network
 
 import requests
 
-from iyp import (BaseCrawler, ConnectionError, RequestStatusError,
-                 get_commit_datetime)
+from iyp import BaseCrawler, get_commit_datetime
 
 # Organization name and URL to data
 ORG = 'BGP.Tools'
@@ -26,15 +25,9 @@ def get_dataset_url(as_prefixes_data_url: str, ip_version: int):
 
 
 def fetch_dataset(url: str):
-    try:
-        res = requests.get(url)
-        return res
-    except requests.exceptions.ConnectionError as e:
-        logging.error(e)
-        raise ConnectionError('Connection error while fetching data file')
-    except requests.exceptions.HTTPError as e:
-        logging.error(e)
-        raise RequestStatusError('Error while fetching data file')
+    res = requests.get(url)
+    res.raise_for_status()
+    return res
 
 
 class Crawler(BaseCrawler):

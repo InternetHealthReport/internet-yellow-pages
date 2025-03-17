@@ -5,7 +5,7 @@ import sys
 import iso3166
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # URL to APNIC API
 URL = 'http://v6data.data.labs.apnic.net/ipv6-measurement/Economies/'
@@ -39,8 +39,7 @@ class Crawler(BaseCrawler):
 
             self.url = URL + f'{cc}/{cc}.asns.json?m={MIN_POP_PERC}'
             req = requests.get(self.url)
-            if req.status_code != 200:
-                raise RequestStatusError(f'Error while fetching data for {cc}')
+            req.raise_for_status()
 
             asns = set()
             names = set()

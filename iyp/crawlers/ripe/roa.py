@@ -9,7 +9,7 @@ from ipaddress import ip_network
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # URL to RIPE repository
 URL = 'https://ftp.ripe.net/rpki/'
@@ -45,8 +45,7 @@ class Crawler(BaseCrawler):
             self.url = f'{URL}/{tal}/{self.date_path}/roas.csv.xz'
             logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get(self.url)
-            if req.status_code != 200:
-                raise RequestStatusError('Error while fetching data for ' + self.url)
+            req.raise_for_status()
 
             # Decompress the .xz file and read it as CSV
             with lzma.open(BytesIO(req.content)) as xz_file:

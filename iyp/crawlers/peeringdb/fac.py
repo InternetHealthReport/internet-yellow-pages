@@ -53,9 +53,7 @@ class Crawler(BaseCrawler):
 
         logging.info('Fetching PeeringDB data...')
         req = self.requests.get(URL, headers=self.headers)
-        if req.status_code != 200:
-            logging.error('Error while fetching peeringDB data')
-            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+        req.raise_for_status()
 
         result = req.json()
         set_reference_time_from_metadata(self.reference, result)

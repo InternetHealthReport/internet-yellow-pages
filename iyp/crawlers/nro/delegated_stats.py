@@ -8,7 +8,7 @@ from ipaddress import IPv4Address, IPv4Network
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # NOTE: this script is not adding new ASNs. It only adds links for existing ASNs
 # Should be run after crawlers that push many ASNs (e.g. ripe.as_names)
@@ -57,8 +57,7 @@ class Crawler(BaseCrawler):
         one."""
 
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching delegated file')
+        req.raise_for_status()
 
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
         asn_in_iyp = sorted(asn_id.keys())

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 URL = 'https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?per_page=400&mrv=1&format=json'
 ORG = 'WorldBank'
@@ -26,8 +26,7 @@ class Crawler(BaseCrawler):
 
         # Get content
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching country population')
+        req.raise_for_status()
         content = json.loads(req.content)
 
         # Set last time of modification

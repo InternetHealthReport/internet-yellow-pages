@@ -6,8 +6,7 @@ from zipfile import ZipFile
 
 import requests
 
-from iyp import (BaseCrawler, RequestStatusError,
-                 set_modification_time_from_last_modified_header)
+from iyp import BaseCrawler, set_modification_time_from_last_modified_header
 
 # URL to Tranco top 1M
 URL = 'https://tranco-list.eu/top-1m.csv.zip'
@@ -37,8 +36,7 @@ class Crawler(BaseCrawler):
 
         logging.info('Downloading latest list...')
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching Tranco csv file')
+        req.raise_for_status()
 
         set_modification_time_from_last_modified_header(self.reference, req)
         self.__set_data_url()

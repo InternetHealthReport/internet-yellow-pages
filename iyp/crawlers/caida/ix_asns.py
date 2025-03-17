@@ -8,7 +8,7 @@ import arrow
 import flatdict
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 URL = 'https://publicdata.caida.org/datasets/ixps/'
 ORG = 'CAIDA'
@@ -56,8 +56,7 @@ class Crawler(BaseCrawler):
         """Fetch the latest file and process lines one by one."""
 
         req = requests.get(self.url)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching CAIDA ix-asns file')
+        req.raise_for_status()
 
         lines = []
         asns = set()

@@ -7,8 +7,7 @@ from ipaddress import ip_network
 
 import requests
 
-from iyp import (BaseCrawler, RequestStatusError,
-                 set_modification_time_from_last_modified_header)
+from iyp import BaseCrawler, set_modification_time_from_last_modified_header
 
 URL = 'https://data.bgpkit.com/pfx2as/pfx2as-latest.json.bz2'
 ORG = 'BGPKIT'
@@ -22,8 +21,7 @@ class Crawler(BaseCrawler):
         one."""
 
         req = requests.get(URL, stream=True)
-        if req.status_code != 200:
-            raise RequestStatusError(f'Error while fetching pfx2as relationships: {req.status_code}')
+        req.raise_for_status()
 
         set_modification_time_from_last_modified_header(self.reference, req)
 

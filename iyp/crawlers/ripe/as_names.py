@@ -4,8 +4,7 @@ import sys
 
 import requests
 
-from iyp import (BaseCrawler, RequestStatusError,
-                 set_modification_time_from_last_modified_header)
+from iyp import BaseCrawler, set_modification_time_from_last_modified_header
 
 URL = 'https://ftp.ripe.net/ripe/asnames/asn.txt'
 ORG = 'RIPE NCC'
@@ -18,8 +17,7 @@ class Crawler(BaseCrawler):
         """Fetch the AS name file from RIPE website and process lines one by one."""
 
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError(f'Error while fetching AS names: {req.status_code}')
+        req.raise_for_status()
 
         set_modification_time_from_last_modified_header(self.reference, req)
 

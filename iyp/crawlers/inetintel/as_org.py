@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 from github import Github
 
-from iyp import BaseCrawler, ConnectionError, RequestStatusError
+from iyp import BaseCrawler
 
 
 def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str):
@@ -67,14 +67,8 @@ class Crawler(BaseCrawler):
         self.filename = os.path.join(self.tmpdir, 'inetintel_as_org.json')
 
         # Fetch data
-        try:
-            req = requests.get(URL)
-        except requests.exceptions.ConnectionError as e:
-            logging.error(e)
-            raise ConnectionError('Connection error while fetching data file')
-        except requests.exceptions.HTTPError as e:
-            logging.error(e)
-            raise RequestStatusError('Error while fetching data file')
+        req = requests.get(URL)
+        req.raise_for_status()
 
         with open(self.filename, 'w') as file:
             file.write(req.text)

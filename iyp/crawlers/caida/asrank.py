@@ -8,7 +8,7 @@ import flatdict
 import requests
 from neo4j.spatial import WGS84Point
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # URL to ASRank API
 URL = 'https://api.asrank.caida.org/v2/restful/asns/?first=10000'
@@ -43,9 +43,7 @@ class Crawler(BaseCrawler):
             i += 1
             logging.debug(f'Fetching {url}')
             req = requests.get(url)
-            if req.status_code != 200:
-                logging.error(f'Request failed with status: {req.status_code}')
-                raise RequestStatusError('Error while fetching data from API')
+            req.raise_for_status()
 
             ranking = json.loads(req.text)['data']['asns']
             has_next = ranking['pageInfo']['hasNextPage']

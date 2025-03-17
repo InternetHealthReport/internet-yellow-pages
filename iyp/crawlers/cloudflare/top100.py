@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # Organization name and URL to data
 ORG = 'Cloudflare'
@@ -42,9 +42,7 @@ class Crawler(BaseCrawler):
         }
 
         req = requests.get(self.reference['reference_url_data'], headers=headers)
-        if req.status_code != 200:
-            logging.error(f'Cannot download data {req.status_code}: {req.text}')
-            raise RequestStatusError(f'Error while fetching data file: {req.status_code}')
+        req.raise_for_status()
 
         results = req.json()['result']
 

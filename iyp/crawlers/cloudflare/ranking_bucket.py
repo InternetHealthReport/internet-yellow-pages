@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
-from iyp import BaseCrawler, JSONDecodeError, RequestStatusError
+from iyp import BaseCrawler, JSONDecodeError
 
 # Organization name and URL to data
 ORG = 'Cloudflare'
@@ -50,9 +50,7 @@ class Crawler(BaseCrawler):
         # Fetch rankings descriptions
         logging.info('Fetching datasets and dataset data.')
         req = req_session.get(URL_DATASETS)
-        if req.status_code != 200:
-            logging.error(f'Cannot download data {req.status_code}: {req.text}')
-            raise RequestStatusError('Error while fetching data file')
+        req.raise_for_status()
 
         datasets_json = req.json()
         if 'success' not in datasets_json or not datasets_json['success']:

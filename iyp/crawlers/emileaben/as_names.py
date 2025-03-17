@@ -6,7 +6,7 @@ import tempfile
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError, get_commit_datetime
+from iyp import BaseCrawler, get_commit_datetime
 
 # Organization name and URL to data
 ORG = 'emileaben'
@@ -27,14 +27,9 @@ class Crawler(BaseCrawler):
         tmpdir = tempfile.mkdtemp()
         filename = os.path.join(tmpdir, 'as_names.txt')
 
-        try:
-            res = requests.get(URL)
-        except requests.exceptions.ConnectionError as e:
-            logging.error(e)
-            raise ConnectionError('Connection error while fetching data file')
-        except requests.exceptions.HTTPError as e:
-            logging.error(e)
-            raise RequestStatusError('Error while fetching data file')
+        res = requests.get(URL)
+        res.raise_for_status()
+
         with open(filename, 'w') as file:
             file.write(res.text)
 
