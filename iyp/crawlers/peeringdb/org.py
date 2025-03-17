@@ -83,8 +83,8 @@ class Crawler(BaseCrawler):
         # push nodes
         self.org_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', orgs)
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
-        self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', websites)
-        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', websites, all=False)
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
         self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
         self.orgid_id = self.iyp.batch_get_nodes_by_single_prop(ORGID_LABEL, 'id', orgids)
 

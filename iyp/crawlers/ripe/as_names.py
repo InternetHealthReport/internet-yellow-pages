@@ -31,9 +31,8 @@ class Crawler(BaseCrawler):
             asn, _, name_cc = line.partition(' ')
             name, _, cc = name_cc.rpartition(', ')
 
-            # Country codes are two digits
-            if len(cc) > 2:
-                logging.warning(cc)
+            if not all((asn, name, cc)) or len(cc) > 2:
+                logging.warning(f'Ignoring invalid line: "{line}"')
                 continue
 
             asn = int(asn)
