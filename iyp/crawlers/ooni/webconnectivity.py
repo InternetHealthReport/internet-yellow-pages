@@ -61,7 +61,12 @@ class Crawler(OoniCrawler):
         if not hostname_is_ip:
             # The test performs DNS queries even if the hostname is an IP, but this
             # does not make sense so we want to ignore it.
-            host_ip_set = process_dns_queries(test_keys['queries'])
+            try:
+                host_ip_set = process_dns_queries(test_keys['queries'])
+            except KeyError:
+                logging.warning(f'No DNS resolution for URL: {input_url}')
+                self.all_results.pop()
+                return
 
         # Determine the result based on the table
         # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)
