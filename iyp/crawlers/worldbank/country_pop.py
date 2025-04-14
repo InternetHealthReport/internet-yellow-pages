@@ -41,10 +41,10 @@ class Crawler(BaseCrawler):
         for entry in content[1]:
 
             country = entry['country']['id']
-            if country not in country_ids:
+            if country not in country_ids or not entry['value']:
                 continue
 
-            population = int(entry['value'])
+            population = entry['value']
             lines.add((country, population))
 
         # Get `Estimate` node ID
