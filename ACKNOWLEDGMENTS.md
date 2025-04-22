@@ -90,8 +90,8 @@ others with permission (Hi Emile!).
 
 ## Google
 
-We use [Crux's](https://developer.chrome.com/docs/crux) top 1M websites per country
-from Google.
+We use the top 1M websites per country from the Google [Chrome User Experience Report
+(CrUX)](https://developer.chrome.com/docs/crux).
 
 This data is licensed under  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 No changes were made to the data.
