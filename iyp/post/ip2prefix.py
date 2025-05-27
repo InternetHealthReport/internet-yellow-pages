@@ -53,7 +53,7 @@ class PostProcess(BasePostProcess):
             self.iyp.batch_add_properties(additional_properties)
 
         # Get all IP nodes
-        ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip')
+        ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', batch_size=100000)
 
         # Compute links for IPs
         # We use a dictionary to avoid having duplicate links

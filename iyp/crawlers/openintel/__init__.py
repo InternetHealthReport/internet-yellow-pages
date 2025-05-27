@@ -14,11 +14,9 @@ import boto3
 import botocore
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 
 from iyp import BaseCrawler, DataNotAvailableError
-
-TMP_DIR = './tmp'
-os.makedirs(TMP_DIR, exist_ok=True)
 
 # credentials
 OPENINTEL_ACCESS_KEY = ''
@@ -42,13 +40,34 @@ class OpenIntelCrawler(BaseCrawler):
         self.dataset = dataset
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://openintel.nl/data/forward-dns/top-lists/'
+        if dataset == 'crux':
+            # We cannot link to the precise date, since the data is separated by country
+            # code first.
+            self.reference['reference_url_data'] = \
+                'https://openintel.nl/download/forward-dns/basis=toplist/source=crux/'
         self.warehouse_bucket = None
         self.fdns_warehouse_s3 = str()
+        self.create_tmp_dir()
 
-    def get_parquet_public(self):
-        """Fetch the forward DNS data, populate a data frame, and process lines one by
-        one."""
+    @staticmethod
+    def fetch_crux_country_codes():
+        """Fetch the list of available country codes for the CrUX dataset by scraping
+        the public website."""
+        r = requests.get('https://openintel.nl/download/forward-dns/basis=toplist/source=crux/',
+                         cookies={'openintel-data-agreement-accepted': 'true'})
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, features='html.parser')
+        country_codes = list()
+        for link in soup.find_all('a'):
+            text = link.text.strip()
+            if text.startswith('country-code'):
+                country_codes.append(text.split('=')[1])
+        if not country_codes:
+            raise DataNotAvailableError('Failed to scrape country codes from website.')
+        return country_codes
 
+    def init_public_s3_bucket(self):
+        """Initialize the S3 bucket for the public endpoint."""
         # Get a boto3 resource
         S3R_OPENINTEL = boto3.resource(
             's3',
@@ -65,14 +84,19 @@ class OpenIntelCrawler(BaseCrawler):
         # The OpenINTEL bucket
         self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel-public')
 
+    def get_parquet_public(self):
+        """Fetch and read dataframes for the specified toplist dataset from the public
+        S3 bucket."""
+
+        self.init_public_s3_bucket()
         # OpenINTEL measurement data objects base prefix
         self.fdns_warehouse_s3 = 'fdns/basis=toplist'
 
         self.fetch_warehouse_data()
 
     def get_parquet_closed(self):
-        """Fetch the forward DNS data, populate a data frame, and process lines one by
-        one."""
+        """Fetch and read dataframes for the specified dataset from the closed S3
+        bucket."""
 
         # Get a boto3 resource
         S3R_OPENINTEL = boto3.resource(
@@ -97,15 +121,42 @@ class OpenIntelCrawler(BaseCrawler):
 
         self.fetch_warehouse_data()
 
-    def fetch_warehouse_data(self):
+    def get_parquet_crux(self):
+        """Fetch and read dataframes for CRuX toplist.
+
+        Only get data for countries available in IYP.
+        """
+        crux_country_codes = OpenIntelCrawler.fetch_crux_country_codes()
+        logging.info(f'{len(crux_country_codes)} countries available.')
+
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
+
+        self.init_public_s3_bucket()
+
+        prefix = f'fdns/basis=toplist/source={self.dataset}'
+        for country_code in crux_country_codes:
+            if country_code.upper() not in country_id:
+                continue
+            logging.info(f'Fetching {country_code.upper()}')
+            self.fetch_warehouse_data(os.path.join(prefix, f'country-code={country_code}'))
+
+    def fetch_warehouse_data(self, prefix: str = str()):
+        """Fetch and read dataframes.
+
+        Requires initialization of the S3 bucket.
+
+        Args:
+            prefix (str, optional): Custom filter prefix.
+        """
+        if not prefix:
+            prefix = os.path.join(self.fdns_warehouse_s3, f'source={self.dataset}')
         # Get latest available data.
         date = arrow.utcnow()
         for lookback_days in range(6):
             objects = list(self.warehouse_bucket.objects.filter(
                 # Build a partition path for the given source and date
                 Prefix=os.path.join(
-                    self.fdns_warehouse_s3,
-                    'source={}'.format(self.dataset),
+                    prefix,
                     'year={}'.format(date.year),
                     'month={:02d}'.format(date.month),
                     'day={:02d}'.format(date.day)
@@ -114,6 +165,10 @@ class OpenIntelCrawler(BaseCrawler):
                 break
             date = date.shift(days=-1)
         else:
+            if self.dataset == 'crux':
+                # For CRuX not all countries have lists all the time...
+                logging.warning('Failed to find data within the specified lookback interval.')
+                return
             logging.error('Failed to find data within the specified lookback interval.')
             raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
         self.reference['reference_time_modification'] = \
@@ -130,20 +185,22 @@ class OpenIntelCrawler(BaseCrawler):
 
             # Open a temporary file to download the Parquet object into
             with tempfile.NamedTemporaryFile(mode='w+b',
-                                             dir=TMP_DIR,
+                                             dir=self.get_tmp_dir(),
                                              prefix='{}.'.format(date.date().isoformat()),
                                              suffix='.parquet',
-                                             delete=True) as tempFile:
-
+                                             delete=False) as tempFile:
                 logging.info("Opened temporary file for object download: '{}'.".format(tempFile.name))
                 self.warehouse_bucket.download_fileobj(
-                    Key=i_obj.key, Fileobj=tempFile, Config=boto3.s3.transfer.TransferConfig(
-                        multipart_chunksize=128 * 1024 * 1024))
+                    Key=i_obj.key, Fileobj=tempFile,
+                    Config=boto3.s3.transfer.TransferConfig(multipart_chunksize=128 * 1024 * 1024)
+                )
                 logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
                     os.path.join(S3A_OPENINTEL_ENDPOINT, self.warehouse_bucket.name, i_obj.key),
                     os.path.getsize(tempFile.name) / (1024 * 1024),
                     tempFile.name
                 ))
+                # For some files read_parquet() fails without this...
+                tempFile.flush()
                 # Use Pandas to read file into a DF and append to list
                 self.pandas_df_list.append(
                     pd.read_parquet(tempFile.name,
@@ -208,6 +265,8 @@ class OpenIntelCrawler(BaseCrawler):
                 self.get_parquet_public()
             elif self.dataset == 'infra:ns':
                 self.get_parquet_closed()
+            elif self.dataset == 'crux':
+                self.get_parquet_crux()
             attempt -= 1
 
         # Concatenate Parquet file-specific DFs
@@ -330,8 +389,12 @@ class OpenIntelCrawler(BaseCrawler):
         host_names.update(cname_resolves_to.keys())
 
         # Get/create all nodes:
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domain_names, all=False)
-        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names, all=False)
+        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName',
+                                                            'name',
+                                                            domain_names,
+                                                            all=False,
+                                                            batch_size=100000)
+        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names, all=False, batch_size=100000)
         ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', name_servers, all=False)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
         ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip',
@@ -434,8 +497,8 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_links('ALIAS_OF', aliasof_links)
 
     def unit_test(self):
-        # infra_ns only has RESOLVES_TO and ALIAS_OF relationships.
-        if self.reference['reference_name'] == 'openintel.infra_ns':
+        # infra_ns and crux only have RESOLVES_TO and ALIAS_OF relationships.
+        if self.reference['reference_name'] in {'openintel.infra_ns', 'openintel.crux'}:
             return super().unit_test(['RESOLVES_TO', 'ALIAS_OF'])
         return super().unit_test(['RESOLVES_TO', 'MANAGED_BY', 'PART_OF', 'ALIAS_OF'])
 

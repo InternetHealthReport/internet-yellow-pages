@@ -144,10 +144,11 @@ display in the graph.
 We use several datasets from [OpenINTEL](https://www.openintel.nl/), a joint project of
 the University of Twente, SURF, SIDN Labs and NLnet Labs.
 
-The `tranco1m` and `umbrella1m` [datasets](https://data.openintel.nl/data/) are licensed
-under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). No changes
-were made to the data. In addition, there are [Terms of
-Use](https://data.openintel.nl/data/README.txt) for this data.
+The `tranco1m`, `umbrella1m`, and `crux`
+[datasets](https://openintel.nl/data/forward-dns/top-lists/) are licensed under [CC
+BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). No changes were made
+to the data. In addition, there are [Terms of Use](https://openintel.nl/download/terms/)
+for this data.
 
 The [DNS Dependency Graph tool](https://dnsgraph.dacs.utwente.nl/) is a joint project of
 the University of Twente and IIJ Research Laboratory.
