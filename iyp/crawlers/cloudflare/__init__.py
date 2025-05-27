@@ -35,14 +35,18 @@ class DnsTopCrawler(BaseCrawler):
                 WHERE r.rank <= $rank_threshold
                 RETURN elementId(dn) AS _id, dn.name AS dname""",
             rank_threshold=RANK_THRESHOLD)
-        existing_hn = self.iyp.tx.run(
-            """MATCH (hn:HostName)-[r:RANK]-(:Ranking)
-                WHERE r.rank <= $rank_threshold
-                RETURN elementId(hn) AS _id, hn.name AS hname""",
-            rank_threshold=RANK_THRESHOLD)
 
         self.domain_names_id = {node['dname']: node['_id'] for node in existing_dn}
-        self.host_names_id = {node['hname']: node['_id'] for node in existing_hn}
+
+        # TODO Fetching data for HostName nodes does not scale at the moment.
+        self.host_names_id = dict()
+        # existing_hn = self.iyp.tx.run(
+        #     """MATCH (hn:HostName)-[r:RANK]-(:Ranking)
+        #         WHERE r.rank <= $rank_threshold
+        #         RETURN elementId(hn) AS _id, hn.name AS hname""",
+        #     rank_threshold=RANK_THRESHOLD)
+        # self.host_names_id = {node['hname']: node['_id'] for node in existing_hn}
+
         # There might be overlap between these two, but we don't want to fetch the same
         # data twice.
         self.names = list(sorted(set(self.domain_names_id.keys()).union(self.host_names_id.keys())))
@@ -99,7 +103,7 @@ class DnsTopCrawler(BaseCrawler):
 
             get_params = f'?limit={TOP_LIMIT}'
             for domain in batch:
-                get_params += f'&dateRange=7d&domain={domain}&name={domain}'
+                get_params += f'&dateRange=7d&domain={domain}'
 
             url = self.url + get_params
             future = req_session.get(url)
@@ -129,11 +133,12 @@ class DnsTopCrawler(BaseCrawler):
                     except (KeyError, ValueError, TypeError) as e:
                         logging.warning(f'Failed to get modification time: {e}')
 
-                for domain, result in data.items():
-                    if domain == 'meta':
+                for idx, (placeholder, result) in enumerate(data.items()):
+                    if placeholder == 'meta':
                         continue
+                    domain = query.domains[idx]
                     with open(query.fpaths[domain], 'w') as fp:
-                        json.dump(result, fp)
+                        json.dump({domain: result}, fp)
 
             except Exception as e:
                 logging.error(f'Failed to fetch data for domains: {query.domains}: {e}')
