@@ -9,7 +9,7 @@ from ipaddress import ip_network
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # URL to RIPE repository
 URL = 'https://ftp.ripe.net/rpki/'
@@ -45,8 +45,7 @@ class Crawler(BaseCrawler):
             self.url = f'{URL}/{tal}/{self.date_path}/roas.csv.xz'
             logging.info(f'Fetching ROA file: {self.url}')
             req = requests.get(self.url)
-            if req.status_code != 200:
-                raise RequestStatusError('Error while fetching data for ' + self.url)
+            req.raise_for_status()
 
             # Decompress the .xz file and read it as CSV
             with lzma.open(BytesIO(req.content)) as xz_file:
@@ -79,7 +78,8 @@ class Crawler(BaseCrawler):
 
             # get ASNs and prefixes IDs
             asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', set(prefix_info.keys()))
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', set(prefix_info.keys()), all=False)
+            self.iyp.batch_add_node_label(list(prefix_id.values()), 'RPKIPrefix')
 
             links = []
             for prefix, attributes in prefix_info.items():

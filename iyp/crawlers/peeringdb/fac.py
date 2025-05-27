@@ -8,6 +8,7 @@ from datetime import timedelta
 import flatdict
 import iso3166
 import requests_cache
+from neo4j.spatial import WGS84Point
 
 from iyp import BaseCrawler
 from iyp.crawlers.peeringdb.ix import (handle_social_media,
@@ -52,9 +53,7 @@ class Crawler(BaseCrawler):
 
         logging.info('Fetching PeeringDB data...')
         req = self.requests.get(URL, headers=self.headers)
-        if req.status_code != 200:
-            logging.error('Error while fetching peeringDB data')
-            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+        req.raise_for_status()
 
         result = req.json()
         set_reference_time_from_metadata(self.reference, result)
@@ -65,6 +64,7 @@ class Crawler(BaseCrawler):
         names = set()
         websites = set()
         countries = set()
+        points = set()
         facids = set()
 
         for fac in facilities:
@@ -78,6 +78,10 @@ class Crawler(BaseCrawler):
             if fac['country'] in iso3166.countries_by_alpha2:
                 countries.add(fac['country'])
 
+            if fac['latitude'] and fac['longitude']:
+                position = WGS84Point((fac['longitude'], fac['latitude']))
+                points.add(position)
+
             handle_social_media(fac, websites)
 
         # push nodes
@@ -85,6 +89,7 @@ class Crawler(BaseCrawler):
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', websites)
         self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
         self.facid_id = self.iyp.batch_get_nodes_by_single_prop(FACID_LABEL, 'id', facids)
 
         # get organization nodes
@@ -94,6 +99,7 @@ class Crawler(BaseCrawler):
         name_links = []
         website_links = []
         country_links = []
+        point_links = []
         facid_links = []
         org_links = []
 
@@ -120,6 +126,11 @@ class Crawler(BaseCrawler):
                 country_qid = self.country_id[fac['country']]
                 country_links.append({'src_id': fac_qid, 'dst_id': country_qid, 'props': [self.reference]})
 
+            if fac['latitude'] and fac['longitude']:
+                position = WGS84Point((fac['longitude'], fac['latitude']))
+                point_qid = self.point_id[position]
+                point_links.append({'src_id': fac_qid, 'dst_id': point_qid, 'props': [self.reference]})
+
             org_qid = self.org_id[fac['org_id']]
             org_links.append({'src_id': fac_qid, 'dst_id': org_qid, 'props': [self.reference]})
 
@@ -127,11 +138,12 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('NAME', name_links)
         self.iyp.batch_add_links('WEBSITE', website_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('LOCATED_IN', point_links)
         self.iyp.batch_add_links('EXTERNAL_ID', facid_links)
         self.iyp.batch_add_links('MANAGED_BY', org_links)
 
     def unit_test(self):
-        return super().unit_test(['NAME', 'WEBSITE', 'COUNTRY', 'EXTERNAL_ID', 'MANAGED_BY'])
+        return super().unit_test(['NAME', 'WEBSITE', 'COUNTRY', 'EXTERNAL_ID', 'MANAGED_BY', 'LOCATED_IN'])
 
 
 def main() -> None:

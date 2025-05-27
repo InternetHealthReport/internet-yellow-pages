@@ -12,12 +12,16 @@ class PostProcess(BasePostProcess):
         """Add address family (4 or 6 for IPv4 or IPv6) to all IP and Prefix nodes."""
 
         # Update prefixes
-        self.iyp.tx.run("MATCH (pfx:Prefix) WHERE pfx.prefix CONTAINS '.' SET pfx.af = 4;")
-        self.iyp.tx.run("MATCH (pfx:Prefix) WHERE pfx.prefix CONTAINS ':' SET pfx.af = 6;")
+        self.iyp.tx.run("MATCH (pfx:Prefix) WHERE pfx.prefix CONTAINS '.' SET pfx.af = 4")
+        self.iyp.commit()
+        self.iyp.tx.run("MATCH (pfx:Prefix) WHERE pfx.prefix CONTAINS ':' SET pfx.af = 6")
+        self.iyp.commit()
 
         # Update IP addresses
-        self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS '.' SET ip.af = 4;")
-        self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS ':' SET ip.af = 6;")
+        self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS '.' SET ip.af = 4")
+        self.iyp.commit()
+        self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS ':' SET ip.af = 6")
+        self.iyp.commit()
 
     def unit_test(self):
         raise NotImplementedError()

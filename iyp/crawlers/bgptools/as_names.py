@@ -6,7 +6,7 @@ from io import BytesIO
 import pandas as pd
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 URL = 'https://bgp.tools/asns.csv'
 ORG = 'BGP.Tools'
@@ -35,8 +35,7 @@ class Crawler(BaseCrawler):
         """Fetch the AS name file from BGP.Tools website and push it to IYP."""
 
         req = requests.get(URL, headers=self.headers)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching AS names')
+        req.raise_for_status()
 
         df = pd.read_csv(BytesIO(req.content), keep_default_na=False)
 

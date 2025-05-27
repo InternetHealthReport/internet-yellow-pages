@@ -88,8 +88,9 @@ class Crawler(BaseCrawler):
                 # timeframe.
                 continue
 
-            # Extract hostname from "URLs"
-            df['hostname'] = df['origin'].str.partition('://')[2]
+            # Extract hostname from "URLs".
+            # Some origins contain ports information as well.
+            df['hostname'] = df['origin'].str.partition('://')[2].str.partition(':')[0]
 
             ranking_name = f'CrUX top 1M ({country_code})'
 

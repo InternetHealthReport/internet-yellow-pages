@@ -8,7 +8,7 @@ from zipfile import ZipFile
 import requests
 import tldextract
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # URL to umbrella top 1M
 URL = 'http://s3-us-west-1.amazonaws.com/umbrella-static/top-1m.csv.zip'
@@ -52,8 +52,7 @@ class Crawler(BaseCrawler):
 
         logging.info('Downloading latest list...')
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError(f'Error while fetching Cisco Umbrella Top 1M csv file: {req.status_code}')
+        req.raise_for_status()
 
         self.__set_modification_time()
 

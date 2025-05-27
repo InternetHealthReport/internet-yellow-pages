@@ -9,7 +9,7 @@ import bs4
 import requests
 from bs4 import BeautifulSoup
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 
 def get_latest_asdb_dataset_url(asdb_stanford_data_url: str, file_name_format: str):
@@ -48,8 +48,7 @@ class Crawler(BaseCrawler):
         """Fetch the ASdb file and push it to IYP."""
 
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching ASdb')
+        req.raise_for_status()
 
         lines = set()
         asns = set()

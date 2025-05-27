@@ -5,7 +5,7 @@ from datetime import datetime, time, timezone
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 # URL to MANRS csv file
 URL = 'https://www.manrs.org/wp-json/manrs/v1/csv/4'
@@ -66,8 +66,7 @@ class Crawler(BaseCrawler):
 
     def run(self):
         req = requests.get(URL)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching MANRS csv file')
+        req.raise_for_status()
 
         # Keep track of unique nodes and relationships.
         asn_set = set()

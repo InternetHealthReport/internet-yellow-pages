@@ -122,9 +122,7 @@ class Crawler(BaseCrawler):
         self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
 
         req = self.requests.get(URL_PDB_IXS, headers=self.headers)
-        if req.status_code != 200:
-            logging.error(f'Error while fetching IXs data\n({req.status_code}) {req.text}')
-            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+        req.raise_for_status()
 
         result = req.json()
         set_reference_time_from_metadata(self.reference_ix, result)
@@ -135,9 +133,7 @@ class Crawler(BaseCrawler):
         self.ix_id = self.iyp.batch_get_node_extid(IXID_LABEL)
 
         req = self.requests.get(URL_PDB_LANS, headers=self.headers)
-        if req.status_code != 200:
-            logging.error(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
-            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+        req.raise_for_status()
 
         result = req.json()
         set_reference_time_from_metadata(self.reference_lan, result)
@@ -153,9 +149,7 @@ class Crawler(BaseCrawler):
 
         # Link network to facilities
         req = self.requests.get(URL_PDB_NETFAC, headers=self.headers)
-        if req.status_code != 200:
-            logging.error(f'Error while fetching IXLANs data\n({req.status_code}) {req.text}')
-            raise Exception(f'Cannot fetch peeringdb data, status code={req.status_code}\n{req.text}')
+        req.raise_for_status()
 
         result = req.json()
         set_reference_time_from_metadata(self.reference_netfac, result)
@@ -227,8 +221,8 @@ class Crawler(BaseCrawler):
                             net_website.add(network['website'])
                         handle_social_media(network, net_website)
 
-        # TODO add the type PEERING_LAN? may break the unique constraint
-        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
+        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
+        self.iyp.batch_add_node_label(list(self.prefix_id.values()), 'PeeringLAN')
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', net_names)
         self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', net_website)
         self.netid_id = self.iyp.batch_get_nodes_by_single_prop(NETID_LABEL, 'id', net_extid)

@@ -36,7 +36,7 @@ discussion](https://github.com/InternetHealthReport/internet-yellow-pages/discus
 or by reaching out to [IYP maintainers](mailto:iyp@ihr.live), so that a consensus is reached
 before the ontology is updated.
 **Any change to the ontology should be reflected in the documentation:** ([Node
-*types](./node-types.md) and [Relationship types](./relationship-types.md)).
+types](./node-types.md) and [Relationship types](./relationship-types.md)).
 
 You can also consider adding example queries to the [IYP gallery](./gallery.md), and
 organizations providing data to the [IYP frontpage](https://iyp.iijlab.net/).

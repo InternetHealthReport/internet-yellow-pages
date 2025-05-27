@@ -48,7 +48,7 @@ Nodes:
 
 - `(:IXP {name})`: IXP node
 - `(:Name {name})`: Name of IXP
-- `(:Prefix {prefix})`: Prefix of IXP peering LAN
+- `(:PeeringLAN {prefix})`: Prefix of IXP peering LAN
 - `(:CaidaIXID {id})`: ID of the IXP assigned by CAIDA
 - `(:Country {country_code})`: Country code
 - `(:URL {url})`: Website of IXP
@@ -60,7 +60,7 @@ Relationships:
 (:IXP)-[:EXTERNAL_ID]->(:CaidaIXID)
 (:IXP)-[:NAME]->(:Name)
 (:IXP)-[:WEBSITE]->(:URL)
-(:Prefix)-[:MANAGED_BY]->(:IXP)
+(:PeeringLAN)-[:MANAGED_BY]->(:IXP)
 ```
 
 ### Dependence
@@ -107,3 +107,24 @@ relationship, BGPKIT uses `rel: 1` for customer-provider, whereas CAIDA uses `re
 ### Dependence
 
 The as_relatonship crawler does not depend on other crawlers.
+
+## AS Organizations (as2org.py)
+
+AS to organization mappings derived from the quarterly WHOIS dumps.
+
+### Graph representation
+
+```cypher
+(:AS {asn: 2497})-[:MANAGED_BY {org_id: '@aut-2497-JPNIC'}]->(:Organization {name: 'Internet Initiative Japan Inc.'})
+(:Organization {name: 'Internet Initiative Japan Inc.'})-[:COUNTRY {org_ids: ['@aut-2497-JPNIC']}]->(:Country {country_code: 'JP'})
+(:Organization {name: 'Internet Initiative Japan Inc.'})-[:NAME {org_ids: ['@aut-2497-JPNIC']}]->(:Name {name: 'Internet Initiative Japan Inc.'})
+(:Organization {name: 'Internet Initiative Japan Inc.'})-[:EXTERNAL_ID]->(:CaidaOrgID {id: '@aut-2497-JPNIC'})
+```
+
+We keep track of the org_id assigned by CAIDA in both the relationships and by adding a
+`CaidaOrgID` node. The main reason for this is that there are organizations with the
+same name but different IDs that may map to different countries.
+
+### Dependence
+
+The as2org crawler does not depend on other crawlers.

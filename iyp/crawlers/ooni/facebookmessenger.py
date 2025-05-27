@@ -22,8 +22,8 @@ class Crawler(OoniCrawler):
     def process_one_line(self, one_line):
         if super().process_one_line(one_line):
             return
-        result_dns = one_line['test_keys']['facebook_dns_blocking']
-        result_tcp = one_line['test_keys']['facebook_tcp_blocking']
+        result_dns = one_line['test_keys'].get('facebook_dns_blocking', None)
+        result_tcp = one_line['test_keys'].get('facebook_tcp_blocking', None)
         if result_dns is None or result_tcp is None:
             self.all_results.pop()
             return

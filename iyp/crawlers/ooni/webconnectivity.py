@@ -32,6 +32,11 @@ class Crawler(OoniCrawler):
 
         input_url = one_line['input']
         test_keys = one_line['test_keys']
+        if 'blocking' not in test_keys or 'accessible' not in test_keys:
+            logging.warning('Skipping entry with missing keys')
+            logging.warning(one_line)
+            self.all_results.pop()
+            return
         blocking = test_keys['blocking']
         accessible = test_keys['accessible']
 
@@ -39,7 +44,12 @@ class Crawler(OoniCrawler):
             logging.warning(f'No HTTP URL: {input_url}')
 
         # Extract the hostname from the URL if it's not an IP address
-        hostname = urlparse(input_url).hostname
+        try:
+            hostname = urlparse(input_url).hostname
+        except ValueError as e:
+            logging.error(f'Failed to extract hostname from URL "{input_url}": {e}')
+            self.all_results.pop()
+            return
         try:
             hostname = ipaddress.ip_address(hostname).compressed
             hostname_is_ip = True
@@ -51,7 +61,12 @@ class Crawler(OoniCrawler):
         if not hostname_is_ip:
             # The test performs DNS queries even if the hostname is an IP, but this
             # does not make sense so we want to ignore it.
-            host_ip_set = process_dns_queries(test_keys['queries'])
+            try:
+                host_ip_set = process_dns_queries(test_keys['queries'])
+            except KeyError:
+                logging.warning(f'No DNS resolution for URL: {input_url}')
+                self.all_results.pop()
+                return
 
         # Determine the result based on the table
         # (https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md)

@@ -56,6 +56,10 @@ and
 
 > AS Relationships (serial-1), https://catalog.caida.org/dataset/as_relationships_serial_1
 
+and
+
+> AS to organization mappings, https://catalog.caida.org/dataset/as_organizations/
+
 ## Cisco
 
 We use the [Cisco Umbrella Popularity
@@ -86,8 +90,8 @@ others with permission (Hi Emile!).
 
 ## Google
 
-We use [Crux's](https://developer.chrome.com/docs/crux) top 1M websites per country
-from Google.
+We use the top 1M websites per country from the Google [Chrome User Experience Report
+(CrUX)](https://developer.chrome.com/docs/crux).
 
 This data is licensed under  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 No changes were made to the data.
@@ -113,6 +117,13 @@ Tech](https://inetintel.notion.site/Internet-Intelligence-Research-Lab-d18618456
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS-to-Organization-Mapping/master/LICENSE).
 
+## IPinfo
+
+We use the free [IP-to-country](https://ipinfo.io/products/free-ip-database) mapping
+provided by [IPinfo](https://ipinfo.io) and released the under [Creative Commons
+Attribution-ShareAlike 4.0 International
+License](https://creativecommons.org/licenses/by-sa/4.0/).
+
 ## Number Resource Organization
 
 We use the [extended allocation and assignment
@@ -133,10 +144,11 @@ display in the graph.
 We use several datasets from [OpenINTEL](https://www.openintel.nl/), a joint project of
 the University of Twente, SURF, SIDN Labs and NLnet Labs.
 
-The `tranco1m` and `umbrella1m` [datasets](https://data.openintel.nl/data/) are licensed
-under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). No changes
-were made to the data. In addition, there are [Terms of
-Use](https://data.openintel.nl/data/README.txt) for this data.
+The `tranco1m`, `umbrella1m`, and `crux`
+[datasets](https://openintel.nl/data/forward-dns/top-lists/) are licensed under [CC
+BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). No changes were made
+to the data. In addition, there are [Terms of Use](https://openintel.nl/download/terms/)
+for this data.
 
 The [DNS Dependency Graph tool](https://dnsgraph.dacs.utwente.nl/) is a joint project of
 the University of Twente and IIJ Research Laboratory.

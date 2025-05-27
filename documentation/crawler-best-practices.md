@@ -8,6 +8,7 @@ them.
 
 **Always required:**
 
+- [ ] Implement the `unit_test()` function
 - [ ] Add/update README
 - [ ] Update example config
 - [ ] Check code style with pre-commit

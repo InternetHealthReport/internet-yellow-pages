@@ -24,10 +24,10 @@ IYP.
 (:AS {asn: 608})-[:RESERVED {registry: 'arin'}]->(:OpaqueID {id: 'arin'})
 (:AS {asn: 2497})-[:COUNTRY]->(:Country {country_code: 'JP'})
 
-(:Prefix {prefix: '2a03:1dc0::/27'})-[:AVAILABLE {registry: 'ripencc'}]->(:OpaqueID {id: 'ripencc'})
-(:Prefix {prefix: '202.0.65.0/24'})-[:ASSIGNED {registry: 'apnic'}]->(:OpaqueID {id: 'A91A7381'})
-(:Prefix {prefix: '196.20.32.0/19'})-[:RESERVED {registry: 'afrinic'}]->(:OpaqueID {id: 'afrinic'})
-(:Prefix {prefix: '196.20.32.0/19'})-[:COUNTRY]->(:Country {country_code: 'ZZ'})
+(:RIRPrefix {prefix: '2a03:1dc0::/27'})-[:AVAILABLE {registry: 'ripencc'}]->(:OpaqueID {id: 'ripencc'})
+(:RIRPrefix {prefix: '202.0.65.0/24'})-[:ASSIGNED {registry: 'apnic'}]->(:OpaqueID {id: 'A91A7381'})
+(:RIRPrefix {prefix: '196.20.32.0/19'})-[:RESERVED {registry: 'afrinic'}]->(:OpaqueID {id: 'afrinic'})
+(:RIRPrefix {prefix: '196.20.32.0/19'})-[:COUNTRY]->(:Country {country_code: 'ZZ'})
 ```
 
 The report also contains `allocated` records that would result in a `ALLOCATED` relationship.
@@ -35,8 +35,8 @@ However, this crawler does not add ASes, so if the AS node was not created by an
 should not happen for `allocated` ASes, the relationship is not created.
 
 The IPv4 address ranges in the report are not necessarily aligned with CIDR ranges (prefixes are
-represented by the first IP and a *count of hosts*). However, the crawler rounds down to the next
-CIDR range.
+represented by the first IP and a *count of hosts*). The crawler decomposes these IP blocks into
+valid CIDR prefixes if necessary.
 
 ## Dependence
 

@@ -7,7 +7,7 @@ from datetime import datetime, time, timedelta, timezone
 
 import requests
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 MAIN_PAGE = 'https://data.bgpkit.com/peer-stats/'
 URL = 'https://data.bgpkit.com/peer-stats/{collector}/{year}/{month:02d}/peer-stats_{collector}_{year}-{month:02d}-{day:02d}_{epoch}.bz2'  # noqa: E501
@@ -24,9 +24,7 @@ class Crawler(BaseCrawler):
         """Fetch peer stats for each collector."""
 
         req = requests.get(MAIN_PAGE)
-        if req.status_code != 200:
-            logging.error(f'Cannot fetch peer-stats page {req.status_code}: req.text')
-            raise RequestStatusError('Error while fetching main page')
+        req.raise_for_status()
 
         # Find all collectors
         collectors = []

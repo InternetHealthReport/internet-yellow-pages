@@ -43,21 +43,21 @@ class Crawler(OoniCrawler):
         total = 'total' if test_keys['total'] else 'no_total'
         request_line_capitalization = (
             'request_line_capitalization'
-            if test_keys['request_line_capitalization']
+            if test_keys.get('request_line_capitalization', False)
             else 'no_request_line_capitalization')
         header_name_capitalization = (
             'header_name_capitalization'
-            if test_keys['header_name_capitalization']
+            if test_keys.get('header_name_capitalization', False)
             else 'no_header_name_capitalization'
         )
         header_field_value = (
             'header_field_value'
-            if test_keys['header_field_value']
+            if test_keys.get('header_field_value', False)
             else 'no_header_field_value'
         )
         header_field_number = (
             'header_field_number'
-            if test_keys['header_field_number']
+            if test_keys.get('header_field_number', False)
             else 'no_header_field_number'
         )
 

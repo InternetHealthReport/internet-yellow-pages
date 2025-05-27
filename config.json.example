@@ -29,6 +29,10 @@
         "password": ""
     },
 
+    "ipinfo": {
+        "token": ""
+    },
+
     "pch": {
         "parallel_downloads": 8,
         "parallel_parsers": 40
@@ -70,10 +74,12 @@
             "iyp.crawlers.peeringdb.ix",
             "iyp.crawlers.caida.ixs",
             "iyp.crawlers.caida.ix_asns",
+            "iyp.crawlers.caida.as2org",
             "iyp.crawlers.cloudflare.top100",
             "iyp.crawlers.tranco.top1m",
             "iyp.crawlers.openintel.tranco1m",
             "iyp.crawlers.openintel.umbrella1m",
+            "iyp.crawlers.openintel.crux",
             "iyp.crawlers.openintel.infra_ns",
             "iyp.crawlers.cisco.umbrella_top1m",
             "iyp.crawlers.citizenlab.urldb",
@@ -90,6 +96,7 @@
             "iyp.crawlers.alice_lg.linx",
             "iyp.crawlers.alice_lg.megaport",
             "iyp.crawlers.alice_lg.netnod",
+            "iyp.crawlers.ipinfo.ip_country",
             "iyp.crawlers.worldbank.country_pop",
             "iyp.crawlers.simulamet.rirdata_rdns",
             "iyp.crawlers.google.crux_top1m_country",

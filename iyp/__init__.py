@@ -244,7 +244,7 @@ class IYP(object):
         self.session.close()
         self.db.close()
 
-    def batch_get_nodes_by_single_prop(self, label, prop_name, prop_set=set(), all=True, create=True):
+    def batch_get_nodes_by_single_prop(self, label, prop_name, prop_set=set(), all=True, create=True, batch_size=0):
         """Find the ID of all nodes in the graph for the given label and check that a
         node exists for each value in prop_set for the property prop. Create these nodes
         if they don't exist.
@@ -271,18 +271,30 @@ class IYP(object):
 
         if all:
             logging.info(f'Fetching all {label_str} nodes.')
-            existing_nodes = self.tx.run(
-                f'MATCH (n:{label_str}) RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id')
+            existing_nodes = self.tx.run(f"""
+                MATCH (n:{label_str})
+                RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id
+                """)
+            ids = {node[prop_name]: node['_id'] for node in existing_nodes}
         else:
             logging.info(f'Fetching up to {len(prop_set)} {label_str} nodes.')
             list_prop = list(prop_set)
-            existing_nodes = self.tx.run(f"""
-            WITH $list_prop AS list_prop
-            MATCH (n:{label_str})
-            WHERE n.{prop_name} IN list_prop
-            RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id""", list_prop=list_prop)
-
-        ids = {node[prop_name]: node['_id'] for node in existing_nodes}
+            ids = dict()
+            query = f"""
+                    WITH $list_prop AS list_prop
+                    MATCH (n:{label_str})
+                    WHERE n.{prop_name} IN list_prop
+                    RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id
+                    """
+            if batch_size > 0:
+                logging.info(f'Fetching in batches of {batch_size} nodes')
+                for i in range(0, len(list_prop), batch_size):
+                    batch = list_prop[i:i + batch_size]
+                    existing_nodes = self.tx.run(query, list_prop=batch)
+                    ids.update({node[prop_name]: node['_id'] for node in existing_nodes})
+            else:
+                existing_nodes = self.tx.run(query, list_prop=list_prop)
+                ids = {node[prop_name]: node['_id'] for node in existing_nodes}
         existing_nodes_set = set(ids.keys())
         missing_props = prop_set.difference(existing_nodes_set)
         missing_nodes = [{prop_name: val} for val in missing_props]

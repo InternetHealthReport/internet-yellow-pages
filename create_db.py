@@ -13,7 +13,8 @@ from scp import SCPClient
 
 from send_email import send_email
 
-NEO4J_VERSION = '5.21.2'
+NEO4J_VERSION = '5.26.3'
+NEO4J_ADMIN_VERSION = '5.26.2-community-debian'
 
 STATUS_OK = 'OK'
 
@@ -170,7 +171,7 @@ def main():
     # ######### Stop container and dump DB ##########
 
     logging.info('Stopping container...')
-    container.stop(timeout=180)
+    container.stop(timeout=1800)
 
     logging.info('Dumping database...')
     dump_file = os.path.join(dump_dir, 'neo4j.dump')
@@ -181,7 +182,7 @@ def main():
     os.chmod(dump_dir, 0o777)
 
     container = client.containers.run(
-        'neo4j/neo4j-admin:' + NEO4J_VERSION,
+        'neo4j/neo4j-admin:' + NEO4J_ADMIN_VERSION,
         command='neo4j-admin database dump neo4j --to-path=/dumps --verbose',
         tty=True,
         stdin_open=True,

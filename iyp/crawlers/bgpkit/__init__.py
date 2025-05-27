@@ -3,8 +3,7 @@ import json
 
 import requests
 
-from iyp import (BaseCrawler, RequestStatusError,
-                 set_modification_time_from_last_modified_header)
+from iyp import BaseCrawler, set_modification_time_from_last_modified_header
 
 
 class AS2RelCrawler(BaseCrawler):
@@ -19,8 +18,7 @@ class AS2RelCrawler(BaseCrawler):
         one."""
 
         req = requests.get(self.url, stream=True)
-        if req.status_code != 200:
-            raise RequestStatusError(f'Error while fetching AS relationships: {req.status_code}')
+        req.raise_for_status()
 
         set_modification_time_from_last_modified_header(self.reference, req)
 

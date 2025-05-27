@@ -32,7 +32,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
 
     Fetches the latest IPv4/IPv6 snapshots in parallel from the PCH website and converts
     them to prefix-AS maps in parallel. This data is used to populate
-    (:AS)-[:ORIGINATE]->(:Prefix) entries in the graph.
+    (:AS)-[:ORIGINATE]->(:BGPPrefix) entries in the graph.
 
     If there are no results for the current day for some collectors, the crawler tries
     to fetch older results, up to a maximum of 7 days (configured by self.MAX_LOOKBACK).
@@ -202,13 +202,15 @@ class RoutingSnapshotCrawler(BaseCrawler):
         self.reference['reference_url_data'] = self.collector_site_url
 
         # Get the date of the latest available dataset based on the
-        # first collector in the list.
-        # This may be not the best method if only the first collector
+        # specified beacon collector.
+        # This may be not the best method if only the beacon collector
         # is missing the most up-to-date data for some reason, but
         # generally this prevents a lot of requests to non-existing
         # files (one per collector) if the data for the current date
         # is not yet available for all collectors.
-        latest_available_date = self.probe_latest_set(collector_names[0])
+        # The chosen beacon collector has been very stable so far.
+        beacon_collector = 'route-collector.ams.pch.net'
+        latest_available_date = self.probe_latest_set(beacon_collector)
         self.reference['reference_time_modification'] = latest_available_date.replace(hour=0,
                                                                                       minute=0,
                                                                                       second=0,
@@ -296,6 +298,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         # Get/push nodes.
         as_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
         prefix_ids = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
+        self.iyp.batch_add_node_label(list(prefix_ids.values()), 'BGPPrefix')
 
         # Push relationships.
         relationships = list()

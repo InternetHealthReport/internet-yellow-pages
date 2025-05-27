@@ -9,7 +9,7 @@ import arrow
 import requests
 from iso3166 import countries as cc_convert
 
-from iyp import BaseCrawler, RequestStatusError
+from iyp import BaseCrawler
 
 URL = 'https://publicdata.caida.org/datasets/ixps/'
 ORG = 'CAIDA'
@@ -57,8 +57,7 @@ class Crawler(BaseCrawler):
         """Fetch the latest file and process lines one by one."""
 
         req = requests.get(self.url)
-        if req.status_code != 200:
-            raise RequestStatusError('Error while fetching CAIDA ix file')
+        req.raise_for_status()
 
         lines = []
         caida_ids = set()
@@ -124,7 +123,8 @@ class Crawler(BaseCrawler):
         name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
         url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
+        self.iyp.batch_add_node_label(list(prefix_id.values()), 'PeeringLAN')
 
         # Compute links and add them to neo4j
         caida_id_links = []
