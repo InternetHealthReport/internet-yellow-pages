@@ -1,54 +1,57 @@
-# Cloudflare radar's top location and ASes is available for both domain names
-# and host names. Results are likely accounting for all NS, A, AAAA queries made to
-# Cloudflare's resolver. Since NS queries for host names make no sense it seems
-# more intuitive to link these results to DomainName nodes.
-
 import argparse
 import logging
 import sys
 
 import flatdict
 
-from iyp.crawlers.cloudflare.dns_top_locations import Crawler
+from iyp.crawlers.cloudflare import DnsTopCrawler
 
-# Organization name and URL to data
 ORG = 'Cloudflare'
 URL = 'https://api.cloudflare.com/client/v4/radar/dns/top/ases/'
 NAME = 'cloudflare.dns_top_ases'
 
 
-class Crawler(Crawler):
+class Crawler(DnsTopCrawler):
+    def __init__(self, organization, url, name):
+        super().__init__(organization, url, name)
 
-    def run(self):
-        """Push data to IYP."""
-
-        self.as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn')
-
-        super().run()
+        self.reference['reference_url_info'] = 'https://developers.cloudflare.com/api/operations/radar-get-dns-top-ases'
 
     def compute_link(self, param):
-        """Compute link for the domain name' top ases and corresponding properties."""
 
-        domain, ases = param
+        name, ases = param
 
-        if domain == 'meta' or domain not in self.domain_names_id:
+        # 'meta' result it not a domain, but contains metadata so skip.
+        if name == 'meta':
             return
 
+        qids = list()
+        if name in self.domain_names_id:
+            qids.append(self.domain_names_id[name])
+        if name in self.host_names_id:
+            qids.append(self.host_names_id[name])
+
         for entry in ases:
+            if not entry:
+                continue
+
             asn = entry['clientASN']
+            self.to_nodes.add(asn)
 
-            # set link
             entry['value'] = float(entry['value'])
-            flat_prop = dict(flatdict.FlatDict(entry))
-            self.statements.append({
-                'src_id': self.domain_names_id[domain],
-                'dst_id': self.as_id[asn],
-                'props': [flat_prop, self.reference]
-            })
 
-    # already defined in imported Crawler
-    # def unit_test(self):
-    #     pass
+            flat_prop = dict(flatdict.FlatDict(entry))
+            for qid in qids:
+                self.links.append({
+                    'src_id': qid,
+                    'dst_id': asn,
+                    'props': [flat_prop, self.reference]
+                })
+
+    def map_links(self):
+        as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.to_nodes, all=False)
+        for link in self.links:
+            link['dst_id'] = as_id[link['dst_id']]
 
 
 def main() -> None:
