@@ -536,26 +536,49 @@ class DnsgraphCrawler(BaseCrawler):
     def run(self):
         # Extract current date for partitioning
         logging.info('Probing available data')
-        max_lookback_in_weeks = 1
-        for lookback in range(0, max_lookback_in_weeks + 1):
-            current_date = datetime.now(tz=timezone.utc) - timedelta(weeks=lookback)
-            year = current_date.strftime('%Y')
-            week = current_date.strftime('%U')
-            base_url = f'{self.reference["reference_url_data"]}/year={year}/week={week}'
-            probe_url = f'{base_url}/connections.json.gz'
-            if requests.head(probe_url).ok:
-                logging.info(base_url)
-                logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')
-                break
+        if self.name == 'openintel.dnsgraph_crux':
+            # CRuX data is available monthly.
+            max_lookback_in_months = 2
+            current_date = datetime.now(tz=timezone.utc)
+            year = current_date.year
+            month = current_date.month
+            for lookback in range(0, max_lookback_in_months + 1):
+                base_url = f'{self.reference["reference_url_data"]}/year={year}/month={month:02d}'
+                probe_url = f'{base_url}/connections.json.gz'
+                logging.info(probe_url)
+                if requests.head(probe_url).ok:
+                    logging.info(base_url)
+                    logging.info(f'Using year={year}/month={month:02d}')
+                    break
+                month -= 1
+                if month == 0:
+                    month = 12
+                    year -= 1
+            else:
+                logging.error('Failed to find data within the specified lookback interval.')
+                raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+            mod_date = datetime(year, month, 1, tzinfo=timezone.utc)
         else:
-            logging.error('Failed to find data within the specified lookback interval.')
-            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+            max_lookback_in_weeks = 1
+            for lookback in range(0, max_lookback_in_weeks + 1):
+                current_date = datetime.now(tz=timezone.utc) - timedelta(weeks=lookback)
+                year = current_date.strftime('%Y')
+                week = current_date.strftime('%U')
+                base_url = f'{self.reference["reference_url_data"]}/year={year}/week={week}'
+                probe_url = f'{base_url}/connections.json.gz'
+                if requests.head(probe_url).ok:
+                    logging.info(base_url)
+                    logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')
+                    break
+            else:
+                logging.error('Failed to find data within the specified lookback interval.')
+                raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
 
-        # Shift to Monday and set to midnight.
-        mod_date = (current_date - timedelta(days=current_date.weekday())).replace(hour=0,
-                                                                                   minute=0,
-                                                                                   second=0,
-                                                                                   microsecond=0)
+            # Shift to Monday and set to midnight.
+            mod_date = (current_date - timedelta(days=current_date.weekday())).replace(hour=0,
+                                                                                       minute=0,
+                                                                                       second=0,
+                                                                                       microsecond=0)
         self.reference['reference_time_modification'] = mod_date
 
         logging.info('Reading connections')
@@ -585,9 +608,17 @@ class DnsgraphCrawler(BaseCrawler):
             unique_host_names.update(connections[connections[node_type] == 'HOSTNAME'][node_key].unique())
             unique_ips.update(connections[connections[node_type] == 'IP'][node_key].unique())
 
-        domains_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', unique_domain_names)
-        hosts_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', unique_host_names)
-        ips_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', unique_ips)
+        domains_id = self.iyp.batch_get_nodes_by_single_prop('DomainName',
+                                                             'name',
+                                                             unique_domain_names,
+                                                             all=False,
+                                                             batch_size=100000)
+        hosts_id = self.iyp.batch_get_nodes_by_single_prop('HostName',
+                                                           'name',
+                                                           unique_host_names,
+                                                           all=False,
+                                                           batch_size=100000)
+        ips_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', unique_ips, all=False, batch_size=100000)
 
         links_parent = list()
         links_part_of = list()
