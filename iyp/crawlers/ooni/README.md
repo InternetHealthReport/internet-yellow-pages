@@ -28,6 +28,13 @@ This test performs HTTP requests with request headers that vary capitalization t
 backend. If the headers reported by the server differ from the ones that were sent, then
 tampering is detected.
 
+### HTTP Invalid Request Line Test (httpinvalidrequestline.py)
+
+Specification:
+[ts-007-http-invalid-request-line.md](https://github.com/ooni/spec/blob/master/nettests/ts-007-http-invalid-request-line.md)
+
+This test sends invalid HTTP requests in order to trick middleboxes, such as caching proxies like squid, into revealing themselves.
+
 ### Signal (osignal.py)
 
 Specification:
