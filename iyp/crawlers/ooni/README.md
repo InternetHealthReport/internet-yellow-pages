@@ -30,10 +30,10 @@ tampering is detected.
 
 ### HTTP Invalid Request Line Test (httpinvalidrequestline.py)
 
-This test sends invalid HTTP requests in order to trick middleboxes, such as caching proxies like squid, into revealing themselves.
-
 Specification:
 [ts-007-http-invalid-request-line.md](https://github.com/ooni/spec/blob/master/nettests/ts-007-http-invalid-request-line.md)
+
+This test sends invalid HTTP requests in order to trick middleboxes, such as caching proxies like squid, into revealing themselves.
 
 ### Signal (osignal.py)
 
