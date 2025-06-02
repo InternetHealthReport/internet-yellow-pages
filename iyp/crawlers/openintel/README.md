@@ -8,9 +8,12 @@ datasets](https://openintel.nl/data/forward-dns/top-lists/) and one closed
 [infrastructure dataset](https://openintel.nl/data/forward-dns/infrastructure/) with
 kind permission:
 
-- Google CRuX: `crux.py`
-- Tranco Top 1M: `tranco1m.py`
-- Cisco Umbrella Top 1M: `umbrella1m.py`
+- Google CRuX: `crux.py` (see also
+  [google.crux_top1m_country](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/iyp/crawlers/google))
+- Tranco Top 1M: `tranco1m.py` (see also
+  [tranco.top1m](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/tranco))
+- Cisco Umbrella Top 1M: `umbrella1m.py` (see also
+  [cisco.umbrella_top1m](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/cisco))
 - Infrastructure: `infra_ns.py`
 
 The list-based datasets contain results for 12 different types of DNS queries, however
@@ -24,8 +27,18 @@ A crawler that imports MX records and their corresponding resolution is implemen
 well, but currently not in use (`infra_mx.py`).
 
 IYP also imports three datasets of the related [DNS Dependency
-Graph](https://dnsgraph.dacs.utwente.nl) measurement. This measurement performs **???**
-measurements to **???** domains from different vantage points.
+Graph](https://dnsgraph.dacs.utwente.nl) measurement. This measurement performs name
+resolution of various host names but records the entire DNS tree, starting at the root,
+that is required to resolve the name.
+
+The datasets resolve different host names from different vantage points:
+
+- `dnsgraph_crux.py`: Google CRuX hosts measured from Japan.
+- `dnsgraph_jp.py` (inactive): Tranco Top 1M hosts from Japan.
+- `dnsgraph_nl.py`: Tranco Top 1M hosts from the Netherlands.
+- `dnsgraph_rdns.py`: Authoritative name servers managing rDNS zones from the
+  Netherlands (see also
+  [simulamet.rirdata_rdns](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/iyp/crawlers/simulamet)).
 
 ## Graph representation
 
@@ -69,16 +82,15 @@ relationship:
 (:HostName {name: 'youtube.com'})-[:PART_OF]->(:DomainName {name: 'youtube.com'})
 ```
 
-More complex domain name relationships are included by the DNS Graph Crawler, which
-infers PART_OF relationships for cases where the host and domain name are not the same.
+More complex domain name relationships are included by the DNS Graph crawler, which
+infers PART_OF relationships for cases where the host and domain name are not the same
+as well as PARENT relationships between domain names.
 
-**Parent relationships between zones:**
+**Parent relationships between domain names:**
 
 ```Cypher
 (:DomainName {name: 'youtube.com'})-[:PARENT]->(:DomainName {name: 'com'})
 ```
-
-**???**
 
 ## Dependence
 
