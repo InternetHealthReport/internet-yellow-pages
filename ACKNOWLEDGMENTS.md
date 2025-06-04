@@ -34,11 +34,11 @@ We use the as2rel, peer-stats, and pfx2as [datasets](https://data.bgpkit.com/) f
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://bgpkit.com/aua).
 
-## BGP.Tools
+## bgp.tools
 
 We use [AS names, AS tags](https://bgp.tools/kb/api), and [anycast prefix
 tags](https://github.com/bgptools/anycast-prefixes) provided by
-[BGP.Tools](https://bgp.tools/).
+[bgp.tools](https://bgp.tools/).
 
 ## CAIDA
 

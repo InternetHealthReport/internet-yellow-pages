@@ -1,78 +1,97 @@
 import argparse
+import csv
+import io
 import logging
 import sys
-from datetime import datetime, time, timezone
 
 import requests
+from bs4 import BeautifulSoup
 
 from iyp import BaseCrawler
 
-# curl -s https://bgp.tools/asns.csv | head -n 5
 URL = 'https://bgp.tools/tags/'
-ORG = 'BGP.Tools'
+ORG = 'bgp.tools'
 NAME = 'bgptools.tags'
-
-TAGS = {
-    'cdn': 'Content Delivery Network',
-    'dsl': 'Home ISP',
-    'a10k': 'Tranco 10k Host',
-    'icrit': 'Internet Critical Infra',
-    'tor': 'ToR Services',
-    'anycast': 'Anycast',
-    'perso': 'Personal ASN',
-    'ddosm': 'DDoS Mitigation',
-    'vpn': 'VPN Host',
-    'vpsh': 'Server Hosting',
-    'uni': 'Academic',
-    'gov': 'Government',
-    'event': 'Event',
-    'mobile': 'Mobile Data/Carrier',
-    'satnet': 'Satellite Internet',
-    'biznet': 'Business Broadband',
-    'corp': 'Corporate/Enterprise',
-    'rpkirov': 'Validating RPKI ROV'
-}
 
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://bgp.tools/kb/api'
+        self.tag_labels = dict()
+        self.fetch_tags = list()
 
-        self.headers = {
+        self.session = requests.Session()
+        self.session.headers.update({
             'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
-        }
+        })
+
+    def __get_tag_labels(self):
+        """Fetch the pretty-print label corresponding to each tag by scraping the
+        overview website."""
+        logging.info('Fetching tag labels')
+        r = self.session.get('https://bgp.tools/tags/')
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, features='html.parser')
+        for link in soup.find_all('a'):
+            href = link['href']
+            if href.startswith('/tags/'):
+                tag = href.removeprefix('/tags/')
+                label = link.text.strip()
+                self.tag_labels[tag] = label
+        logging.info(f'Fetched {len(self.tag_labels)} tag labels')
+
+    def __get_tag_counts(self):
+        """Get the number of values for each tag from the summary file to only fetch
+        tags that actually have values."""
+        logging.info('Fetching tag counts')
+        r = self.session.get('https://bgp.tools/tags.txt')
+        r.raise_for_status()
+        for l in r.text.splitlines():
+            tag, count = l.split(',')
+            if int(count) > 0:
+                if tag not in self.tag_labels:
+                    raise ValueError(f'No label available for tag {tag}')
+                self.fetch_tags.append(tag)
 
     def run(self):
-        """Fetch the AS name file from BGP.Tools website and process lines one by
-        one."""
+        """Fetch available tags and labels from the overview file and then fetch
+        individual tag files, process the data and push to IYP."""
+        self.__get_tag_labels()
+        self.__get_tag_counts()
 
-        for tag, label in TAGS.items():
-            url = URL + tag + '.csv'
-            # Reference information for data pushed to the wikibase
-            self.reference = {
-                'reference_org': ORG,
-                'reference_url_data': url,
-                'reference_name': NAME,
-                'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
-            }
+        asns = set()
+        tags = {self.tag_labels[tag] for tag in self.fetch_tags}
 
-            req = requests.get(url, headers=self.headers)
-            req.raise_for_status()
+        categorized_links = list()
 
-            self.tag_qid = self.iyp.get_node('Tag', {'label': label})
-            for line in req.text.splitlines():
-                # skip header
-                if line.startswith('asn'):
-                    continue
+        for tag in self.fetch_tags:
+            tag_label = self.tag_labels[tag]
+            logging.info(f'Processing tag {tag} / "{tag_label}"')
 
-                # Parse given line to get ASN, name, and country code
-                asn, _, _ = line.partition(',')
-                asn_qid = self.iyp.get_node('AS', {'asn': asn[2:]})
-                statements = [['CATEGORIZED', self.tag_qid, self.reference]]  # Set AS name
+            tag_url = f'https://bgp.tools/tags/{tag}.csv'
+            r = self.session.get(tag_url)
+            r.raise_for_status()
 
-                # Update AS name and country
-                self.iyp.add_links(asn_qid, statements)
+            tag_reference = self.reference.copy()
+            tag_reference['reference_url_data'] = tag_url
+
+            for row in csv.reader(io.StringIO(r.text)):
+                as_str, name = row
+                if not as_str.startswith('AS'):
+                    raise ValueError(f'Invalid AS string in row: {row}')
+                asn = int(as_str.removeprefix('AS'))
+                asns.add(asn)
+                categorized_links.append({'src_id': asn, 'dst_id': tag_label, 'props': [tag_reference]})
+
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
+        tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', tags, all=False)
+
+        for link in categorized_links:
+            link['src_id'] = asn_id[link['src_id']]
+            link['dst_id'] = tag_id[link['dst_id']]
+
+        self.iyp.batch_add_links('CATEGORIZED', categorized_links)
 
     def unit_test(self):
         return super().unit_test(['CATEGORIZED'])

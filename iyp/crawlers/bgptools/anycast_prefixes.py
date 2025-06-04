@@ -10,7 +10,7 @@ import requests
 from iyp import BaseCrawler, get_commit_datetime
 
 # Organization name and URL to data
-ORG = 'BGP.Tools'
+ORG = 'bgp.tools'
 URL = 'https://github.com/bgptools/anycast-prefixes'
 NAME = 'bgptools.anycast_prefixes'  # should reflect the directory and name of this file
 
