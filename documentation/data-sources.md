@@ -14,7 +14,7 @@
 | BGPKIT | as2rel| https://data.bgpkit.com/as2rel | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgpkit#readme) | bgpkit.as2rel_v4, bgpkit.as2rel_v6 |
 | | peer-stats| https://data.bgpkit.com/peer-stats | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgpkit#readme) | bgpkit.peerstats |
 | | pfx2as| https://data.bgpkit.com/pfx2as | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgpkit#readme) | bgpkit.pfx2asn |
-| BGP.Tools | Anycast prefix tags| https://github.com/bgptools/anycast-prefixes | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgptools#readme) | bgptools.anycast_prefixes |
+| bgp.tools | Anycast prefix tags| https://github.com/bgptools/anycast-prefixes | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgptools#readme) | bgptools.anycast_prefixes |
 | | AS names| https://bgp.tools/kb/api | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgptools#readme) | bgptools.as_names |
 | | AS tags| https://bgp.tools/kb/api | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgptools#readme) | bgptools.tags |
 | CAIDA | AS to Organizations| https://catalog.caida.org/dataset/as_organizations | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/caida#readme) | caida.as2org |

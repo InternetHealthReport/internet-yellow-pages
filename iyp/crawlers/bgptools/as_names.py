@@ -9,7 +9,7 @@ import requests
 from iyp import BaseCrawler
 
 URL = 'https://bgp.tools/asns.csv'
-ORG = 'BGP.Tools'
+ORG = 'bgp.tools'
 NAME = 'bgptools.as_names'
 
 
@@ -32,7 +32,7 @@ class Crawler(BaseCrawler):
                 link['dst_id'] = dst_id[link['dst_id']]
 
     def run(self):
-        """Fetch the AS name file from BGP.Tools website and push it to IYP."""
+        """Fetch the AS name file from bgp.tools website and push it to IYP."""
 
         req = requests.get(URL, headers=self.headers)
         req.raise_for_status()

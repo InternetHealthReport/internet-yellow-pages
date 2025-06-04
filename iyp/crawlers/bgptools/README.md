@@ -1,31 +1,38 @@
-# BGP.Tools -- https://bgp.tools
+# bgp.tools -- https://bgp.tools
 
-Data collected by BGP.Tools, including:
+Data collected by bgp.tools, including:
+
 - AS names
 - AS tags
-- Anycast IPv4, and IPv6 prefixes
-
+- Anycast IPv4 and IPv6 prefixes
 
 ## Graph representation
 
 ### AS names
-Connect AS to names nodes, providing the name of an AS.
-For example:
-```
-(:AS {asn:2497})-[:NAME]-(:Name {name:'IIJ'})
+
+Connect AS to names nodes, providing the name of an AS. Names from bgp.tools can include
+corrections made by users of the website.
+
+```cypher
+(:AS {asn:2497})-[:NAME]->(:Name {name:'IIJ'})
 ```
 
 ### AS tags
+
 Connect AS to tag nodes meaning that an AS has been categorized according to the
 given tag.
-```
-(:AS {asn:2497})-[:CATEGORIZED]-(:Tag {label: 'Internet Critical Infra'})
+
+```cypher
+(:AS {asn:2497})-[:CATEGORIZED]->(:Tag {label: 'Internet Critical Infra'})
 ```
 
 ### Anycast IPv4 and IPv6 prefixes
-Connect Prefix to tag node meaning that an prefix has been categorized according to the TAG with a label `Anycast`.
-```
-(:BGPPrefix {prefix: '43.249.213.0/24'})-[:CATEGORIZED]-(:Tag {label: 'Anycast'})
+
+Connect Prefix to Tag node indicating that the prefix has been categorized as an Anycast
+prefix.
+
+```cypher
+(:BGPPrefix {prefix: '8.8.8.0/24'})-[:CATEGORIZED]->(:Tag {label: 'Anycast'})
 ```
 
 ## Dependence
