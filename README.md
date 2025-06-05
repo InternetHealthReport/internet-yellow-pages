@@ -86,15 +86,15 @@ the default login and password: `neo4j` and `password` respectively. Then enter 
 For example, this finds the IXPs and corresponding country codes where IIJ (AS2497) is:
 
 ```cypher
-MATCH (iij:AS {asn:2497})-[:MEMBER_OF]-(ix:IXP)--(cc:Country)
-RETURN iij, ix, cc
+MATCH p = (:AS {asn:2497})-[:MEMBER_OF]->(ix:IXP)--(:Country)
+RETURN p
 ```
 
 ![Countries of IXPs where AS2497 is present](/documentation/assets/gallery/as2497ixpCountry.svg)
 
 ### IYP gallery
 
-See more query examples in [IYP gallery](/documentation/gallery.md)
+See more query examples in [IYP gallery](/documentation/gallery.md).
 
 ## Contributing
 
@@ -111,3 +111,4 @@ See: <https://github.com/InternetHealthReport/internet-yellow-pages/releases>
 - [Public instance of IYP](https://iyp.iijlab.net)
 - [RIPE86 presentation](https://ripe86.ripe.net/archives/video/1073/)
 - [APNIC blog article](https://blog.apnic.net/2023/09/06/understanding-the-japanese-internet-with-the-internet-yellow-pages/)
+- [IMC paper](https://www.iijlab.net/en/members/romain/pdf/romain_imc2024.pdf)
