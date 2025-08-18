@@ -368,13 +368,16 @@ class Crawler(BaseCrawler):
             asns.add(member_asn)
 
             # This is a bit silly, but for some neighbors that are in a weird state,
-            # there can be an empty dict in details:route_changes, which will remain as
-            # a FlatDict. Since neo4j does not like maps as properties, remove any empty
+            # there can be an empty dict in some fields, which will remain as a
+            # FlatDict. Since neo4j does not like maps as properties, remove any empty
             # dicts left in the property.
             flattened_neighbor = dict(flatdict.FlatDict(neighbor))
-            if ('details:route_changes' in flattened_neighbor
-                    and isinstance(flattened_neighbor['details:route_changes'], flatdict.FlatDict)):
-                flattened_neighbor.pop('details:route_changes')
+            empty_keys = list()
+            for k, v in flattened_neighbor.items():
+                if isinstance(v, flatdict.FlatDict):
+                    empty_keys.append(k)
+            for k in empty_keys:
+                flattened_neighbor.pop(k)
             routeserver_id = neighbor['routeserver_id']
             self.reference['reference_url_data'] = self.urls['neighbors'].format(rs=routeserver_id)
             if routeserver_id in self.routeserver_cached_at:
