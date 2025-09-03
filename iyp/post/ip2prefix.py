@@ -1,7 +1,6 @@
 import argparse
 import logging
 import sys
-from collections import defaultdict
 
 import radix
 
@@ -31,11 +30,10 @@ class PostProcess(BasePostProcess):
         prefixes_labels = self.iyp.tx.run('MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels')
 
         all_labels = set([label for row in prefixes_labels for label in row['pfx_labels']])
-        rtrees = dict()
+        all_labels.remove('Prefix')
 
+        rtrees = dict()
         for label in all_labels:
-            if label == 'Prefix':
-                continue
             # Get all prefixes in a radix tree
             prefix_id = self.iyp.batch_get_nodes_by_single_prop(label, 'prefix', all=True)
             additional_properties = list()
@@ -44,6 +42,8 @@ class PostProcess(BasePostProcess):
             for prefix, prefix_qid in prefix_id.items():
                 rnode = rtrees[label].add(prefix)
                 rnode.data['id'] = prefix_qid
+
+                # Add properties to prefix nodes
                 prefix_split = self.__get_network_and_prefixlen(prefix)
                 if prefix_split is not None:
                     additional_properties.append(
@@ -57,49 +57,58 @@ class PostProcess(BasePostProcess):
 
         # Compute links for IPs
         # We use a dictionary to avoid having duplicate links
-        prefix_types = defaultdict(list)
+        links = []
         for ip, ip_qid in ip_id.items():
             if ip:
                 for prefix_label, rtree in rtrees.items():
+
                     rnode = rtree.search_best(ip)
                     if rnode:
                         src = ip_qid
                         dst = rnode.data['id']
-                        prefix_types[(src, dst)].append(prefix_label)
-        links = [
-            {
-                'src_id': src,
-                'dst_id': dst,
-                'props': [self.reference,
-                          {'prefix_types': prefix_labels}]
-            }
-            for (src, dst), prefix_labels in prefix_types.items()]
+                        links.append(
+                                {
+                                    'src_id': src,
+                                    'dst_id': dst,
+                                    'props': [self.reference]
+                                }
+                        )
 
         # push IP to prefix links to IYP
         self.iyp.batch_add_links('PART_OF', links)
 
         # Compute links sub-prefix and covering prefix
-        prefix_types = defaultdict(list)
-        for prefix_label, rtree in rtrees.items():
-            for rnode in rtree:
-                covering = rnode.parent
+        links = []
 
-                if covering:
-                    src = rnode.data['id']
-                    dst = covering.data['id']
-                    prefix_types[(src, dst)].append(prefix_label)
+        for prefix_label0, rtree0 in rtrees.items():
+            for rnode in rtree0.nodes():
+                if rnode.prefixlen == 0:
+                    continue
 
-        links = [
-            {
-                'src_id': src,
-                'dst_id': dst,
-                'props': [self.reference,
-                          {'prefix_types': prefix_labels}]
-            }
-            for (src, dst), prefix_labels in prefix_types.items()]
+                # Find covering prefixes for all sub-prefix node labels
+                for prefix_label1, rtree1 in rtrees.items():
 
-        # push sub-prefix to covering-prefix links
-        self.iyp.batch_add_links('PART_OF', links)
+                    covering = None
+                    if prefix_label0 == prefix_label1:
+                        # If same node types then find a larger prefix
+                        covering = rtree1.search_best(f'{rnode.network}/{rnode.prefixlen-1}')
+                    else:
+                        # Else it can be the same prefix
+                        covering = rtree1.search_best(rnode.prefix)
+
+                    if covering:
+                        src = rnode.data['id']
+                        dst = covering.data['id']
+                        links.append(
+                                {
+                                    'src_id': src,
+                                    'dst_id': dst,
+                                    'props': [self.reference]
+                                }
+                        )
+
+            # push sub-prefix to covering-prefix links
+            self.iyp.batch_add_links('PART_OF', links)
 
     def unit_test(self):
         raise NotImplementedError()
