@@ -170,8 +170,8 @@ class Crawler(BaseCrawler):
 
         # Create all nodes
         opaqueid_id = self.iyp.batch_get_nodes_by_single_prop('OpaqueID', 'id', opaqueids, all=False)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-        self.iyp.batch_add_node_label(list(prefix_id.values()), 'RIRPrefix')
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop('RIRPrefix', 'prefix', prefixes, all=False)
+        self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
 
         # Replace with QIDs

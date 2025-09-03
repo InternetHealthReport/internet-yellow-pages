@@ -424,9 +424,9 @@ class Crawler(BaseCrawler):
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
         prefix_id = dict()
         if prefixes:
-            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-            # Add the BGPPrefix label
-            self.iyp.batch_add_node_label(list(prefix_id.values()), 'BGPPrefix')
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
+            # Add the Prefix label
+            self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
         # Translate raw values to QID.
         for relationship in member_of_rels:
