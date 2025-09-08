@@ -56,7 +56,6 @@ class PostProcess(BasePostProcess):
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', batch_size=100000)
 
         # Compute links for IPs
-        # We use a dictionary to avoid having duplicate links
         links = []
         for ip, ip_qid in ip_id.items():
             if ip:
