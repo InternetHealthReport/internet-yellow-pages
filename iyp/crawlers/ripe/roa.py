@@ -79,7 +79,7 @@ class Crawler(BaseCrawler):
             # get ASNs and prefixes IDs
             asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
             prefix_id = self.iyp.batch_get_nodes_by_single_prop(
-                    'RPKIPrefix', 'prefix', set(prefix_info.keys()), all=False)
+                'RPKIPrefix', 'prefix', set(prefix_info.keys()), all=False)
             self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
             links = []
