@@ -66,11 +66,11 @@ class PostProcess(BasePostProcess):
                         src = ip_qid
                         dst = rnode.data['id']
                         links.append(
-                                {
-                                    'src_id': src,
-                                    'dst_id': dst,
-                                    'props': [self.reference]
-                                }
+                            {
+                                'src_id': src,
+                                'dst_id': dst,
+                                'props': [self.reference]
+                            }
                         )
 
         # push IP to prefix links to IYP
@@ -99,11 +99,11 @@ class PostProcess(BasePostProcess):
                         src = rnode.data['id']
                         dst = covering.data['id']
                         links.append(
-                                {
-                                    'src_id': src,
-                                    'dst_id': dst,
-                                    'props': [self.reference]
-                                }
+                            {
+                                'src_id': src,
+                                'dst_id': dst,
+                                'props': [self.reference]
+                            }
                         )
 
             # push sub-prefix to covering-prefix links
