@@ -78,9 +78,9 @@ class PostProcess(BasePostProcess):
         self.iyp.batch_add_links('PART_OF', links)
 
         # Compute links sub-prefix and covering prefix
-        links = []
-
         for prefix_label0, rtree0 in rtrees.items():
+            links = []
+
             for rnode in rtree0.nodes():
                 if rnode.prefixlen == 0:
                     continue
