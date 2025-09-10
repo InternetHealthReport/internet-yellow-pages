@@ -89,7 +89,7 @@ class Crawler(BaseCrawler):
         count_relationships_global = 0
         connections = defaultdict(set)  # Remember the relationship between the "AS" and its Sibling.
         connections_org = defaultdict(set)  # Remember the relationship between the organizations
-        org_id = self.iyp.batch_get_node_extid('PeeringdbOrgID')
+        org_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', all=True, create=False)
 
         for i in range(0, len(df), batch_size):
             df_batch = df.iloc[i:i + batch_size]
@@ -109,7 +109,7 @@ class Crawler(BaseCrawler):
                     sibling_asns.add(int(sibling_asn))
                     batch_asns.add(int(sibling_asn))
 
-                pdb_orgs = set([int(org['org_id']) for org in row['Reference Orgs'] if org['source'] == 'PDB'])
+                pdb_orgs = set([org.removeprefix('PDB: ') for org in row['Reference Orgs'] if org.startswith('PDB: ')])
 
                 url = row['Website']
                 if len(url) > 1:
