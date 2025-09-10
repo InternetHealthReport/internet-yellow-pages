@@ -135,8 +135,8 @@ class Crawler(BaseCrawler):
             })
 
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-        self.iyp.batch_add_node_label(list(prefix_id.values()), 'BGPPrefix')
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
+        self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
         tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', tags, all=False)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
 
