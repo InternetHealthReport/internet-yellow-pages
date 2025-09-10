@@ -56,29 +56,27 @@ class PostProcess(BasePostProcess):
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', batch_size=100000)
 
         # Compute links for IPs
-        links = []
+        links = list()
         for ip, ip_qid in ip_id.items():
-            if ip:
-                for prefix_label, rtree in rtrees.items():
-
-                    rnode = rtree.search_best(ip)
-                    if rnode:
-                        src = ip_qid
-                        dst = rnode.data['id']
-                        links.append(
-                            {
-                                'src_id': src,
-                                'dst_id': dst,
-                                'props': [self.reference]
-                            }
-                        )
+            for rtree in rtrees.values():
+                rnode = rtree.search_best(ip)
+                if rnode:
+                    src = ip_qid
+                    dst = rnode.data['id']
+                    links.append(
+                        {
+                            'src_id': src,
+                            'dst_id': dst,
+                            'props': [self.reference]
+                        }
+                    )
 
         # push IP to prefix links to IYP
         self.iyp.batch_add_links('PART_OF', links)
 
         # Compute links sub-prefix and covering prefix
         for prefix_label0, rtree0 in rtrees.items():
-            links = []
+            links = list()
 
             for rnode in rtree0.nodes():
                 if rnode.prefixlen == 0:
