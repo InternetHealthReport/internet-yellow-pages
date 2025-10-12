@@ -79,7 +79,9 @@ class Crawler(BaseCrawler):
                 'asn': item.pop('target_asn', None),
                 'ip': item.pop('target_ip', None),
                 'prefix': item.pop('target_prefix', None),
-                'resolved_ips': item.pop('resolved_ips', None)
+                'resolved_ips': item.pop('resolved_ips', None),
+                'update_hours': item.pop('target_update_hours', None),
+                'update_last': item.pop('target_update_last', None),
             }
             item['target'] = target_info
 
@@ -90,6 +92,13 @@ class Crawler(BaseCrawler):
                 'id': item.pop('group_id', None)
             }
             item['group'] = group_info
+
+            auto_topup_info = {
+                'enabled': item.pop('auto_topup', None),
+                'prb_days_off': item.pop('auto_topup_prb_days_off', None),
+                'prb_similarity': item.pop('auto_topup_prb_similarity', None),
+            }
+            item['auto_topup'] = auto_topup_info
 
     @staticmethod
     def __is_valid_ip(ip):
