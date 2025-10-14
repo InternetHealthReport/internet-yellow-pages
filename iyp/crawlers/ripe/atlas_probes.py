@@ -128,7 +128,12 @@ class Crawler(BaseCrawler):
             if probe['geometry']:
                 geo_coordinates = probe['geometry']['coordinates']
                 if geo_coordinates:
-                    points.add(WGS84Point((geo_coordinates[0], geo_coordinates[1])))
+                    long, lat = geo_coordinates
+                    # There is at least one probe with invalid coordinates.
+                    if long < -180 or long > 180 or lat < -90 or long > 90:
+                        probe['geometry'] = None
+                    else:
+                        points.add(WGS84Point((long, lat)))
 
             # An empty tag list causes a FlatterDict instance to remain in the object,
             # which neo4j does not like.

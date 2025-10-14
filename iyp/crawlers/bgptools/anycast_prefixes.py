@@ -82,8 +82,8 @@ class Crawler(BaseCrawler):
                 prefixes.add(prefix)
                 lines.append(prefix)
 
-            prefix_id = self.iyp.batch_get_nodes_by_single_prop('Prefix', 'prefix', prefixes, all=False)
-            self.iyp.batch_add_node_label(list(prefix_id.values()), 'BGPPrefix')
+            prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
+            self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
             tag_id = self.iyp.get_node('Tag', {'label': 'Anycast'})
 
             links = []

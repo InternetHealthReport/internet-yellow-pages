@@ -89,9 +89,8 @@ WHERE dn.name ENDS WITH '.jp'
     AND r.rank < 5000
     AND dn.name = hn.name
 MATCH q = (hn)-[:RESOLVES_TO {reference_name: 'openintel.tranco1m'}]->(:IP)
-    -[po:PART_OF]->(:Prefix)
+    -[:PART_OF]->(:BGPPrefix)
     <-[:ORIGINATE {reference_name: 'bgpkit.pfx2asn'}]-(:AS)
-WHERE 'BGPPrefix' in po.prefix_types
 RETURN q
 ```
 
