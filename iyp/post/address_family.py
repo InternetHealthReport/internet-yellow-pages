@@ -23,6 +23,10 @@ class PostProcess(BasePostProcess):
         self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS ':' SET ip.af = 6")
         self.iyp.commit()
 
+    def rerun(self):
+        # This crawler is idempotent for existing nodes.
+        self.run()
+
     def unit_test(self):
         raise NotImplementedError()
 
@@ -30,6 +34,7 @@ class PostProcess(BasePostProcess):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
+    parser.add_argument('--rerun', action='store_true')
     args = parser.parse_args()
 
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -45,6 +50,9 @@ def main() -> None:
     post = PostProcess(NAME)
     if args.unit_test:
         post.unit_test()
+    if args.rerun:
+        post.rerun()
+        post.close()
     else:
         post.run()
         post.close()

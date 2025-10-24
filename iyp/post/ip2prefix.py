@@ -110,10 +110,22 @@ class PostProcess(BasePostProcess):
     def unit_test(self):
         raise NotImplementedError()
 
+    def delete(self):
+        logging.info('Deleting existing relationships.')
+        self.iyp.tx.commit()
+        self.iyp.session.run("""
+            MATCH ()-[r:PART_OF {reference_name: 'iyp.ip2prefix'}]->(:Prefix)
+            CALL (r) {
+                DELETE r
+            } IN TRANSACTIONS OF 100000 ROWS
+        """)
+        self.iyp.tx = self.iyp.session.begin_transaction()
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
+    parser.add_argument('--rerun', action='store_true')
     args = parser.parse_args()
 
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -129,6 +141,9 @@ def main() -> None:
     post = PostProcess(NAME)
     if args.unit_test:
         post.unit_test()
+    if args.rerun:
+        post.rerun()
+        post.close()
     else:
         post.run()
         post.close()
