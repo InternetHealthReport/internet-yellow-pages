@@ -662,6 +662,19 @@ class BasePostProcess(object):
         # Commit changes to IYP
         self.iyp.close()
 
+    def run(self):
+        raise NotImplementedError()
+
+    def unit_test(self):
+        raise NotImplementedError()
+
+    def delete(self):
+        raise NotImplementedError()
+
+    def rerun(self):
+        self.delete()
+        self.run()
+
 
 class BaseCrawler(object):
     def __init__(self, organization, url, name):

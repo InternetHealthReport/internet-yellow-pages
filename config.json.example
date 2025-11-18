@@ -102,6 +102,7 @@
             "iyp.crawlers.openintel.crux",
             "iyp.crawlers.openintel.dnsgraph_nl",
             "iyp.crawlers.openintel.dnsgraph_rdns",
+            "iyp.crawlers.openintel.dnsgraph_crux",
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
             "iyp.crawlers.ooni.facebookmessenger",
