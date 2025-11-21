@@ -1,0 +1,114 @@
+import io
+import pandas as pd
+import re
+from mcp.documentation.models import Dataset, NodeType, RelationshipType
+
+
+def parse_markdown_table(filename):
+    with open(filename, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # 1. Pre-process: Filter for lines that actually look like table rows
+    #    (Markdown tables always contain pipe characters)
+    table_lines = [line for line in lines if "|" in line]
+
+    if not table_lines:
+        print(f"No table found in {filename}")
+        return None
+
+    # Join the filtered lines back into a single string
+    table_str = "".join(table_lines)
+
+    # 2. Parse with Pandas
+    #    Using pipe separator, assuming first line is header
+    df = pd.read_csv(io.StringIO(table_str), sep="|", header=0)
+
+    # --- Cleaning Steps ---
+
+    # A. Remove the first and last columns (empty due to outer pipes)
+    #    We check column count to avoid errors on empty dataframes
+    if df.shape[1] > 1:
+        df = df.iloc[:, 1:-1]
+
+    # B. Remove the separator row (e.g., ---|---)
+    #    We check the first cell of the first row.
+    #    Markdown separator lines typically start with dashes.
+    if len(df) > 0:
+        first_cell = str(df.iloc[0, 0]).strip()
+        if first_cell.startswith("---"):
+            df = df.iloc[1:]
+
+    # C. Clean whitespace from headers
+    df.columns = df.columns.str.strip()
+
+    # D. Clean whitespace from data cells
+    #    Only apply to object (string) columns to avoid errors on numbers
+    df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+
+    df = df.reset_index(drop=True)
+
+    # Optionally forward fill refactored cells
+    df = df.replace("", pd.NA).ffill()
+
+    return df
+
+
+def parse_datasets(md_path: str = "documentation/data-sources.md") -> list[Dataset]:
+    df = parse_markdown_table(md_path)
+
+    datasets = []
+    for _, row in df.iterrows():
+        readme_url = re.search(r"\[.*?\]\((.*?)\)", row["Crawler"]).group(1)
+        reference_name = (
+            None if row["reference_name"] is pd.NA else row["reference_name"]
+        )
+
+        dataset = Dataset(
+            organization=row["Organization"],
+            name=row["Dataset Name / Description"],
+            url=row["URL"],
+            readme_url=readme_url,
+            reference_name=reference_name,
+        )
+        datasets.append(dataset)
+
+    return datasets
+
+
+def parse_node_types(md_path: str = "documentation/node-types.md") -> list[NodeType]:
+    df = parse_markdown_table(md_path)
+
+    node_types = []
+    for _, row in df.iterrows():
+        node_type = NodeType(
+            node_type=row["Node types"], description=row["Description"]
+        )
+        node_types.append(node_type)
+
+    return node_types
+
+
+def parse_relationship_types(
+    md_path: str = "documentation/relationship-types.md",
+) -> list[RelationshipType]:
+    df = parse_markdown_table(md_path)
+
+    relationship_types = []
+    for _, row in df.iterrows():
+        relationship_type = RelationshipType(
+            relationship_type=row["Relationship"], description=row["Description"]
+        )
+        relationship_types.append(relationship_type)
+
+    return relationship_types
+
+
+if __name__ == "__main__":
+    datasets = parse_datasets()
+    print(datasets[0])
+
+    node_types = parse_node_types()
+    print(node_types[0])
+
+    relationship_types = parse_relationship_types()
+    print(relationship_types[0])
