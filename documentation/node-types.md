@@ -3,6 +3,7 @@
 
 | Node types              | Description                                                                                                                       |
 |-------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| AnycastPrefix           | An IP prefix inferred as anycast, uniquely identified with the **prefix** property. This is a subtype of Prefix.                  |
 | AS                      | Autonomous System, uniquely identified with the **asn** property.                                                                 |
 | AtlasMeasurement        | RIPE Atlas Measurement, uniquely identified with the **id** property.                                                             |
 | AtlasProbe              | RIPE Atlas probe, uniquely identified with the **id** property.                                                                   |
