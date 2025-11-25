@@ -99,7 +99,7 @@ def parse_node_types(md_path: str = "documentation/node-types.md") -> list[NodeT
     node_types = []
     for _, row in df.iterrows():
         node_type = NodeType(
-            node_type=row["Node types"], description=row["Description"]
+            name=row["Node types"], description=row["Description"]
         )
         node_types.append(node_type)
 
@@ -114,7 +114,7 @@ def parse_relationship_types(
     relationship_types = []
     for _, row in df.iterrows():
         relationship_type = RelationshipType(
-            relationship_type=row["Relationship"], description=row["Description"]
+            name=row["Relationship"], description=row["Description"]
         )
         relationship_types.append(relationship_type)
 

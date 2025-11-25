@@ -17,10 +17,12 @@ class DatasetFull(DatasetBase):
         
     
 class NodeType(BaseModel):
-    node_type: str
+    """View of a IYP node type"""
+    name: str
     description: str
     
     
 class RelationshipType(BaseModel):
-    relationship_type: str
+    """View of a IYP relationship type"""
+    name: str
     description: str
