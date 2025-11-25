@@ -7,6 +7,24 @@ mcp = FastMCP("Internet Yellow Pages (IYP)", port=8001)
 datasets = {dataset.reference_name: dataset for dataset in parse_datasets()}
 
 
+# Register dataset resources one by one to make them discoverable
+def register_dataset_resource(reference_name: str, data: DatasetFull):
+    # Create a specific URI for this dataset
+    uri = f"dataset://{reference_name}"
+    
+    dynamic_description = (
+        f"Returns documentation of the {data.name} dataset."
+    )
+    
+    def get_dataset() -> DatasetFull:
+        return data
+    get_dataset.__doc__ = dynamic_description
+    mcp.resource(uri)(get_dataset)
+
+for reference_name, dataset_obj in datasets.items():
+    register_dataset_resource(reference_name, dataset_obj)
+
+
 @mcp.resource("dataset://{reference_name}")
 def get_dataset(reference_name: str) -> DatasetFull:
     """Get dataset associated to `reference_name`"""
