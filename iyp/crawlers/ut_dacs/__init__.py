@@ -96,7 +96,7 @@ class Crawler(BaseCrawler):
         geo_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
             'GeoPrefix',
             'prefix',
-            anycast_prefixes,
+            geo_prefixes,
             all=False
         )
         point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points, all=False)
