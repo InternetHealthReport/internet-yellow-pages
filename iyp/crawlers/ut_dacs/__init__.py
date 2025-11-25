@@ -35,39 +35,56 @@ class Crawler(BaseCrawler):
         laces_df = laces_df[laces_df[f'GCD_ICMPv{self.ip_version}'] > 1]
 
         anycast_prefixes = set()
+        geo_prefixes = set()
         points = set()
+        countries = set()
         located_in_links = list()
+        country_links = list()
 
         # Iterate over rows creating anycast prefixes and points.
         for idx, row in laces_df.iterrows():
+            ref_data = row.to_dict()
             try:
-                ref_data = row.to_dict()
                 prefix = ip_network(ref_data.pop('prefix')).compressed
-                locations = ref_data.pop('locations')
-                anycast_prefixes.add(prefix)
+            except ValueError as e:
+                logging.warning(f'Ignoring malformed prefix: "{row.prefix}": {e}')
+                continue
+            locations = ref_data.pop('locations')
+            anycast_prefixes.add(prefix)
 
-                # Create a point and LOCATED_IN link for each location.
-                for location in locations:
-                    lat = location.pop('lat')
-                    lon = location.pop('lon')
-                    point = WGS84Point((lon, lat))
-                    points.add(point)
+            # Create a point and LOCATED_IN link for each location.
+            if locations.any():
+                geo_prefixes.add(prefix)
+            for location in locations:
+                lat = location.pop('lat')
+                lon = location.pop('lon')
+                point = WGS84Point((lon, lat))
+                points.add(point)
 
-                    # Include location metadata in link properties, exclude None values.
-                    ref_data.update({k: v for k, v in location.items() if v})
+                # Include location metadata in link properties, exclude None values.
+                ref_data.update({k: v for k, v in location.items() if v})
 
-                    located_in_links.append({
+                located_in_links.append({
+                    'src_id': prefix,
+                    'dst_id': point,
+                    'props': [
+                        self.reference,
+                        dict(ref_data),
+                    ],
+                })
+
+                # Some entries only have WGS84 coordinates, but no country mapping.
+                if location['country_code']:
+                    country = location['country_code']
+                    countries.add(country)
+                    country_links.append({
                         'src_id': prefix,
-                        'dst_id': point,
+                        'dst_id': country,
                         'props': [
                             self.reference,
                             dict(ref_data),
                         ],
                     })
-
-            except ValueError as e:
-                logging.warning(f'Ignoring malformed prefix: "{row.prefix}": {e}')
-                continue
 
         # Get all IYP prefix IDs for our anycast prefixes and points.
         anycast_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
@@ -76,17 +93,29 @@ class Crawler(BaseCrawler):
             anycast_prefixes,
             all=False
         )
+        geo_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'GeoPrefix',
+            'prefix',
+            anycast_prefixes,
+            all=False
+        )
         point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
 
-        # Add Prefix labels to AnycastPrefix nodes.
+        # Add Prefix labels to AnycastPrefix and GeoPrefix nodes.
         self.iyp.batch_add_node_label(list(anycast_prefix_id.values()), 'Prefix')
+        self.iyp.batch_add_node_label(list(geo_prefix_id.values()), 'Prefix')
 
         # Replace links values with node ids.
         for link in located_in_links:
-            link['src_id'] = anycast_prefix_id[link['src_id']]
+            link['src_id'] = geo_prefix_id[link['src_id']]
             link['dst_id'] = point_id[link['dst_id']]
+        for link in country_links:
+            link['src_id'] = geo_prefix_id[link['src_id']]
+            link['dst_id'] = country_id[link['dst_id']]
 
         self.iyp.batch_add_links('LOCATED_IN', located_in_links)
+        self.iyp.batch_add_links('COUNTRY', country_links)
 
     def unit_test(self):
-        return super().unit_test(['LOCATED_IN'])
+        return super().unit_test(['LOCATED_IN', 'COUNTRY'])
