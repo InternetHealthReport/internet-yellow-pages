@@ -223,8 +223,9 @@ provided by the Design and Analysis of Communication Systems group at the Univer
 Twente.
 
 > [LACeS: an Open, Fast, Responsible and Efficient Longitudinal Anycast Census
-> System](https://arxiv.org/pdf/2503.20554).
->
+> System](https://arxiv.org/pdf/2503.20554). Remi Hendriks, Matthew Luckie, Mattijs
+> Jonker, Raffaele Sommese, and Roland van Rijswijk-Deij.
+> ACM Internet Measurement Conference (IMC), November 2025.
 
 ## Virginia Tech
 
