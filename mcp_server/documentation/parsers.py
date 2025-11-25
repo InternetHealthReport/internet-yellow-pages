@@ -47,8 +47,15 @@ def parse_markdown_table(filename):
 
     df = df.reset_index(drop=True)
 
-    # Optionally forward fill refactored cells
+    # Optionally forward fill refactored cells (useful for the dataset table)
     df = df.replace("", pd.NA).ffill()
+    
+    # Optionally explode reference_name comma-separated values (useful for the dataset table)
+    if "reference_name" in df.columns:
+        df['reference_name'] = df['reference_name'].str.split(',')
+        df = df.explode('reference_name')
+        # Step 3: Clean up whitespace (removes the space after the comma)
+        df['reference_name'] = df['reference_name'].str.strip()
 
     return df
 
