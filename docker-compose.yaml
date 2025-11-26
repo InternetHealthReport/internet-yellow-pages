@@ -9,8 +9,8 @@ services:
     volumes:
       - ./data:/data
       - ./dumps:/dumps
-    entrypoint: "/bin/bash"
     # command: neo4j-admin database load neo4j --from-path=/dumps --verbose
+    entrypoint: "/bin/bash"
     command: >
       -c "
       if [ -d '/data/databases/neo4j' ]; then
@@ -113,11 +113,11 @@ services:
       iyp_loader:
         condition: service_completed_successfully
 
-  iyp_mcp:
+  iyp_mcp_neo4j:
     image: mcp/neo4j-cypher:latest
     profiles: ["mcp"]
     user: "${uid}:${gid}"
-    container_name: iyp_mcp
+    container_name: iyp_mcp_neo4j
     ports:
       - '8001:8000'
     environment:
@@ -132,6 +132,17 @@ services:
       - NEO4J_NAMESPACE=local
     depends_on:
       - iyp_apoc
+
+  iyp_mcp_doc:
+    image: python:3.12-slim-trixie
+    profiles: ["mcp"]
+    container_name: iyp_mcp_doc
+    working_dir: /app
+    volumes:
+      - ./:/app:ro       
+    ports:
+      - '8002:8002'
+    command: bash -c "pip install pandas 'mcp[cli]' pydantic && python -m mcp_server.server"
       
 volumes:
   caddy_data:

@@ -3,7 +3,7 @@ from mcp_server.documentation.parsers import parse_datasets, parse_node_types, p
 from mcp_server.documentation.models import DatasetFull, DatasetBase, NodeType, RelationshipType
 from urllib.parse import urlparse
 
-mcp = FastMCP("Internet Yellow Pages (IYP)", port=8001)
+mcp = FastMCP("Internet Yellow Pages (IYP)", host="0.0.0.0", port=8002)
 
 # Load doc
 datasets = {dataset.reference_name: dataset for dataset in parse_datasets()}
