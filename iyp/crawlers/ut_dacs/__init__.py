@@ -38,8 +38,11 @@ class Crawler(BaseCrawler):
         geo_prefixes = set()
         points = set()
         countries = set()
+        categorized_links = list()
         located_in_links = list()
         country_links = list()
+
+        anycast_tag_qid = self.iyp.get_node('Tag', {'label': 'Anycast'})
 
         # Iterate over rows creating anycast prefixes and points.
         for idx, row in laces_df.iterrows():
@@ -51,6 +54,15 @@ class Crawler(BaseCrawler):
                 continue
             locations = ref_data.pop('locations')
             anycast_prefixes.add(prefix)
+            # Link to Anycast tag to retain metadata.
+            categorized_links.append({
+                'src_id': prefix,
+                'dst_id': anycast_tag_qid,
+                'props': [
+                    self.reference,
+                    dict(ref_data)
+                ]
+            })
 
             # Create a point and LOCATED_IN link for each location.
             if locations.any():
@@ -107,15 +119,18 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_node_label(list(geo_prefix_id.values()), 'Prefix')
 
         # Replace links values with node ids.
-        for link in located_in_links:
-            link['src_id'] = geo_prefix_id[link['src_id']]
-            link['dst_id'] = point_id[link['dst_id']]
+        for link in categorized_links:
+            link['src_id'] = anycast_prefix_id[link['src_id']]
         for link in country_links:
             link['src_id'] = geo_prefix_id[link['src_id']]
             link['dst_id'] = country_id[link['dst_id']]
+        for link in located_in_links:
+            link['src_id'] = geo_prefix_id[link['src_id']]
+            link['dst_id'] = point_id[link['dst_id']]
 
-        self.iyp.batch_add_links('LOCATED_IN', located_in_links)
+        self.iyp.batch_add_links('CATEGORIZED', categorized_links)
         self.iyp.batch_add_links('COUNTRY', country_links)
+        self.iyp.batch_add_links('LOCATED_IN', located_in_links)
 
     def unit_test(self):
-        return super().unit_test(['LOCATED_IN', 'COUNTRY'])
+        return super().unit_test(['CATEGORIZED', 'COUNTRY', 'LOCATED_IN'])
