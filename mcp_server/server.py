@@ -1,9 +1,16 @@
 from mcp.server.fastmcp import FastMCP
 from mcp_server.documentation.parsers import parse_datasets, parse_node_types, parse_relationship_types
 from mcp_server.documentation.models import DatasetFull, DatasetBase, NodeType, RelationshipType
-from urllib.parse import urlparse
+from pydantic import Field
+from typing import Literal
 
-mcp = FastMCP("Internet Yellow Pages (IYP)", host="0.0.0.0", port=8002)
+instructions = """This MCP server exposes the Internet Yellow Pages (IYP) documentation.
+IYP is an open source Neo4j knowledge database that gathers information about Internet resources (for example ASNs, IP prefixes, and domain names)."""
+
+mcp = FastMCP("Internet Yellow Pages (IYP)",
+              host="0.0.0.0",
+              port=8002,
+              instructions=instructions)
 
 # Load doc
 datasets = {dataset.reference_name: dataset for dataset in parse_datasets()}
@@ -31,7 +38,7 @@ for reference_name, dataset in datasets.items():
 
 # Register node type resources one by one
 def register_node_type_resource(name: str, node_type: NodeType):
-    uri = f"nodetype://{name}"
+    uri = f"node-type://{name}"
     
     dynamic_description = f"Returns documentation of the {name} node type"
     
@@ -46,7 +53,7 @@ for name, node_type in node_types.items():
     
 # Register relationship type resources one by one
 def register_relationship_type_resource(name: str, rel_type: RelationshipType):
-    uri = f"relationshiptype://{name}"
+    uri = f"relationship-type://{name}"
 
     dynamic_description = f"Returns documentation of the {name} relation type"
 
@@ -62,42 +69,44 @@ for name, rel_type in rel_types.items():
 # General template resource access
 # Not discovered by clients, but callable by an LLM if wrapped in a tool
 @mcp.resource("dataset://{reference_name}")
-def get_dataset(reference_name: str) -> DatasetFull:
-    """Get dataset associated to `reference_name`"""
+def get_iyp_dataset_documentation(reference_name: str) -> DatasetFull:
+    """Get complete documentation of a dataset associated to `reference_name` in Internet Yellow Pages"""
     return datasets[reference_name]
 
-@mcp.resource("nodetype://{name}")
-def get_node_type(name: str) -> NodeType:
-    """Get node type associated to`name`"""
+@mcp.resource("node-type://{name}")
+def get_iyp_node_type_documentation(name: str) -> NodeType:
+    """Get complete documentation of a node type associated to `name` in Internet Yellow Pages"""
     return node_types[name]
 
-@mcp.resource("relationshiptype://{name}")
-def get_relationship_type(name: str) -> RelationshipType:
-    """Get relationship type associated to `name`"""
+@mcp.resource("relationship-type://{name}")
+def get_iyp_relationship_type_documentation(name: str) -> RelationshipType:
+    """Get complete documentation of a relationship type associated to `name` in Internet Yellow Pages"""
     return rel_types[name]
 
 scheme2getter = {
-    "dataset": get_dataset,
-    "nodetype": get_node_type,
-    "relationshiptype": get_relationship_type,
+    "dataset": get_iyp_dataset_documentation,
+    "node-type": get_iyp_node_type_documentation,
+    "relationship-type": get_iyp_relationship_type_documentation,
 }
 
 # Wrap general templated resource access in a tool.
 @mcp.tool()
-def get_resource(uri: str):
-    """Get the resource associated to the uri (e.g. dataset://<reference_name>, nodetype://<name>, relationshiptype://<name>)."""
+def get_resource(
+    scheme: Literal["dataset", "node-type", "relationship-type"] = Field(
+        description="The scheme to access the resource.",
+    ),
+    name: str = Field(description="Unique identifier of the resource (`reference_name` for datasets, `name` otherwise)"),
+):
+    """Get the Internet Yellow Pages documentation associated to the resource."""
     
-    scheme = urlparse(uri).scheme
     if scheme not in scheme2getter:
         return {
-            "error": f"Unknown or unsupported resource URI scheme: '{scheme}://'. Only 'dataset://', 'nodetype://' and relationshiptype:// are supported.",
+            "error": f"Unknown or unsupported resource URI scheme: '{scheme}://'. Only 'dataset://', 'node-type://' and relationship-type:// are supported.",
             "status": 400,
         }
     
-    identifier = uri[len(f"{scheme}://") :]
-
     try:
-        resource_data = scheme2getter[scheme](identifier)
+        resource_data = scheme2getter[scheme](name)
 
         return resource_data
 
@@ -113,21 +122,20 @@ def get_resource(uri: str):
 
 
 @mcp.tool()
-def list_datasets() -> list[DatasetBase]:
-    """List all datasets."""
+def list_iyp_datasets() -> list[DatasetBase]:
+    """List a light view of datasets in Internet Yellow Pages. For a full description a dataset, call `get_resource`."""
     # I downcast to save context
     return [DatasetBase.model_validate(dataset) for dataset in datasets.values()]
 
 @mcp.tool()
-def list_node_types() -> list[NodeType]:
-    """List all node types."""
+def list_iyp_node_types() -> list[NodeType]:
+    """List all node types in Internet Yellow Pages."""
     return [node_type for node_type in node_types.values()]
 
 @mcp.tool()
-def list_rel_types() -> list[RelationshipType]:
-    """List all relationship types."""
+def list_iyp_relationship_types() -> list[RelationshipType]:
+    """List all relationship types in Internet Yellow Pages."""
     return [rel_type for rel_type in rel_types.values()]
-    
 
 if __name__ == "__main__":
 
