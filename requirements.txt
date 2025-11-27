@@ -25,3 +25,4 @@ PyGithub
 clickhouse_driver
 paramiko
 scp
+pyarrow

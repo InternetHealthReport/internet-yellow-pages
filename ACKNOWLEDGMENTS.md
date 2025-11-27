@@ -216,6 +216,17 @@ Umbrella](https://umbrella-static.s3-us-west-1.amazonaws.com/index.html)
    ([available](https://radar.cloudflare.com/about) under a [CC BY-NC
    4.0](https://creativecommons.org/licenses/by-nc/4.0/) license).
 
+## University of Twente
+
+We use the [LACeS Anycast Census](https://github.com/ut-dacs/anycast-census) dataset
+provided by the Design and Analysis of Communication Systems group at the University of
+Twente.
+
+> [LACeS: an Open, Fast, Responsible and Efficient Longitudinal Anycast Census
+> System](https://arxiv.org/pdf/2503.20554). Remi Hendriks, Matthew Luckie, Mattijs
+> Jonker, Raffaele Sommese, and Roland van Rijswijk-Deij.
+> ACM Internet Measurement Conference (IMC), November 2025.
+
 ## Virginia Tech
 
 We use the [RoVista](https://rovista.netsecurelab.org/) dataset provided by the
