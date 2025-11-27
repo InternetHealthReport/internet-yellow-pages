@@ -66,6 +66,7 @@
 | SimulaMet | rDNS data| https://rir-data.org | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/simulamet#readme)| simulamet.rirdata_rdns |
 | Stanford | ASdb dataset| https://asdb.stanford.edu | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/stanford#readme) | stanford.asdb |
 | Tranco | Tranco list| https://tranco-list.eu | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/tranco#readme) | tranco.top1m |
+| University of Twente - Design and Analysis of Communication Systems | LACeS Anycast Census | https://manycast.net/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ut_dacs#readme) | ut_dacs.laces_v4, ut_dacs.laces_v6 |
 | Virginia Tech | RoVista| https://rovista.netsecurelab.org | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/virginiatech#readme)| virginiatech.rovista |
 | World Bank | Indicators API: Country Population Indicator| https://www.worldbank.org | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/worldbank#readme)| worldbank.country_pop |
 
