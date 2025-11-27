@@ -34,7 +34,7 @@ class Crawler(BaseCrawler):
         # Filter on GCD_ICMP where LACeS has high confidence of anycast and locations.
         laces_df = laces_df[laces_df[f'GCD_ICMPv{self.ip_version}'] > 1]
 
-        anycast_prefixes = set()
+        bgp_prefixes = set()
         geo_prefixes = set()
         points = set()
         countries = set()
@@ -52,18 +52,22 @@ class Crawler(BaseCrawler):
             except ValueError as e:
                 logging.warning(f'Ignoring malformed prefix: "{row.prefix}": {e}')
                 continue
-            locations = ref_data.pop('locations')
-            anycast_prefixes.add(prefix)
-            # Link to Anycast tag to retain metadata.
-            categorized_links.append({
-                'src_id': prefix,
-                'dst_id': anycast_tag_qid,
-                'props': [
-                    self.reference,
-                    dict(ref_data)
-                ]
-            })
+            try:
+                bgp_prefix = ip_network(ref_data.pop('backing_prefix')).compressed
+            except ValueError as e:
+                logging.warning(f'Ignoring malformed backing prefix: "{row.backing_prefix}": {e}')
+                continue
+            if bgp_prefix not in bgp_prefixes:
+                bgp_prefixes.add(bgp_prefix)
+                categorized_links.append({
+                    'src_id': bgp_prefix,
+                    'dst_id': anycast_tag_qid,
+                    'props': [
+                        self.reference
+                    ]
+                })
 
+            locations = ref_data.pop('locations')
             # Create a point and LOCATED_IN link for each location.
             if locations.any():
                 geo_prefixes.add(prefix)
@@ -99,10 +103,10 @@ class Crawler(BaseCrawler):
                     })
 
         # Get all IYP prefix IDs for our anycast prefixes and points.
-        anycast_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
-            'AnycastPrefix',
+        bgp_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'BGPPrefix',
             'prefix',
-            anycast_prefixes,
+            bgp_prefixes,
             all=False
         )
         geo_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
@@ -115,12 +119,12 @@ class Crawler(BaseCrawler):
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
 
         # Add Prefix labels to AnycastPrefix and GeoPrefix nodes.
-        self.iyp.batch_add_node_label(list(anycast_prefix_id.values()), 'Prefix')
+        self.iyp.batch_add_node_label(list(bgp_prefix_id.values()), 'Prefix')
         self.iyp.batch_add_node_label(list(geo_prefix_id.values()), 'Prefix')
 
         # Replace links values with node ids.
         for link in categorized_links:
-            link['src_id'] = anycast_prefix_id[link['src_id']]
+            link['src_id'] = bgp_prefix_id[link['src_id']]
         for link in country_links:
             link['src_id'] = geo_prefix_id[link['src_id']]
             link['dst_id'] = country_id[link['dst_id']]

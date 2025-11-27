@@ -6,16 +6,15 @@ estimate the geolocation of their sites. Results are produced daily for IPv4 and
 ## Graph representation
 
 Because the site geolocation is a geographic property, we model prefixes both as
-`AnycastPrefix` and `GeoPrefix`.
+`BGPPrefix` and `GeoPrefix`. Since the site information is attached to usually
+more-specific prefixes than what is visible in BGP, we use the `backing_prefix` (aka BGP
+prefix) for `BGPPrefix` nodes and the `prefix` for `GeoPrefix` nodes.
+
+In addition, since multiple prefixes can belong to the same BGP prefix, the detailed
+properties of the dataset are only attached to the `GeoPrefix` relationships.
 
 ```cypher
-(:AnycastPrefix {prefix: '1.1.1.0/24'})-[:CATEGORIZED]->(:Tag {label: 'Anycast'})
-```
-
-The `CATEGORIZED` relationship contains the properties related to this dataset and can
-be used to filter on the `reference_name`.
-
-```cypher
+(:BGPPrefix {prefix: '1.1.1.0/24'})-[:CATEGORIZED]->(:Tag {label: 'Anycast'})
 (:GeoPrefix {prefix: '1.1.1.0/24'})-[:LOCATED_IN {city: 'Tokyo'}]->(:Point)
 (:GeoPrefix {prefix: '1.1.1.0/24'})-[:LOCATED_IN {country_code: 'JP'}]->(:Point)
 (:GeoPrefix {prefix: '1.1.1.0/24'})-[:COUNTRY]->(:Country {country_code: 'JP'})
@@ -29,7 +28,9 @@ exist, we also create a `COUNTRY` relationship to the respective `Country` node.
 To find all anycast sites for a specific prefix, you need to match both node types:
 
 ```cypher
-MATCH p = (:AnycastPrefix {prefix: '1.1.1.0/24'})-[:PART_OF]->(:GeoPrefix)-[:LOCATED_IN]->(:Point)
+MATCH p = (:Tag {label: 'Anycast'})<-[:CATEGORIZED]-
+          (:BGPPrefix {prefix: '1.1.1.0/24'})-[:PART_OF]->
+          (:GeoPrefix)-[:LOCATED_IN]->(:Point)
 RETURN p
 ```
 
