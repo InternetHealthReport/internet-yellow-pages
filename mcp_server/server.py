@@ -28,7 +28,7 @@ mcp = FastMCP(
 
 @mcp.tool()
 def list_iyp_datasets() -> list[DatasetBase]:
-    """List a light view of datasets in Internet Yellow Pages. For a full description a dataset, call `get_resource`."""
+    """List a light view of datasets in Internet Yellow Pages. For a full description a dataset, call `get_iyp_resource`."""
     # Downcast `DatasetFull` to `DatasetBase`` to save context
     return [DatasetBase.model_validate(dataset) for dataset in datasets.values()]
 
@@ -75,7 +75,7 @@ scheme2getter = {
 
 
 @mcp.tool()
-def get_resource(
+def get_iyp_resource(
     scheme: Literal["dataset", "node-type", "relationship-type"] = Field(
         description="The scheme to access the resource.",
     ),
