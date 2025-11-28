@@ -9,17 +9,7 @@ services:
     volumes:
       - ./data:/data
       - ./dumps:/dumps
-    # command: neo4j-admin database load neo4j --from-path=/dumps --verbose
-    entrypoint: "/bin/bash"
-    command: >
-      -c "
-      if [ -d '/data/databases/neo4j' ]; then
-        echo 'Database neo4j already exists. Skipping data loading.';
-      else
-        echo 'Database not found. Loading from dump...';
-        neo4j-admin database load neo4j --from-path=/dumps --verbose;
-      fi
-      "
+    command: neo4j-admin database load neo4j --from-path=/dumps --verbose
 
   iyp:
     image: neo4j:5.26.3
@@ -99,7 +89,7 @@ services:
     image: neo4j:5.26.3
     profiles: ["mcp"]
     user: "${uid}:${gid}"
-    container_name: iyp_apoc
+    container_name: iyp
     restart: unless-stopped
     ports:
       - 7474:7474
