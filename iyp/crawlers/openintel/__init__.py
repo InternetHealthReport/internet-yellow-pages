@@ -204,7 +204,6 @@ class OpenIntelCrawler(BaseCrawler):
                 # Use Pandas to read file into a DF and append to list
                 self.pandas_df_list.append(
                     pd.read_parquet(tempFile.name,
-                                    engine='fastparquet',
                                     columns=[
                                         'query_type',
                                         'query_name',

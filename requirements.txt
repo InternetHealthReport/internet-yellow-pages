@@ -15,7 +15,6 @@ docker
 boto3
 botocore
 pandas
-fastparquet
 flatdict
 requests_futures
 autopep8
