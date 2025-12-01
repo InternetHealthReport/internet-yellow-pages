@@ -1,6 +1,6 @@
 services:
   iyp_loader:
-    image: neo4j/neo4j-admin:5.26.2-community-debian
+    image: neo4j/neo4j-admin:2025-community-debian
     profiles: ["local", "public_tls", "public_notls"]
     user: "${uid}:${gid}"
     container_name: iyp_loader
@@ -12,7 +12,7 @@ services:
     command: neo4j-admin database load neo4j --from-path=/dumps --verbose
 
   iyp:
-    image: neo4j:5.26.3
+    image: neo4j:5.26.17
     profiles: ["local"]
     user: "${uid}:${gid}"
     container_name: iyp
@@ -29,7 +29,7 @@ services:
         condition: service_completed_successfully
 
   iyp_readonly_tls:
-    image: neo4j:5.26.3
+    image: neo4j:5.26.17
     profiles: ["public_tls"]
     user: "${uid}:${gid}"
     container_name: iyp
@@ -49,7 +49,7 @@ services:
         condition: service_completed_successfully
 
   iyp_readonly_notls:
-    image: neo4j:5.26.3
+    image: neo4j:5.26.17
     profiles: ["public_notls"]
     user: "${uid}:${gid}"
     container_name: iyp
@@ -84,7 +84,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     command: /usr/bin/caddy run --resume
-      
+
 volumes:
   caddy_data:
   caddy_config:
