@@ -10,7 +10,7 @@ from iyp import BaseCrawler, DataNotAvailableError, get_commit_datetime
 DATA_URL_FMT = 'https://raw.githubusercontent.com/ut-dacs/anycast-census/refs/heads/main/%Y/%m/%d/IPv{ip_version}.parquet'  # noqa: E501
 
 
-class Crawler(BaseCrawler):
+class LacesCrawler(BaseCrawler):
     def __init__(self, organization: str, url: str, name: str, ip_version: int):
         super().__init__(organization, url, name)
         self.ip_version = ip_version

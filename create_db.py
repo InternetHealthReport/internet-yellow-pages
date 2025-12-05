@@ -13,8 +13,8 @@ from scp import SCPClient
 
 from send_email import send_email
 
-NEO4J_VERSION = '5.26.3'
-NEO4J_ADMIN_VERSION = '5.26.2-community-debian'
+NEO4J_VERSION = '5.26.17'
+NEO4J_ADMIN_VERSION = '2025-community-debian'
 
 STATUS_OK = 'OK'
 

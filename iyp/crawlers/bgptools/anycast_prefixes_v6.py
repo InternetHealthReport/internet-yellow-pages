@@ -9,6 +9,11 @@ URL = 'https://github.com/bgptools/anycast-prefixes'
 NAME = 'bgptools.anycast_prefixes_v6'
 
 
+class Crawler(AnycastPrefixesCrawler):
+    def __init__(self, organization: str, url: str, name: str):
+        super().__init__(organization, url, name, ip_version=6)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
@@ -24,7 +29,7 @@ def main() -> None:
 
     logging.info(f'Started: {sys.argv}')
 
-    crawler = AnycastPrefixesCrawler(ORG, URL, NAME, 6)
+    crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
         crawler.unit_test()
     else:

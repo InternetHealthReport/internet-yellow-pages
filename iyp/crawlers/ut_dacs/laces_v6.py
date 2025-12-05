@@ -2,12 +2,17 @@ import argparse
 import logging
 import sys
 
-from iyp.crawlers.ut_dacs import Crawler
+from iyp.crawlers.ut_dacs import LacesCrawler
 
 # Organization name and URL to data
 ORG = 'University of Twente - Design and Analysis of Communication Systems'
 URL = 'https://github.com/ut-dacs/anycast-census'
 NAME = 'ut_dacs.laces_v6'
+
+
+class Crawler(LacesCrawler):
+    def __init__(self, organization: str, url: str, name: str):
+        super().__init__(organization, url, name, ip_version=6)
 
 
 def main() -> None:
@@ -25,7 +30,7 @@ def main() -> None:
 
     logging.info(f'Started: {sys.argv}')
 
-    crawler = Crawler(ORG, URL, NAME, ip_version=6)
+    crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
         crawler.unit_test()
     else:

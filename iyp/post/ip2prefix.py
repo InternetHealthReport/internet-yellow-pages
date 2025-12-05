@@ -88,7 +88,7 @@ class PostProcess(BasePostProcess):
                     covering = None
                     if prefix_label0 == prefix_label1:
                         # If same node types then find a larger prefix
-                        covering = rtree1.search_best(f'{rnode.network}/{rnode.prefixlen-1}')
+                        covering = rtree1.search_best(f'{rnode.network}/{rnode.prefixlen - 1}')
                     else:
                         # Else it can be the same prefix
                         covering = rtree1.search_best(rnode.prefix)
