@@ -1,7 +1,7 @@
 services:
   iyp_loader:
     image: neo4j/neo4j-admin:5.26.2-community-debian
-    profiles: ["local", "public_tls", "public_notls"]
+    profiles: ["local", "public_tls", "public_notls", "mcp"]
     user: "${uid}:${gid}"
     container_name: iyp_loader
     tty: true
@@ -84,6 +84,55 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     command: /usr/bin/caddy run --resume
+
+  iyp_apoc:
+    image: neo4j:5.26.3
+    profiles: ["mcp"]
+    user: "${uid}:${gid}"
+    container_name: iyp
+    restart: unless-stopped
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+    depends_on:
+      iyp_loader:
+        condition: service_completed_successfully
+
+  iyp_mcp_neo4j:
+    image: mcp/neo4j-cypher:latest
+    profiles: ["mcp"]
+    user: "${uid}:${gid}"
+    container_name: iyp_mcp_neo4j
+    ports:
+      - '8001:8000'
+    environment:
+      - NEO4J_URI=bolt://iyp_apoc:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - NEO4J_DATABASE=neo4j
+      - NEO4J_TRANSPORT=http
+      - NEO4J_MCP_SERVER_HOST=0.0.0.0 # must be 0.0.0.0 for sse  or http transport in Docker
+      - NEO4J_MCP_SERVER_PORT=8000
+      - NEO4J_MCP_SERVER_PATH=/api/mcp/
+      - NEO4J_NAMESPACE=local
+    depends_on:
+      - iyp_apoc
+
+  iyp_mcp_doc:
+    image: python:3.12-slim-trixie
+    profiles: ["mcp"]
+    container_name: iyp_mcp_doc
+    working_dir: /app
+    volumes:
+      - ./:/app:ro       
+    ports:
+      - '8002:8002'
+    command: bash -c "pip install pandas 'mcp[cli]' pydantic && python -m mcp_server.server"
       
 volumes:
   caddy_data:
