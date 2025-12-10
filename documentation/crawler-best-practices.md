@@ -13,6 +13,8 @@ them.
 - [ ] Update example config
 - [ ] Check code style with pre-commit
 - [ ] **Test your crawler by actually running it**
+  - [ ] Standalone (`python3 -m`)
+  - [ ] As part of `create_db.py`
 
 If you add a new data source:
 
@@ -36,11 +38,9 @@ If you add a new Python dependency:
   between two nodes with the same relationship types are acceptable if the relationship
   properties differ.
 - Check that you do not create empty nodes.
-- Be aware of [property
-  formatters](https://github.com/InternetHealthReport/internet-yellow-pages/blob/main/iyp/__init__.py#L17)
-  that might change your ID property and do the
-  formatting yourselves beforehand (example IPv6, but the crawler will crash anyways if
-  you fail to do this).
+- Be aware of [property formatters](../iyp/__init__.py#L17)
+  that might change your ID property and do the formatting yourselves beforehand
+  (example IPv6, but the crawler will crash anyways if you fail to do this).
 - Specify `reference_url_data` as precise as possible, especially if it changes for
   parts of the data within the same crawler. Also try to use URLs that point to the
   correct data even when accessed at a later point in time. Note: `URL` is used as the
@@ -74,7 +74,9 @@ If you add a new Python dependency:
   node/relationship creations, so you do not have to do this manually.
 - Do not change the interface of the default crawler. create_db always uses the default
   `Crawler(ORG, URL, NAME)` call. The `main` function in the crawler file is only for
-  testing or individual runs of the crawler and should not be modified.
+  testing or individual runs of the crawler and should not be modified. If you want to
+  reuse a crawler for different data sources with the same format, create a wrapper
+  around it (see [here](../iyp/crawlers/ut_dacs/laces_v4.py) for an example).
 
 ### Performance
 
