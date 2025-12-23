@@ -47,7 +47,7 @@ anycast prefixes:
 
 ```cypher
 MATCH (:BGPPrefix {prefix: '1.204.0.0/14'})<-[:PART_OF]-
-      (p:GeoPrefix)-[:LOCATED_IN {reference_name: 'ut_dacs.laces_v4'}]->
+      (p:GeoPrefix)-[:LOCATED_IN {reference_name: 'utwente.laces_v4'}]->
       (:Point)
 RETURN DISTINCT(p.prefix) AS anycast_prefix
 ```

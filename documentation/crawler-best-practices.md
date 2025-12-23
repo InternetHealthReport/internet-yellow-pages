@@ -62,7 +62,7 @@ If you add a new Python dependency:
   specific information can (and should) be attached to the created relationships. Nodes
   are accessed by different crawlers and thus should only contain information that all
   crawlers share.
-  
+
 ### Code style
 
 - Do not use `sys.exit`, but raise an exception to kill a crawler. Also print to the log
@@ -76,7 +76,7 @@ If you add a new Python dependency:
   `Crawler(ORG, URL, NAME)` call. The `main` function in the crawler file is only for
   testing or individual runs of the crawler and should not be modified. If you want to
   reuse a crawler for different data sources with the same format, create a wrapper
-  around it (see [here](../iyp/crawlers/ut_dacs/laces_v4.py) for an example).
+  around it (see [here](../iyp/crawlers/utwente/laces_v4.py) for an example).
 
 ### Performance
 
