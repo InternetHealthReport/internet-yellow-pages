@@ -3,6 +3,8 @@ import json
 import logging
 import os
 
+import iso3166
+
 from iyp import BaseCrawler
 from iyp.crawlers.ooni.utils import grabber
 
@@ -82,15 +84,16 @@ class OoniCrawler(BaseCrawler):
         except ValueError:
             pass
 
-        probe_cc = one_line.get('probe_cc')
-
         if probe_asn == 0:
             # Ignore result if probe ASN is hidden.
             return True
 
         self.all_asns.add(probe_asn)
-        if probe_cc != 'ZZ':
-            # Do not create country nodes for ZZ country.
+        probe_cc = one_line.get('probe_cc')
+        if probe_cc not in iso3166.countries_by_alpha2:
+            # Do not create country nodes with invalid CC.
+            probe_cc = None
+        if probe_cc:
             self.all_countries.add(probe_cc)
 
         # Append the results to the list.
@@ -128,7 +131,7 @@ class OoniCrawler(BaseCrawler):
         if self.dataset == 'webconnectivity':
             for entry in self.all_results:
                 asn, country = entry[:2]
-                if country == 'ZZ':
+                if country is None:
                     continue
                 asn_id = self.node_ids['asn'][asn]
                 country_id = self.node_ids['country'][country]
