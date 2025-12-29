@@ -3,6 +3,7 @@ import importlib
 import json
 import logging
 import os
+import subprocess as sp
 import sys
 from datetime import datetime, timezone
 from time import sleep
@@ -17,6 +18,28 @@ NEO4J_VERSION = '5.26.17'
 NEO4J_ADMIN_VERSION = '2025-community-debian'
 
 STATUS_OK = 'OK'
+
+
+def log_commit_info():
+    try:
+        tag = sp.run(['git', 'tag', '--points-at=HEAD'], capture_output=True, text=True)
+        tag.check_returncode()
+    except sp.CalledProcessError as e:
+        logging.warning(e)
+        logging.warning(tag.stderr.strip())
+        return
+    try:
+        commit_info = sp.run(['git', 'show', '--no-patch', '--format=%H %cI'], capture_output=True, text=True)
+        commit_info.check_returncode()
+    except sp.CalledProcessError as e:
+        logging.warning(e)
+        logging.warning(commit_info.stderr.strip())
+        return
+    tag = tag.stdout.strip()
+    if not tag:
+        tag = 'none'
+    commit_hash, commit_timestamp = commit_info.stdout.split()
+    logging.info(f'commit:{commit_hash} date:{commit_timestamp} tag:{tag}')
 
 
 def main():
@@ -47,6 +70,7 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     logging.info(f'Started: {sys.argv}')
+    log_commit_info()
 
     # Load configuration file
     with open('config.json', 'r') as fp:
