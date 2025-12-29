@@ -75,3 +75,10 @@ Create and populate a new database:
 ```bash
 python3 create_db.py
 ```
+
+## Secure your instance
+
+See the Neo4j documentation on [how to add authentication using Docker
+secrets](https://neo4j.com/docs/operations-manual/current/docker/docker-compose-standalone/#docker-compose-secrets)
+and [how to add SSL
+encryption](https://neo4j.com/docs/operations-manual/current/docker/security/).

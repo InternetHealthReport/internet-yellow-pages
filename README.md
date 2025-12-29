@@ -7,8 +7,9 @@ Internet resources (for example ASNs, IP prefixes, and domain names).
 
 Visit <https://iyp.iijlab.net> to try our online prototype. You will find instructions
 on how to connect to the prototype and some example queries there. For even more
-examples, check out the [IYP
-gallery](documentation/gallery.md).
+examples, check out the [IYP gallery](documentation/gallery.md). If you want to learn
+how to properly use IYP you should complete the [IYP
+tutorial](https://tutorial.iyp.ihr.live/).
 
 ## Deploy a local IYP instance
 
@@ -80,8 +81,9 @@ docker stop iyp
 
 ### Query the database
 
-Open <http://localhost:7474> in your favorite browser. To connect the interface to the database give
-the default login and password: `neo4j` and `password` respectively. Then enter your query in the top input field.
+Open <http://localhost:7474> in your favorite browser. No credentials are required to
+connect to the database, just click on “Connect”. Then enter your query in the top input
+field.
 
 For example, this finds the IXPs and corresponding country codes where IIJ (AS2497) is:
 
