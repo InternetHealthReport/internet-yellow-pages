@@ -6,6 +6,7 @@ import os
 import subprocess as sp
 import sys
 from datetime import datetime, timezone
+from shutil import rmtree
 from time import sleep
 
 import docker
@@ -45,6 +46,7 @@ def log_commit_info():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--archive', action='store_true', help='push dump to archive server')
+    parser.add_argument('-d', '--directory', help='store database in a bind mount instead of a volume')
     args = parser.parse_args()
 
     today = datetime.now(tz=timezone.utc)
@@ -78,6 +80,11 @@ def main():
 
     # Neo4j container settings
     neo4j_volume = f'data-{date}'
+    bind_mount_directory = args.directory
+    if bind_mount_directory:
+        neo4j_volume = os.path.join(bind_mount_directory, neo4j_volume)
+        os.makedirs(neo4j_volume, exist_ok=True)
+        logging.info(f'Using bind mount: {neo4j_volume}')
 
     # Start a new neo4j container
     client = docker.from_env()
@@ -100,12 +107,13 @@ def main():
             'NEO4J_server_memory_heap_initial__size': '16G',
             'NEO4J_server_memory_heap_max__size': '16G',
         },
+        user=os.getuid(),
         remove=True,
         detach=True
     )
 
     # Wait for the container to be ready
-    timeout = 120
+    timeout = 300
     stop_time = 1
     elapsed_time = 0
     container_ready = False
@@ -214,11 +222,15 @@ def main():
         volumes={
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
             dump_dir: {'bind': '/dumps', 'mode': 'rw'},
-        }
+        },
+        user=os.getuid()
     )
 
     # Delete the data volume once the dump been created
-    client.volumes.get(neo4j_volume).remove()
+    if bind_mount_directory:
+        rmtree(neo4j_volume)
+    else:
+        client.volumes.get(neo4j_volume).remove()
 
     # rename dump
 
