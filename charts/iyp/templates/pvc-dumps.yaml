@@ -1,0 +1,17 @@
+{{- if .Values.persistence.dumps.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "iyp.fullname" . }}-dumps
+  labels:
+    {{- include "iyp.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.dumps.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.dumps.size }}
+  {{- if .Values.persistence.dumps.storageClass }}
+  storageClassName: {{ .Values.persistence.dumps.storageClass }}
+  {{- end }}
+{{- end }}
