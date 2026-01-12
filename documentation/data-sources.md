@@ -10,6 +10,7 @@
 | | LINX| https://alice-rs.linx.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.linx |
 | | Megaport| https://lg.megaport.com | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.megaport |
 | | Netnod| https://lg.netnod.se | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.netnod |
+| Amazon Web Services | Amazon IP Ranges | https://ip-ranges.amazonaws.com/ip-ranges.json | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/amazon#readme) | amazon.aws_ip_ranges |
 | APNIC | AS population estimate| https://stats.labs.apnic.net/aspop | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/apnic#readme) | apnic.eyeball |
 | BGPKIT | as2rel| https://data.bgpkit.com/as2rel | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgpkit#readme) | bgpkit.as2rel_v4, bgpkit.as2rel_v6 |
 | | peer-stats| https://data.bgpkit.com/peer-stats | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgpkit#readme) | bgpkit.peerstats |
