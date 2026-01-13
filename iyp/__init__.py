@@ -7,6 +7,7 @@ import pickle
 from datetime import datetime, timezone
 from shutil import rmtree
 from typing import Optional
+import json
 
 import requests
 from github import Github
@@ -151,16 +152,14 @@ class IYP(object):
         logging.debug('IYP: Enter initialization')
         self.neo4j_enterprise = False
 
-        # TODO: get config from configuration file
-        self.server = 'localhost'
-        self.port = 7687
-        self.login = 'neo4j'
-        self.password = 'password'
+        # Load configuration file
+        with open('config.json', 'r') as fp:
+            conf = json.load(fp)
 
         # Connect to the database
-        uri = f'neo4j://{self.server}:{self.port}'
+        uri = f'neo4j://{conf["neo4j"]["server"]}:{conf["neo4j"]["port"]}'
         self.db = GraphDatabase.driver(uri,
-                                       auth=(self.login, self.password),
+                                       auth=(conf["neo4j"]["login"], conf["neo4j"]["password"]),
                                        notifications_min_severity=NotificationMinimumSeverity.WARNING)
 
         if self.db is None:
