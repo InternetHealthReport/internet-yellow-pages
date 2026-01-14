@@ -1,13 +1,13 @@
 import bz2
 import glob
 import ipaddress
+import json
 import logging
 import os
 import pickle
 from datetime import datetime, timezone
 from shutil import rmtree
 from typing import Optional
-import json
 
 import requests
 from github import Github
@@ -159,7 +159,7 @@ class IYP(object):
         # Connect to the database
         uri = f'neo4j://{conf["neo4j"]["server"]}:{conf["neo4j"]["port"]}'
         self.db = GraphDatabase.driver(uri,
-                                       auth=(conf["neo4j"]["login"], conf["neo4j"]["password"]),
+                                       auth=(conf['neo4j']['login'], conf['neo4j']['password']),
                                        notifications_min_severity=NotificationMinimumSeverity.WARNING)
 
         if self.db is None:
