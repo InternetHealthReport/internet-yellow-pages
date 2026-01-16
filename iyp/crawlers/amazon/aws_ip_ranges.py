@@ -1,12 +1,79 @@
 import argparse
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
+
+import iso3166
 import requests
+from bs4 import BeautifulSoup
+
 from iyp import BaseCrawler
 
 URL = 'https://ip-ranges.amazonaws.com/ip-ranges.json'
+ORG = 'Amazon Web Services'
 NAME = 'amazon.aws_ip_ranges'
+
+# AWS documentation page with region-to-country mapping
+AWS_REGIONS_DOC_URL = 'https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html'
+
+# Manual mapping for country names that don't match iso3166 exactly
+# These are edge cases where AWS uses different naming conventions
+COUNTRY_NAME_OVERRIDES = {
+    'South Korea': 'KR',
+    'Taiwan': 'TW',
+    'United Kingdom': 'GB',
+}
+
+
+def fetch_region_to_country_mapping():
+    """Fetch AWS region to country code mapping by scraping AWS documentation.
+
+    Returns a dict mapping region codes (e.g., 'us-east-1') to ISO country codes
+    (e.g., 'US').
+    """
+    logging.info(f'Fetching AWS region mapping from {AWS_REGIONS_DOC_URL}')
+
+    resp = requests.get(AWS_REGIONS_DOC_URL)
+    resp.raise_for_status()
+
+    soup = BeautifulSoup(resp.text, 'html.parser')
+
+    # Find the regions table (there's only one table on this page)
+    tables = soup.find_all('table')
+    if not tables:
+        raise ValueError('No table found on AWS regions documentation page')
+
+    table = tables[0]
+
+    # Skip header row, process data rows
+    rows = table.find_all('tr')[1:]
+
+    region_to_country = {}
+
+    for row in rows:
+        cols = row.find_all('td')
+        if len(cols) < 4:
+            continue
+
+        region_code = cols[0].get_text(strip=True)
+        country_name = cols[3].get_text(strip=True)  # Geography column
+
+        # Check manual overrides first
+        if country_name in COUNTRY_NAME_OVERRIDES:
+            country_code = COUNTRY_NAME_OVERRIDES[country_name]
+        else:
+            # Try iso3166 lookup (case-insensitive)
+            country = iso3166.countries_by_name.get(country_name.upper())
+            if country:
+                country_code = country.alpha2
+            else:
+                logging.warning(f'Unknown country name for region {region_code}: {country_name}')
+                continue
+
+        region_to_country[region_code] = country_code
+
+    logging.info(f'Fetched {len(region_to_country)} region-to-country mappings')
+    return region_to_country
 
 
 class Crawler(BaseCrawler):
@@ -17,91 +84,118 @@ class Crawler(BaseCrawler):
         )
 
     def run(self):
-        logging.info(f"Fetching AWS IP ranges from {URL}")
-        try:
-            resp = requests.get(URL)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            logging.error(f"Failed to fetch AWS IP ranges: {e}")
-            return
+        """Fetch AWS IP ranges and push to IYP."""
+
+        # Fetch region-to-country mapping from AWS documentation
+        region_to_country = fetch_region_to_country_mapping()
+
+        # Fetch AWS IP ranges JSON
+        logging.info(f'Fetching AWS IP ranges from {URL}')
+        resp = requests.get(URL)
+        resp.raise_for_status()
+        data = resp.json()
 
         # Parse createDate for reference_time_modification
-        # Format: "YYYY-MM-DD-HH-mm-ss" -> "2026-01-10-08-28-04"
+        # Format: 'YYYY-MM-DD-HH-mm-ss'
         if 'createDate' in data:
             try:
-                dt = datetime.strptime(data['createDate'], "%Y-%m-%d-%H-%M-%S")
-                # Ensure UTC if needed, but assuming simple datetime object
-                self.reference['reference_time_modification'] = dt
+                dt = datetime.strptime(data['createDate'], '%Y-%m-%d-%H-%M-%S')
+                self.reference['reference_time_modification'] = dt.replace(tzinfo=timezone.utc)
             except ValueError:
                 logging.warning(f"Could not parse createDate: {data['createDate']}")
 
-        prefixes_v4 = []
-        prefixes_v6 = []
-
-        # AWS JSON has 'prefixes' (IPv4) and 'ipv6_prefixes' (IPv6)
+        # Parse prefixes
         items = []
         for item in data.get('prefixes', []):
-            items.append((item['ip_prefix'], item['region'], item['service'], 4))
+            items.append({
+                'prefix': item['ip_prefix'],
+                'region': item['region'],
+                'service': item['service'],
+                'af': 4
+            })
         for item in data.get('ipv6_prefixes', []):
-            items.append((item['ipv6_prefix'], item['region'], item['service'], 6))
+            items.append({
+                'prefix': item['ipv6_prefix'],
+                'region': item['region'],
+                'service': item['service'],
+                'af': 6
+            })
 
-        for prefix, region, service, version in items:
-            props = {
-                'prefix': prefix,
-                'af': version
-            }
-            if version == 4:
-                prefixes_v4.append(props)
-            else:
-                prefixes_v6.append(props)
+        logging.info(f'Processing {len(items)} prefixes')
 
-        # 1. Batch Create Nodes
-        logging.info(
-            f"Creating {len(prefixes_v4)} IPv4 and {len(prefixes_v6)} IPv6 nodes..."
+        # Collect unique values
+        prefixes = set()
+        services = set()
+        countries = set()
+
+        for item in items:
+            prefixes.add(item['prefix'])
+            services.add(item['service'])
+            region = item['region']
+            if region in region_to_country:
+                countries.add(region_to_country[region])
+
+        # Create/get nodes
+        logging.info(f'Creating {len(prefixes)} GeoPrefix nodes')
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'GeoPrefix', 'prefix', prefixes, all=False
         )
-        prefix_v4_ids = self.iyp.batch_get_nodes(
-            'Prefix', prefixes_v4, ['prefix'], create=True
-        )
-        prefix_v6_ids = self.iyp.batch_get_nodes(
-            'Prefix', prefixes_v6, ['prefix'], create=True
+        # Add Prefix label to all GeoPrefix nodes
+        self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
+
+        tag_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Tag', 'label', services, all=False
         )
 
-        all_prefix_ids = {**prefix_v4_ids, **prefix_v6_ids}
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
 
-        # 2. Prepare Links
+        # Prepare relationships
         categorized_links = []
-        tag_cache = {}
+        country_links = []
 
-        for prefix, region, service, version in items:
-            if prefix not in all_prefix_ids:
+        for item in items:
+            prefix = item['prefix']
+            if prefix not in prefix_id:
                 continue
 
-            p_node_id = all_prefix_ids[prefix]
+            p_id = prefix_id[prefix]
 
-            # CATEGORIZED (Service Tag)
-            if service:
-                if service not in tag_cache:
-                    t_id = self.iyp.get_node('Tag', {'label': service}, ['label'])
-                    tag_cache[service] = t_id
-
+            # CATEGORIZED -> Tag (service)
+            service = item['service']
+            if service in tag_id:
                 categorized_links.append({
-                    'src_id': p_node_id,
-                    'dst_id': tag_cache[service],
+                    'src_id': p_id,
+                    'dst_id': tag_id[service],
                     'props': [self.reference]
                 })
 
-        # 3. Batch Create Links
-        if categorized_links:
-            self.iyp.batch_add_links('CATEGORIZED', categorized_links)
+            # COUNTRY -> Country
+            region = item['region']
+            if region in region_to_country:
+                cc = region_to_country[region]
+                if cc in country_id:
+                    country_links.append({
+                        'src_id': p_id,
+                        'dst_id': country_id[cc],
+                        'props': [self.reference]
+                    })
 
-        logging.info(f"Refreshed AWS IP Ranges: {len(items)} prefixes processed.")
+        # Create relationships
+        logging.info(f'Creating {len(categorized_links)} CATEGORIZED relationships')
+        self.iyp.batch_add_links('CATEGORIZED', categorized_links)
+
+        logging.info(f'Creating {len(country_links)} COUNTRY relationships')
+        self.iyp.batch_add_links('COUNTRY', country_links)
+
+        logging.info(f'Finished processing AWS IP ranges: {len(items)} prefixes')
 
     def unit_test(self):
-        return super().unit_test(['CATEGORIZED'])
+        return super().unit_test(['CATEGORIZED', 'COUNTRY'])
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_true')
     args = parser.parse_args()
@@ -116,7 +210,7 @@ def main():
 
     logging.info(f'Started: {sys.argv}')
 
-    crawler = Crawler(URL, URL, NAME)
+    crawler = Crawler(ORG, URL, NAME)
     if args.unit_test:
         crawler.unit_test()
     else:
