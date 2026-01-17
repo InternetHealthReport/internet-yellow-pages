@@ -130,5 +130,12 @@
             "iyp.post.country_information",
             "iyp.post.url2hostname"
         ]
+    },
+
+    "neo4j": {
+        "server": "localhost",
+        "port": 7687,
+        "login": "neo4j",
+        "password": "password"
     }
 }
