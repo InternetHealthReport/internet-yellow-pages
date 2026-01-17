@@ -31,18 +31,20 @@ def remove_deployment(client: docker.DockerClient, date: datetime):
     try:
         container = client.containers.get(container_name)
         logging.warning(f'Removing active deployment for {date.strftime("%m-%d")}')
-        container.stop()
-        # Wait a little bit after the container has been removed
-        # before deleting the volume
-        # TODO Is there a better way?
-        while True:
-            try:
-                client.volumes.get(volume_name).remove()
-                break
-            except BaseException:
-                time.sleep(1)
+        container.stop(timeout=30)
+        container.wait(timeout=60)
     except docker.errors.NotFound:
         logging.info(f'No existing deployment for {date.strftime("%Y-%m-%d")}. Starting deployment')
+
+    for _ in range(10):
+        try:
+            client.volumes.get(volume_name).remove()
+            return
+        except docker.errors.NotFound:
+            return
+        except docker.errors.APIError:
+            time.sleep(1)
+    raise RuntimeError(f'Failed to remove volume {volume_name}')
 
 
 def get_ports_from_caddy_config(config: dict):
