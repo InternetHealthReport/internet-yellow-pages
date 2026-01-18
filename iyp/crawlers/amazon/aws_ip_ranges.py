@@ -28,8 +28,8 @@ COUNTRY_NAME_OVERRIDES = {
 def fetch_region_to_country_mapping():
     """Fetch AWS region to country code mapping by scraping AWS documentation.
 
-    Returns a dict mapping region codes (e.g., 'us-east-1') to ISO country codes
-    (e.g., 'US').
+    Returns a dict mapping region codes (e.g., 'us-east-1') to ISO country codes (e.g.,
+    'US').
     """
     logging.info(f'Fetching AWS region mapping from {AWS_REGIONS_DOC_URL}')
 
