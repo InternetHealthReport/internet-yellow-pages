@@ -120,7 +120,8 @@
             "iyp.crawlers.ooni.torsf",
             "iyp.crawlers.ooni.vanillator",
             "iyp.crawlers.ooni.webconnectivity",
-            "iyp.crawlers.ooni.whatsapp"
+            "iyp.crawlers.ooni.whatsapp",
+            "iyp.crawlers.amazon.aws_ip_ranges"
         ],
 
         "post": [
