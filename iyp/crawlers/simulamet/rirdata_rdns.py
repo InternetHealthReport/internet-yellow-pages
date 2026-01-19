@@ -105,6 +105,9 @@ class Crawler(BaseCrawler):
 
         pandas_df_list = list()
         for obj in objects:
+            if not obj.key.endswith('.jsonl.bz2'):
+                logging.warning(f'Ignoring file with unexpected format: {obj.key}')
+                continue
             # Open a temporary file to download the object into
             with tempfile.NamedTemporaryFile(mode='w+b',
                                              dir=tmp_dir,
