@@ -97,6 +97,7 @@
             "iyp.crawlers.alice_lg.megaport",
             "iyp.crawlers.alice_lg.netnod",
             "iyp.crawlers.ipinfo.ip_country",
+            "iyp.crawlers.amazon.aws_ip_ranges",
             "iyp.crawlers.worldbank.country_pop",
             "iyp.crawlers.simulamet.rirdata_rdns",
             "iyp.crawlers.utwente.laces_v4",

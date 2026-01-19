@@ -21,6 +21,11 @@ We retrieve route server looking glass snapshots from the following IXPs.
 | Megaport | https://lg.megaport.com/   |
 | Netnod   | https://lg.netnod.se/      |
 
+## Amazon
+
+We use the [IP address ranges](https://ip-ranges.amazonaws.com/ip-ranges.json) provided by
+[Amazon Web Services](https://aws.amazon.com/).
+
 ## APNIC
 
 We use [APNIC](https://labs.apnic.net/)'s [AS population
