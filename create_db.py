@@ -13,8 +13,6 @@ import docker
 import paramiko
 from scp import SCPClient
 
-from send_email import send_email
-
 NEO4J_VERSION = '5.26.17'
 NEO4J_ADMIN_VERSION = '2025-community-debian'
 
@@ -172,12 +170,10 @@ def main():
             no_error = False
             logging.error(relation_count_error)
             status[module_name] = relation_count_error
-            send_email(relation_count_error)
         except Exception as e:
             no_error = False
             logging.error('Crawler crashed!')
             status[module_name] = e
-            send_email(e)
 
     # ######### Post processing scripts ##########
 
@@ -236,19 +232,10 @@ def main():
 
     os.rename(dump_file, os.path.join(dump_dir, f'iyp-{date}.dump'))
 
-    if not no_error:
-        # TODO send an email
-
-        final_words = '\nErrors: '
-        for module, status in status.items():
-            if status != STATUS_OK:
-                final_words += f'\n{module}: {status}'
-    else:
-        final_words = 'No error :)'
     # Delete tmp file in cron job
     #    shutil.rmtree(tmp_dir)
 
-    logging.info(f'Finished: {sys.argv} {final_words}')
+    logging.info(f'Finished: {sys.argv}')
     if not no_error:
         # Add the log line to indicate to autodeploy that there were errors.
         logging.error('There were errors!')
