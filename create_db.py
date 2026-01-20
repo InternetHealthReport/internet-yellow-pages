@@ -232,10 +232,17 @@ def main():
 
     os.rename(dump_file, os.path.join(dump_dir, f'iyp-{date}.dump'))
 
+    if not no_error:
+        final_words = '\nErrors: '
+        for module, status in status.items():
+            if status != STATUS_OK:
+                final_words += f'\n{module}: {status}'
+    else:
+        final_words = 'No error :)'
     # Delete tmp file in cron job
     #    shutil.rmtree(tmp_dir)
 
-    logging.info(f'Finished: {sys.argv}')
+    logging.info(f'Finished: {sys.argv} {final_words}')
     if not no_error:
         # Add the log line to indicate to autodeploy that there were errors.
         logging.error('There were errors!')
