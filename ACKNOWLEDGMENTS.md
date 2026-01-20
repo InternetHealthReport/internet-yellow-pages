@@ -122,6 +122,25 @@ Tech](https://inetintel.notion.site/Internet-Intelligence-Research-Lab-d18618456
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS-to-Organization-Mapping/master/LICENSE).
 
+## Internet Assigned Numbers Authority (IANA)
+
+We use multiple authoritative registries published by the
+[Internet Assigned Numbers Authority (IANA)](https://www.iana.org/) for modeling
+global Internet infrastructure.
+
+These datasets include:
+
+- The [DNS Root Zone File](https://www.iana.org/domains/root/files), used to retrieve
+  authoritative name servers and their IPv4 and IPv6 addresses for all top-level
+  domains.
+- The [IPv4 Address Space Registry](https://www.iana.org/assignments/ipv4-address-space/)
+  and the [IPv6 Unicast Address Assignments](https://www.iana.org/assignments/ipv6-unicast-address-assignments/),
+  used to model IANA-level address space allocations to Regional Internet Registries
+  (RIRs).
+- The [IPv4](https://www.iana.org/assignments/iana-ipv4-special-registry/) and
+  [IPv6](https://www.iana.org/assignments/iana-ipv6-special-registry/) Special-Purpose
+  Address Registries, used to identify reserved and protocol-specific address blocks.
+
 ## IPinfo
 
 We use the free [IP-to-country](https://ipinfo.io/products/free-ip-database) mapping
