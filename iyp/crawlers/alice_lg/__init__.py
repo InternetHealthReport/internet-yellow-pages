@@ -212,22 +212,35 @@ class Crawler(BaseCrawler):
                     # Alice-LG uses nanosecond-granularity timestamps, which are not
                     # valid ISO format...
                     try:
-                        pre, suf = cached_at_str.rsplit('.', maxsplit=1)
-                        if suf.endswith('Z'):
-                            # UTC
-                            frac_seconds = suf[:-1]
-                            tz_suffix = '+00:00'
-                        elif '+' in suf:
-                            # Hopefully a timezone identifier of form +HH:MM
-                            frac_seconds, tz_suffix = suf.split('+')
-                            tz_suffix = '+' + tz_suffix
-                        else:
-                            raise ValueError(f'Failed to get timezone from timestamp :{cached_at_str}')
-                        if not frac_seconds.isdigit():
-                            raise ValueError(f'Fractional seconds are not digits: {cached_at_str}')
-                        # Reduce to six digits (ms).
-                        frac_seconds = frac_seconds[:6]
-                        cached_at_str = f'{pre}.{frac_seconds}{tz_suffix}'
+                        cached_at = None
+                        if '.' in cached_at_str:
+                            pre, suf = cached_at_str.rsplit('.', maxsplit=1)
+                            if suf.endswith('Z'):
+                                # UTC
+                                frac_seconds_raw = suf[:-1]
+                                tz_suffix = '+00:00'
+                            elif '+' in suf:
+                                # Hopefully a timezone identifier of form +HH:MM
+                                frac_seconds_raw, tz_suffix = suf.split('+')
+                                tz_suffix = '+' + tz_suffix
+                            else:
+                                raise ValueError(f'Failed to get timezone from timestamp :{cached_at_str}')
+                            
+                            if not frac_seconds_raw.isdigit():
+                                raise ValueError(f'Fractional seconds are not digits: {cached_at_str}')
+
+                            # Handle varying lengths of fractional seconds (RFC3339Nano)
+                            # Pad or truncate to 6 digits (microseconds) for consistent fromisoformat parsing
+                            frac_seconds = frac_seconds_raw[:6]
+                            if len(frac_seconds) < 6:
+                                frac_seconds = frac_seconds.ljust(6, '0')
+
+                            cached_at_str = f'{pre}.{frac_seconds}{tz_suffix}'
+                        
+                        elif cached_at_str.endswith('Z'):
+                            # Handle timestamps without fractional seconds (e.g. 2024-03-12T10:00:00Z)
+                            cached_at_str = cached_at_str[:-1] + '+00:00'
+
                         cached_at = datetime.fromisoformat(cached_at_str)
                     except ValueError as e:
                         logging.warning(f'Failed to get cached_at timestamp for routeserver "{routeserver_id}": {e}')
