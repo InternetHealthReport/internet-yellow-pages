@@ -33,18 +33,13 @@ S3A_OPENINTEL_ENDPOINT = 'https://object.openintel.nl'
 
 
 class OpenIntelCrawler(BaseCrawler):
-    def __init__(self, organization, url, name, dataset):
+    def __init__(self, organization, url, name, datasets):
         """Initialization of the OpenIntel crawler requires the name of the dataset
         (e.g. tranco or infra:ns)."""
 
-        self.dataset = dataset
+        self.datasets = datasets
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://openintel.nl/data/forward-dns/top-lists/'
-        if dataset == 'crux':
-            # We cannot link to the precise date, since the data is separated by country
-            # code first.
-            self.reference['reference_url_data'] = \
-                'https://openintel.nl/download/forward-dns/basis=toplist/source=crux/'
         self.warehouse_bucket = None
         self.fdns_warehouse_s3 = str()
         self.create_tmp_dir()
@@ -84,7 +79,7 @@ class OpenIntelCrawler(BaseCrawler):
         # The OpenINTEL bucket
         self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel-public')
 
-    def get_parquet_public(self):
+    def get_parquet_public(self, dataset: str):
         """Fetch and read dataframes for the specified toplist dataset from the public
         S3 bucket."""
 
@@ -92,9 +87,9 @@ class OpenIntelCrawler(BaseCrawler):
         # OpenINTEL measurement data objects base prefix
         self.fdns_warehouse_s3 = 'fdns/basis=toplist'
 
-        self.fetch_warehouse_data()
+        self.fetch_warehouse_data(dataset)
 
-    def get_parquet_closed(self):
+    def get_parquet_closed(self, dataset):
         """Fetch and read dataframes for the specified dataset from the closed S3
         bucket."""
 
@@ -119,7 +114,7 @@ class OpenIntelCrawler(BaseCrawler):
         # OpenINTEL measurement data objects base prefix
         self.fdns_warehouse_s3 = 'category=fdns/type=warehouse'
 
-        self.fetch_warehouse_data()
+        self.fetch_warehouse_data(dataset)
 
     def get_parquet_crux(self):
         """Fetch and read dataframes for CRuX toplist.
@@ -133,14 +128,14 @@ class OpenIntelCrawler(BaseCrawler):
 
         self.init_public_s3_bucket()
 
-        prefix = f'fdns/basis=toplist/source={self.dataset}'
+        prefix = 'fdns/basis=toplist/source=crux'
         for country_code in crux_country_codes:
             if country_code.upper() not in country_id:
                 continue
             logging.info(f'Fetching {country_code.upper()}')
-            self.fetch_warehouse_data(os.path.join(prefix, f'country-code={country_code}'))
+            self.fetch_warehouse_data('crux', os.path.join(prefix, f'country-code={country_code}'))
 
-    def fetch_warehouse_data(self, prefix: str = str()):
+    def fetch_warehouse_data(self, dataset: str, prefix: str = str()):
         """Fetch and read dataframes.
 
         Requires initialization of the S3 bucket.
@@ -149,7 +144,7 @@ class OpenIntelCrawler(BaseCrawler):
             prefix (str, optional): Custom filter prefix.
         """
         if not prefix:
-            prefix = os.path.join(self.fdns_warehouse_s3, f'source={self.dataset}')
+            prefix = os.path.join(self.fdns_warehouse_s3, f'source={dataset}')
         # Get latest available data.
         date = arrow.utcnow()
         for lookback_days in range(6):
@@ -165,7 +160,7 @@ class OpenIntelCrawler(BaseCrawler):
                 break
             date = date.shift(days=-1)
         else:
-            if self.dataset == 'crux':
+            if dataset == 'crux':
                 # For CRuX not all countries have lists all the time...
                 logging.warning('Failed to find data within the specified lookback interval.')
                 return
@@ -174,9 +169,9 @@ class OpenIntelCrawler(BaseCrawler):
         self.reference['reference_time_modification'] = \
             date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
 
-        if self.dataset in ['tranco', 'umbrella']:
+        if dataset in ['tranco', 'umbrella']:
             # Set data URL for public datasets.
-            self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=self.dataset))
+            self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=dataset))
 
         logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
@@ -254,19 +249,22 @@ class OpenIntelCrawler(BaseCrawler):
     def run(self):
         """Fetch the forward DNS data, populate a data frame, and process lines one by
         one."""
-        attempt = 5
         self.pandas_df_list = list()  # List of Parquet file-specific Pandas DataFrames
 
-        while len(self.pandas_df_list) == 0 and attempt > 0:
-            if self.dataset == 'tranco':
-                self.get_parquet_public()
-            elif self.dataset == 'umbrella':
-                self.get_parquet_public()
-            elif self.dataset == 'infra:ns':
-                self.get_parquet_closed()
-            elif self.dataset == 'crux':
-                self.get_parquet_crux()
-            attempt -= 1
+        for dataset in self.datasets:
+            attempt = 5
+            list_past_len = len(self.pandas_df_list)
+
+            while len(self.pandas_df_list) == list_past_len and attempt > 0:
+                if dataset == 'tranco':
+                    self.get_parquet_public(dataset)
+                elif dataset == 'umbrella':
+                    self.get_parquet_public(dataset)
+                elif dataset == 'infra:ns':
+                    self.get_parquet_closed(dataset)
+                elif dataset == 'crux':
+                    self.get_parquet_crux()
+                attempt -= 1
 
         # Concatenate Parquet file-specific DFs
         pandas_df = pd.concat(self.pandas_df_list)
