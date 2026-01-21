@@ -9,15 +9,23 @@ The crawler *can* also import the received routes of all neighbors, however test
 shown that this takes an unreasonable amount of time for most IXPs due to the tiny
 pagination size (250 routes per page). Therefore this functionality is disabled by default.
 
-List of supported IXPs:
+List of supported IXPs and IXP associations (i.e., some looking glasses contain route
+servers from multiple IXPs):
 
 - AMS-IX (`amsix.py`)
 - BCIX (`bcix.py`)
+- DD-IX (`ddix.py`)
 - DE-CIX (`decix.py`)
 - IX.br (`ixbr.py`)
+- IX Australia (`ixaustralia.py`)
 - LINX (`linx.py`)
 - Megaport (`megaport.py`)
 - Netnod (`netnod.py`)
+- NZIX (`nzix.py`)
+- PIX (`pix.py`)
+- SFMIX (`sfmix.py`)
+- Stuttgart-IX (`six.py`)
+- TOP-IX (`topix.py`)
 
 ## Graph representation
 

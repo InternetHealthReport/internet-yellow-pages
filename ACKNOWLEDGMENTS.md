@@ -11,15 +11,22 @@ Please refer to the READMEs in the respective crawler directories for more infor
 
 We retrieve route server looking glass snapshots from the following IXPs.
 
-|   Name   |            URL             |
-|----------|----------------------------|
-| AMS-IX   | https://lg.ams-ix.net/     |
-| BCIX     | https://lg.bcix.de/        |
-| DE-CIX   | https://lg.de-cix.net/     |
-| IX.br    | https://lg.ix.br/          |
-| LINX     | https://alice-rs.linx.net/ |
-| Megaport | https://lg.megaport.com/   |
-| Netnod   | https://lg.netnod.se/      |
+|     Name     |            URL             |
+|--------------|----------------------------|
+| AMS-IX       | https://lg.ams-ix.net/     |
+| BCIX         | https://lg.bcix.de/        |
+| DD-IX        | https://lg.dd-ix.net       |
+| DE-CIX       | https://lg.de-cix.net/     |
+| IX.br        | https://lg.ix.br/          |
+| LINX         | https://alice-rs.linx.net/ |
+| Megaport     | https://lg.megaport.com/   |
+| Netnod       | https://lg.netnod.se/      |
+| IX Australia | https://lg.ix.asn.au       |
+| NZIX         | https://lg.ix.nz           |
+| PIX          | https://glass.gigapix.pt   |
+| SFMIX        | https://alice.sfmix.org    |
+| Stuttgart-IX | https://lg.s-ix.de         |
+| TOP-IX       | https://lg.top-ix.org      |
 
 ## Amazon
 
