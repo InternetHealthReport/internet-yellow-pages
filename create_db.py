@@ -168,7 +168,6 @@ def main():
                 error_message = f'Did not receive data from crawler {name}'
                 raise RelationCountError(error_message)
             status[module_name] = STATUS_OK
-            logging.info(f'end {module}')
         except RelationCountError as relation_count_error:
             no_error = False
             logging.error(relation_count_error)
@@ -176,7 +175,9 @@ def main():
         except Exception as e:
             no_error = False
             logging.error('Crawler crashed!')
+            logging.error(e)
             status[module_name] = e
+        logging.info(f'end {module}')
 
     # ######### Post processing scripts ##########
 
@@ -191,13 +192,13 @@ def main():
             post.run()
             post.close()
             status[module_name] = STATUS_OK
-            logging.info(f'end {module}')
 
         except Exception as e:
             no_error = False
             logging.error('Crawler crashed!')
             logging.error(e)
             status[module_name] = e
+        logging.info(f'end {module}')
 
     # ######### Stop container and dump DB ##########
 
