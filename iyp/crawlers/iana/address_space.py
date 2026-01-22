@@ -147,7 +147,9 @@ class Crawler(BaseCrawler):
             # Determine relationship type
             rel_type = status.upper()
             if rel_type not in links_by_type:
-                links_by_type[rel_type] = []
+                raise RequestStatusError(
+                    f'Unexpected status "{rel_type}" in IANA address space data from {url}'
+                )
 
             # Create relationship properties
             ref_copy = self.reference.copy()
