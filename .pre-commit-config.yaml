@@ -1,7 +1,7 @@
 files: \.py$
 
-default_language_version:
-  python: python3.13
+  # default_language_version:
+  # python: python3.12
   
 repos:
 -   repo: https://github.com/PyCQA/autoflake
