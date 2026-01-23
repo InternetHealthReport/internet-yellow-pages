@@ -32,44 +32,16 @@ IYP imports `NS`, `A`, and `AAAA` records from the root zone file.
 
 ### Address Space Registries - `address_space.py`
 
-IYP imports IANA-level IPv4 and IPv6 address space allocations and special-purpose reservations. This provides the top-level view of global IP address management.
+IYP imports IANA-level IPv4 and IPv6 address space allocations and special-purpose
+reservations. This provides the top-level view of global IP address management.
+
 ```cypher
 // RIR allocation
-(:IANAPrefix {prefix: '1.0.0.0/8'})-[:ALLOCATED {designation: 'APNIC', date: '2010-01', whois: 'whois.apnic.net', status: 'ALLOCATED'}]->(:Organization {name: 'APNIC'})
+(:IANAPrefix {prefix: '1.0.0.0/8'})-[:ALLOCATED]->(:Organization {name: 'APNIC'})
 
 // Legacy allocation
-(:IANAPrefix {prefix: '3.0.0.0/8'})-[:LEGACY {designation: 'General Electric Company', date: '1994-05', whois: 'whois.arin.net', status: 'LEGACY'}]->(:Organization {name: 'ARIN'})
+(:IANAPrefix {prefix: '17.0.0.0/8'})-[:LEGACY]->(:Organization {name: 'Apple Computer Inc.'})
 
 // Special-purpose reservation
-(:IANAPrefix {prefix: '10.0.0.0/8'})-[:RESERVED {designation: 'Private-Use', allocation_date: '1996-02', reserved: True, rfcs: ['RFC1918']}]->(:Organization {name: 'IANA'})
+(:IANAPrefix {prefix: '192.168.0.0/16'})-[:RESERVED {Name: 'Private-Use'}]->(:Organization {name: 'IANA'})
 ```
-
-#### Node Labels
-
-**IANAPrefix**: Represents an IP prefix (IPv4 or IPv6) allocated or reserved by IANA.
-- `prefix`: IP prefix in CIDR notation (e.g., "1.0.0.0/8", "2001:200::/23")
-
-**Organization**: Organizations managing address space (RIRs, IANA, or legacy holders).
-- `name`: Normalized organization name (e.g., "APNIC", "ARIN", "RIPE NCC", "LACNIC", "AFRINIC", "IANA")
-
-#### Relationship Types
-
-**ALLOCATED**: Address space allocated by IANA to a Regional Internet Registry.
-- Properties: `designation`, `date`, `whois`, `status`
-
-**RESERVED**: Address space reserved for special purposes or by protocol specification.
-- Properties: `designation`, `allocation_date`, `reserved`, `rfcs`
-
-**LEGACY**: Legacy allocations made before RIRs existed, now administered by RIRs.
-- Properties: `designation`, `date`, `whois`, `status`
-
-#### Organization Name Normalization
-
-Organization names are normalized from IANA's "Designation" field:
-- `"IANA - xxx"` → `"IANA"`
-- `"Administered by xxx"` → `"xxx"`
-- `"Multicast"` → `"IANA"`
-- `"Future use"` → `"IANA"`
-- Company/agency names preserved as-is
-
-The original designation is kept in relationship properties for full data provenance.

@@ -30,11 +30,10 @@
 | Point                   | A point on the earth surface uniquely identified by the **position** property. The position is expressed in the World Geodesic System, WGS84 (x=longitude, y=latitude).                                                 |
 | Prefix                  | Generic type for IP prefixes covering all other prefix types (e.g. BGPPrefix, PeeringLAN, GeoPrefix). The prefix property is **not** unique for Prefix nodes. The **af** property (address family) provides the IP version of the prefix.|
 | Ranking                 | Represent a specific ranking of Internet resources (e.g. CAIDA's ASRank or Tranco ranking). The rank value for each resource is given by the RANK relationship. |
-| Resolver                | An additional label added to IP nodes if they are a DNS resolver.      
-| IANAPrefix | An IPv4 or IPv6 address prefix allocated or reserved at the IANA level. Represents global address space blocks before delegation to RIRs or special-purpose reservation. Uniquely identified by the **prefix** property. |                                                                      |
+| Resolver                | An additional label added to IP nodes if they are a DNS resolver.
+| IANAPrefix              | An IPv4 or IPv6 address prefix allocated or reserved at the IANA level. Represents global address space blocks before delegation to RIRs or special-purpose reservation. Uniquely identified by the **prefix** property. This is a subtype of Prefix. |
 | RDNSPrefix              | An IP prefix representing a reverse DNS zone that is managed by one or more authoritative name servers and uniquely identified with the **prefix** property. This is a subtype of Prefix. |
 | RIRPrefix               | An IP prefix assigned by of the five RIRs' (delegated files), uniquely identified with the **prefix** property. This is a subtype of Prefix.                                                                      |
 | RPKIPrefix              | An IP prefix registered in RPKI, uniquely identified with the **prefix** property. This is a subtype of Prefix.                                                                                                   |
 | Tag                     | The output of a classification. A tag can be the result of a manual or automated classification. Uniquely identified by the **label** property.|
 | URL                     | The full URL for an Internet resource, uniquely identified by the **url** property.                                               |
-
