@@ -305,7 +305,7 @@ class OpenIntelCrawler(BaseCrawler):
         # response values of NS records are name servers
         name_servers = set(df[(df.ns_address.notnull()) & (df.response_type == 'NS')]['ns_address'])
 
-        # query_names for A and AAAA records are host names
+        # response_name for A and AAAA records are host names
         host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['response_name'])
 
         ipv6_addresses = set()
