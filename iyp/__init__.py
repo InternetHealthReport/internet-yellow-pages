@@ -1,6 +1,7 @@
 import bz2
 import glob
 import ipaddress
+import itertools
 import json
 import logging
 import os
@@ -301,8 +302,7 @@ class IYP(object):
         # Create missing nodes
         if create and missing_nodes:
             logging.info(f'Creating {len(missing_nodes)} {label_str} nodes.')
-            for i in range(0, len(missing_nodes), BATCH_SIZE):
-                batch = missing_nodes[i:i + BATCH_SIZE]
+            for batch in itertools.batched(missing_nodes, BATCH_SIZE):
 
                 create_query = f"""WITH $batch AS batch
                 UNWIND batch AS item CREATE (n:{label_str})
@@ -422,8 +422,7 @@ class IYP(object):
                     RETURN {return_clause_str}, elementId(a) AS _id"""
 
         ids = dict()
-        for i in range(0, len(properties), BATCH_SIZE):
-            props = properties[i: i + BATCH_SIZE]
+        for props in itertools.batched(properties, BATCH_SIZE):
             results = self.tx.run(query, props=props)
             if len(id_properties) == 1:
                 # Single id property results in a simple key-to-value mapping.
@@ -498,8 +497,7 @@ class IYP(object):
 
         logging.info(f'Adding label "{label_str}" to {len(node_ids)} nodes.')
 
-        for i in range(0, len(node_ids), BATCH_SIZE):
-            batch = node_ids[i:i + BATCH_SIZE]
+        for batch in itertools.batched(node_ids, BATCH_SIZE):
 
             self.tx.run(f"""WITH $batch AS batch
                         MATCH (n)
@@ -551,12 +549,10 @@ class IYP(object):
 
         self.__create_range_index(type, 'reference_name', on_relationship=True)
 
-        action_str = 'Creating' if action == 'create' else 'Merging'
-        logging.info(f'{action_str} {len(links)} {type} relationships.')
+        nb_links = 0
 
         # Create links in batches
-        for i in range(0, len(links), BATCH_SIZE):
-            batch = links[i:i + BATCH_SIZE]
+        for batch in itertools.batched(links, BATCH_SIZE):
 
             create_query = f"""WITH $batch AS batch
             UNWIND batch AS link
@@ -580,6 +576,10 @@ class IYP(object):
             res = self.tx.run(create_query, batch=batch)
             res.consume()
             self.commit()
+            nb_links += len(batch)
+
+        action_str = 'Creating' if action == 'create' else 'Merging'
+        logging.info(f'{action_str} {len(links)} {type} relationships.')
 
     def add_links(self, src_node, links):
         """Create links from src_node to the destination nodes given in parameter links.
@@ -627,8 +627,7 @@ class IYP(object):
         # Ensure proper formatting and transform into dict.
         formatted_props = [{'id': node_id, 'props': format_properties(props)} for node_id, props in id_prop_list]
 
-        for i in range(0, len(formatted_props), BATCH_SIZE):
-            batch = formatted_props[i: i + BATCH_SIZE]
+        for batch in itertools.batched(formatted_props, BATCH_SIZE):
 
             add_query = """WITH $batch AS batch
             UNWIND batch AS item
