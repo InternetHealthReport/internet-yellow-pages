@@ -47,7 +47,9 @@ class Crawler(BaseCrawler):
             req = requests.head(url)
 
             prev_day -= timedelta(days=1)
-            logging.warning("Today's data not yet available!")
+            trials += 1
+            if req is None or req.status_code != 200:
+                logging.warning("Today's data not yet available!")
 
         self.reference['reference_time_modification'] = self.now
         for collector in collectors:
