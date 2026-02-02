@@ -7,7 +7,7 @@ from datetime import datetime, time, timedelta, timezone
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, DataNotAvailableError
 
 MAIN_PAGE = 'https://data.bgpkit.com/peer-stats/'
 URL = 'https://data.bgpkit.com/peer-stats/{collector}/{year}/{month:02d}/peer-stats_{collector}_{year}-{month:02d}-{day:02d}_{epoch}.bz2'  # noqa: E501
@@ -35,21 +35,21 @@ class Crawler(BaseCrawler):
         # Find latest date
         prev_day = datetime.combine(datetime.utcnow(), time.min, timezone.utc)
         self.now = None
-        req = None
         trials = 0
 
-        while (req is None or req.status_code != 200) and trials < 7:
+        while trials < 7:
             self.now = prev_day
             # Check if today's data is available
             url = URL.format(collector='rrc10', year=self.now.year,
                              month=self.now.month, day=self.now.day,
                              epoch=int(self.now.timestamp()))
             req = requests.head(url)
-
+            if req.ok:
+                break
             prev_day -= timedelta(days=1)
             trials += 1
-            if req is None or req.status_code != 200:
-                logging.warning("Today's data not yet available!")
+        else:
+            raise DataNotAvailableError('No recent data available.')
 
         self.reference['reference_time_modification'] = self.now
         for collector in collectors:
