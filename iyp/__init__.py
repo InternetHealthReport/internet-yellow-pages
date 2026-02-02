@@ -65,13 +65,11 @@ def dict2str(d, eq=':', pfx=''):
 
     data = []
     for key, value in d.items():
-        if isinstance(value, str) and '"' in value:
-            escaped = value.replace("'", r"\'")
+        if isinstance(value, str):
+            escaped = value.replace('\\', '\\\\').replace("'", "\\'")
             data.append(f"{pfx + key}{eq} '{escaped}'")
         elif isinstance(value, datetime):
             data.append(f'{pfx + key}{eq} datetime("{value.isoformat()}")')
-        elif isinstance(value, str):
-            data.append(f'{pfx + key}{eq} "{value}"')
         elif value is None:
             # Neo4j does not have the concept of empty properties.
             pass
