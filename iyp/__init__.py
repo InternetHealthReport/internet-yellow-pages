@@ -545,14 +545,14 @@ class IYP(object):
         Notice: this method commit changes to neo4j
         """
 
-        batch_format_link_properties(links, inplace=True)
-
         self.__create_range_index(type, 'reference_name', on_relationship=True)
 
         nb_links = 0
 
         # Create links in batches
         for batch in itertools.batched(links, BATCH_SIZE):
+
+            batch_format_link_properties(batch, inplace=True)
 
             create_query = f"""WITH $batch AS batch
             UNWIND batch AS link
@@ -579,7 +579,7 @@ class IYP(object):
             nb_links += len(batch)
 
         action_str = 'Creating' if action == 'create' else 'Merging'
-        logging.info(f'{action_str} {len(links)} {type} relationships.')
+        logging.info(f'{action_str} {nb_links} {type} relationships.')
 
     def add_links(self, src_node, links):
         """Create links from src_node to the destination nodes given in parameter links.
