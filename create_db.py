@@ -156,6 +156,7 @@ def main():
     status = {}
     no_error = True
     for module_name in conf['iyp']['crawlers']:
+        crawler = None
         try:
             module = importlib.import_module(module_name)
             logging.info(f'start {module}')
@@ -163,7 +164,6 @@ def main():
             crawler = module.Crawler(module.ORG, module.URL, name)
             crawler.run()
             passed = crawler.unit_test()
-            crawler.close()
             if not passed:
                 error_message = f'Did not receive data from crawler {name}'
                 raise RelationCountError(error_message)
@@ -177,27 +177,37 @@ def main():
             logging.error('Crawler crashed!')
             logging.error(e)
             status[module_name] = e
+        finally:
+            if crawler is not None:
+                try:
+                    crawler.close()
+                except Exception as cleanup_error:
+                    logging.error(f'Failed to close crawler: {cleanup_error}')
         logging.info(f'end {module}')
 
     # ######### Post processing scripts ##########
 
     logging.info('Post-processing...')
     for module_name in conf['iyp']['post']:
-        module = importlib.import_module(module_name)
-        name = module_name.replace('iyp.post.', '')
-
+        post = None
         try:
+            module = importlib.import_module(module_name)
+            name = module_name.replace('iyp.post.', '')
             logging.info(f'start {module}')
             post = module.PostProcess(name)
             post.run()
-            post.close()
             status[module_name] = STATUS_OK
-
         except Exception as e:
             no_error = False
-            logging.error('Crawler crashed!')
+            logging.error('Post-processing crashed!')
             logging.error(e)
             status[module_name] = e
+        finally:
+            if post is not None:
+                try:
+                    post.close()
+                except Exception as cleanup_error:
+                    logging.error(f'Failed to close post-processor: {cleanup_error}')
         logging.info(f'end {module}')
 
     # ######### Stop container and dump DB ##########
