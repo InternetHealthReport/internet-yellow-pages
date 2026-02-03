@@ -89,19 +89,22 @@ def main():
 
     # ######### Start a new docker image ##########
 
+    auth = 'none'
+    if 'login' in conf['neo4j'] and 'password' in conf['neo4j']:
+        auth = f'{conf["neo4j"]["login"]}/{conf["neo4j"]["password"]}'
+
     logging.info('Starting new container...')
     container = client.containers.run(
         'neo4j:' + NEO4J_VERSION,
         name=f'iyp-{date}',
         ports={
-            7474: 7474,
-            7687: 7687
+            7687: conf['neo4j']['port']
         },
         volumes={
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
         },
         environment={
-            'NEO4J_AUTH': 'neo4j/password',
+            'NEO4J_AUTH': auth,
             'NEO4J_server_memory_heap_initial__size': '16G',
             'NEO4J_server_memory_heap_max__size': '16G',
         },
@@ -165,7 +168,6 @@ def main():
                 error_message = f'Did not receive data from crawler {name}'
                 raise RelationCountError(error_message)
             status[module_name] = STATUS_OK
-            logging.info(f'end {module}')
         except RelationCountError as relation_count_error:
             no_error = False
             logging.error(relation_count_error)
@@ -173,7 +175,9 @@ def main():
         except Exception as e:
             no_error = False
             logging.error('Crawler crashed!')
+            logging.error(e)
             status[module_name] = e
+        logging.info(f'end {module}')
 
     # ######### Post processing scripts ##########
 
@@ -188,13 +192,13 @@ def main():
             post.run()
             post.close()
             status[module_name] = STATUS_OK
-            logging.info(f'end {module}')
 
         except Exception as e:
             no_error = False
             logging.error('Crawler crashed!')
             logging.error(e)
             status[module_name] = e
+        logging.info(f'end {module}')
 
     # ######### Stop container and dump DB ##########
 

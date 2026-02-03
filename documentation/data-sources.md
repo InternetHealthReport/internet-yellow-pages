@@ -3,13 +3,20 @@
 | Organization              | Dataset Name / Description                                                                                    | URL                                                             | Crawler                                                                                                        | reference_name   |
 |---------------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|----|
 | Alice-LG | IXP route server looking glass snapshots| https://github.com/alice-lg/alice-lg | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | |
-| | AMS-IX| https://lg.ams-ix.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.amsix |
-| | BCIX| https://lg.bcix.de | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.bcix |
-| | DE-CIX| https://lg.de-cix.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.decix |
-| | IX.br| https://lg.ix.br | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.ixbr |
-| | LINX| https://alice-rs.linx.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.linx |
-| | Megaport| https://lg.megaport.com | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.megaport |
-| | Netnod| https://lg.netnod.se | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme)| alice_lg.netnod |
+| | AMS-IX | https://lg.ams-ix.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.amsix |
+| | BCIX | https://lg.bcix.de | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.bcix |
+| | DE-CIX | https://lg.de-cix.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.decix |
+| | DD-IX | https://lg.dd-ix.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.ddix |
+| | IX.br | https://lg.ix.br | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.ixbr |
+| | IX Australia | https://lg.ix.asn.au | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.ixaustralia |
+| | LINX | https://alice-rs.linx.net | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.linx |
+| | Megaport | https://lg.megaport.com | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.megaport |
+| | Netnod | https://lg.netnod.se | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.netnod |
+| | NZIX | https://lg.ix.nz | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.nzix |
+| | PIX | https://glass.gigapix.pt | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.pix |
+| | SFMIX | https://alice.sfmix.org | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.sfmix |
+| | Stuttgart-IX | https://lg.s-ix.de | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.six |
+| | TOP-IX | https://lg.top-ix.org | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/alice_lg#readme) | alice_lg.topix |
 | Amazon | AWS IP Ranges | https://ip-ranges.amazonaws.com/ip-ranges.json | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/amazon#readme) | amazon.aws_ip_ranges |
 | APNIC | AS population estimate| https://stats.labs.apnic.net/aspop | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/apnic#readme) | apnic.eyeball |
 | BGPKIT | as2rel| https://data.bgpkit.com/as2rel | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/bgpkit#readme) | bgpkit.as2rel_v4, bgpkit.as2rel_v6 |
@@ -34,6 +41,8 @@
 | | Country Dependency| https://www.ihr.live/en/documentation#Country-s-network-dependency | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.country_dependency |
 | | ROV| https://www.ihr.live/en/documentation#Route-Origin-Validation | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.rov |
 | Internet Intelligence Lab | AS to Organization Mapping| https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/inetintel#readme)| inetintel.as_org |
+| Internet Assigned Numbers Authority (IANA) | DNS Root Zone File | https://www.iana.org/domains/root/files | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.root_zone |
+| | IPv4/IPv6 Address Allocations (extract) | https://www.iana.org/numbers | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.address_space |
 | IPinfo | IP to Country Mapping| https://ipinfo.io | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ipinfo#readme) | ipinfo.ip_country |
 | NRO | Extended allocation and assignment reports| https://www.nro.net/about/rirs/statistics | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/nro#readme) | nro.delegated_stats |
 | OONI | Facebook Messenger | https://github.com/ooni/spec/blob/master/nettests/ts-019-facebook-messenger.md | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ooni#readme) | ooni.facebookmessenger |

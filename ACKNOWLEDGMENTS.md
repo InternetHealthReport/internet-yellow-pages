@@ -11,15 +11,22 @@ Please refer to the READMEs in the respective crawler directories for more infor
 
 We retrieve route server looking glass snapshots from the following IXPs.
 
-|   Name   |            URL             |
-|----------|----------------------------|
-| AMS-IX   | https://lg.ams-ix.net/     |
-| BCIX     | https://lg.bcix.de/        |
-| DE-CIX   | https://lg.de-cix.net/     |
-| IX.br    | https://lg.ix.br/          |
-| LINX     | https://alice-rs.linx.net/ |
-| Megaport | https://lg.megaport.com/   |
-| Netnod   | https://lg.netnod.se/      |
+|     Name     |            URL             |
+|--------------|----------------------------|
+| AMS-IX       | https://lg.ams-ix.net/     |
+| BCIX         | https://lg.bcix.de/        |
+| DD-IX        | https://lg.dd-ix.net       |
+| DE-CIX       | https://lg.de-cix.net/     |
+| IX.br        | https://lg.ix.br/          |
+| LINX         | https://alice-rs.linx.net/ |
+| Megaport     | https://lg.megaport.com/   |
+| Netnod       | https://lg.netnod.se/      |
+| IX Australia | https://lg.ix.asn.au       |
+| NZIX         | https://lg.ix.nz           |
+| PIX          | https://glass.gigapix.pt   |
+| SFMIX        | https://alice.sfmix.org    |
+| Stuttgart-IX | https://lg.s-ix.de         |
+| TOP-IX       | https://lg.top-ix.org      |
 
 ## Amazon
 
@@ -121,6 +128,25 @@ Tech](https://inetintel.notion.site/Internet-Intelligence-Research-Lab-d18618456
 
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS-to-Organization-Mapping/master/LICENSE).
+
+## Internet Assigned Numbers Authority (IANA)
+
+We use multiple authoritative registries published by the
+[Internet Assigned Numbers Authority (IANA)](https://www.iana.org/) for modeling
+global Internet infrastructure.
+
+These datasets include:
+
+- The [DNS Root Zone File](https://www.iana.org/domains/root/files), used to retrieve
+  authoritative name servers and their IPv4 and IPv6 addresses for all top-level
+  domains.
+- The [IPv4 Address Space Registry](https://www.iana.org/assignments/ipv4-address-space/)
+  and the [IPv6 Unicast Address Assignments](https://www.iana.org/assignments/ipv6-unicast-address-assignments/),
+  used to model IANA-level address space allocations to Regional Internet Registries
+  (RIRs).
+- The [IPv4](https://www.iana.org/assignments/iana-ipv4-special-registry/) and
+  [IPv6](https://www.iana.org/assignments/iana-ipv6-special-registry/) Special-Purpose
+  Address Registries, used to identify reserved and protocol-specific address blocks.
 
 ## IPinfo
 

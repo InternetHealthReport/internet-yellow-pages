@@ -168,7 +168,7 @@ class ShowBGPParser:
                 continue
             origin = route.path[-1].strip('{}')
             if ',' in origin:
-                # TODO Handle AS sets.
+                # AS set. No correct mapping possible, so ignore.
                 as_sets += 1
                 continue
             origin = int(origin)

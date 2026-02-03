@@ -8,6 +8,7 @@ import tempfile
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from ipaddress import IPv6Address
+from typing import Iterable
 
 import arrow
 import boto3
@@ -305,7 +306,7 @@ class OpenIntelCrawler(BaseCrawler):
         # response values of NS records are name servers
         name_servers = set(df[(df.ns_address.notnull()) & (df.response_type == 'NS')]['ns_address'])
 
-        # query_names for A and AAAA records are host names
+        # response_name for A and AAAA records are host names
         host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['response_name'])
 
         ipv6_addresses = set()
@@ -403,12 +404,10 @@ class OpenIntelCrawler(BaseCrawler):
                      f'{len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
 
         # Compute links
-        res_links = list()
         mng_links = list()
         partof_links = list()
-        aliasof_links = list()
         unique_alias = set()
-        unique_res = set()
+        unique_res = defaultdict(set)
 
         # RESOLVES_TO and MANAGED_BY links
         for row in df.itertuples():
@@ -427,11 +426,8 @@ class OpenIntelCrawler(BaseCrawler):
             elif row.response_type == 'A' and row.ip4_address:
                 host_qid = host_id[row.response_name]
                 ip_qid = ip4_id[row.ip4_address]
-                if (host_qid, ip_qid, row.response_type) not in unique_res:
-                    res_links.append({'src_id': host_qid,
-                                      'dst_id': ip_qid,
-                                      'props': [self.reference, {'source': row.response_type}]})
-                    unique_res.add((host_qid, ip_qid, row.response_type))
+                unique_res[(host_qid, ip_qid)].add(row.response_type)
+
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
                 try:
@@ -441,13 +437,9 @@ class OpenIntelCrawler(BaseCrawler):
                     continue
                 host_qid = host_id[row.response_name]
                 ip_qid = ip6_id[ip_normalized]
-                if (host_qid, ip_qid, row.response_type) not in unique_res:
-                    res_links.append({'src_id': host_qid,
-                                      'dst_id': ip_qid,
-                                      'props': [self.reference, {'source': row.response_type}]})
-                    unique_res.add((host_qid, ip_qid, row.response_type))
+                unique_res[(host_qid, ip_qid)].add(row.response_type)
 
-        normal_resolve_to_links = len(res_links)
+        normal_resolve_to_links = len(unique_res)
 
         # Process CNAMES
         # RESOLVES_TO relationships
@@ -457,11 +449,8 @@ class OpenIntelCrawler(BaseCrawler):
                 ip_id = ip4_id if response_type == 'A' else ip6_id
                 for ip in ips:
                     ip_qid = ip_id[ip]
-                    if (host_qid, ip_qid, 'CNAME') not in unique_res:
-                        res_links.append({'src_id': host_qid,
-                                          'dst_id': ip_qid,
-                                          'props': [self.reference, {'source': 'CNAME'}]})
-                        unique_res.add((host_qid, ip_qid, 'CNAME'))
+                    unique_res[(host_qid, ip_qid)].add('CNAME')
+
         # Add ALIAS_OF links for resolvable parts.
         for source, destinations in cnames.items():
             if source not in cname_resolves_to:
@@ -472,26 +461,41 @@ class OpenIntelCrawler(BaseCrawler):
                 if destination not in cname_resolves_to and destination not in cname_ip_records:
                     continue
                 destination_qid = host_id[destination]
-                if (source_qid, destination_qid) not in unique_alias:
-                    aliasof_links.append({'src_id': source_qid,
-                                          'dst_id': destination_qid,
-                                          'props': [self.reference]})
-                    unique_alias.add((source_qid, destination_qid))
+                unique_alias.add((source_qid, destination_qid))
 
         # PART_OF links between HostNames and DomainNames
         for hd in host_names.intersection(domain_names):
             partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
 
-        cname_resolve_to_links = len(res_links) - normal_resolve_to_links
+        cname_resolve_to_links = len(unique_res) - normal_resolve_to_links
 
         logging.info(f'Computed {normal_resolve_to_links} A/AAAA and {cname_resolve_to_links} CNAME RESOLVES_TO links '
                      f'and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RESOLVES_TO', res_links)
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
         self.iyp.batch_add_links('PART_OF', partof_links)
-        self.iyp.batch_add_links('ALIAS_OF', aliasof_links)
+        self.iyp.batch_add_links('ALIAS_OF', self.link_generator(unique_alias))
+        self.iyp.batch_add_links('RESOLVES_TO', self.link_generator(unique_res))
+
+    def link_generator(self, elems: Iterable):
+        """Generator of links from a dict or set .
+
+        Generate a sequence of dictionaries representing links from either:
+             - a dictionary of sets where the key is a tuple (node0_id, node1_id)
+             and the value is a set of sources to add in the link properties,
+             - a set of (node0_id, node1_id) values.
+
+         Args:
+             elems (Iterable): A dictionary or set describing the links
+        """
+
+        if isinstance(elems, dict) or isinstance(elems, defaultdict):
+            for nodes, prop in elems.items():
+                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference, {'source': list(prop)}]}
+        elif isinstance(elems, set):
+            for nodes in elems:
+                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference]}
 
     def unit_test(self):
         # infra_ns and crux only have RESOLVES_TO and ALIAS_OF relationships.
