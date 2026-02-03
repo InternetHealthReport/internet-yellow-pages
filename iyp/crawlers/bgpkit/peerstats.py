@@ -3,11 +3,11 @@ import bz2
 import json
 import logging
 import sys
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, DataNotAvailableError
 
 MAIN_PAGE = 'https://data.bgpkit.com/peer-stats/'
 URL = 'https://data.bgpkit.com/peer-stats/{collector}/{year}/{month:02d}/peer-stats_{collector}_{year}-{month:02d}-{day:02d}_{epoch}.bz2'  # noqa: E501
@@ -27,65 +27,75 @@ class Crawler(BaseCrawler):
         req.raise_for_status()
 
         # Find all collectors
-        collectors = []
+        available_collectors = list()
         for line in req.text.splitlines():
             if line.strip().startswith('<span class="name">') and line.endswith('/</span>'):
-                collectors.append(line.partition('>')[2].partition('/')[0])
+                available_collectors.append(line.partition('>')[2].partition('/')[0])
 
-        # Find latest date
-        prev_day = datetime.combine(datetime.utcnow(), time.min, timezone.utc)
-        self.now = None
-        req = None
-        trials = 0
-
-        while (req is None or req.status_code != 200) and trials < 7:
-            self.now = prev_day
-            # Check if today's data is available
-            url = URL.format(collector='rrc10', year=self.now.year,
-                             month=self.now.month, day=self.now.day,
-                             epoch=int(self.now.timestamp()))
+        # Find latest available data.
+        curr_date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        max_lookback_days = 7
+        for _ in range(max_lookback_days):
+            url = URL.format(collector='rrc10', year=curr_date.year,
+                             month=curr_date.month, day=curr_date.day,
+                             epoch=int(curr_date.timestamp()))
             req = requests.head(url)
+            if req.ok:
+                break
+            curr_date -= timedelta(days=1)
+        else:
+            raise DataNotAvailableError('No recent data available.')
 
-            prev_day -= timedelta(days=1)
-            logging.warning("Today's data not yet available!")
+        logging.info(f'Using date: {curr_date.strftime("%Y-%m-%d")}')
+        self.reference['reference_time_modification'] = curr_date
 
-        self.reference['reference_time_modification'] = self.now
-        for collector in collectors:
-            url = URL.format(collector=collector, year=self.now.year,
-                             month=self.now.month, day=self.now.day,
-                             epoch=int(self.now.timestamp()))
+        collectors = list()
+        asns = set()
+        peers_with = list()
+
+        logging.info(f'Fetching data for {len(available_collectors)} collectors.')
+        for collector in available_collectors:
+            url = URL.format(collector=collector, year=curr_date.year,
+                             month=curr_date.month, day=curr_date.day,
+                             epoch=int(curr_date.timestamp()))
 
             req = requests.get(url, stream=True)
             if req.status_code != 200:
                 logging.warning(f'Data not available for {collector}')
                 continue
 
-            # keep track of collector and reference url
             stats = json.load(bz2.open(req.raw))
-            collector_qid = self.iyp.get_node(
-                'BGPCollector',
-                {'name': stats['collector'], 'project': stats['project']}
-            )
-            self.reference['reference_url_data'] = url
+            # Name should be the same as in URL, but just in case use name from file.
+            collector_name = stats['collector']
+            collectors.append({
+                'name': collector_name,
+                'project': stats['project']
+            })
 
-            asns = set()
+            # Copy since data URL is different per collector.
+            reference = dict(self.reference)
+            reference['reference_url_data'] = url
 
-            # Collect all ASNs and names
+            # Collect all ASNs and relationships.
             for peer in stats['peers'].values():
-                asns.add(peer['asn'])
+                peer_asn = peer['asn']
+                asns.add(peer_asn)
+                peers_with.append({
+                    'src_id': peer_asn,
+                    'dst_id': collector_name,
+                    'props': [reference, peer]
+                })
 
-            # get ASNs' IDs
-            self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
+        # Get nodes.
+        collector_id = self.iyp.batch_get_nodes('BGPCollector', collectors, id_properties=['name'])
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
 
-            # Compute links
-            links = []
-            for peer in stats['peers'].values():
-                as_qid = self.asn_id[peer['asn']]
-                links.append({'src_id': as_qid, 'dst_id': collector_qid,
-                             'props': [self.reference, peer]})  # Set AS name
+        # Replace QID in links.
+        for link in peers_with:
+            link['src_id'] = asn_id[link['src_id']]
+            link['dst_id'] = collector_id[link['dst_id']]
 
-            # Push all links to IYP
-            self.iyp.batch_add_links('PEERS_WITH', links)
+        self.iyp.batch_add_links('PEERS_WITH', peers_with)
 
     def unit_test(self):
         return super().unit_test(['PEERS_WITH'])

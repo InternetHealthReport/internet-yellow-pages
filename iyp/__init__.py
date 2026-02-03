@@ -157,10 +157,14 @@ class IYP(object):
         with open('config.json', 'r') as fp:
             conf = json.load(fp)
 
+        auth = None
+        if 'login' in conf['neo4j'] and 'password' in conf['neo4j']:
+            auth = (conf['neo4j']['login'], conf['neo4j']['password'])
+
         # Connect to the database
         uri = f'neo4j://{conf["neo4j"]["server"]}:{conf["neo4j"]["port"]}'
         self.db = GraphDatabase.driver(uri,
-                                       auth=(conf['neo4j']['login'], conf['neo4j']['password']),
+                                       auth=auth,
                                        notifications_min_severity=NotificationMinimumSeverity.WARNING)
 
         if self.db is None:
