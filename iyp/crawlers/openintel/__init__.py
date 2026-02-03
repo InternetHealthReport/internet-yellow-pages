@@ -1,4 +1,4 @@
-# Simple ython script to fetch domain name to IP address mappings from OpenINTEL data
+# Simple Python script to fetch domain name to IP address mappings from OpenINTEL data
 # OpenIntelCrawler is based on code from Mattijs Jonker <m.jonker@utwente.nl>
 
 import json
@@ -427,6 +427,7 @@ class OpenIntelCrawler(BaseCrawler):
                 host_qid = host_id[row.response_name]
                 ip_qid = ip4_id[row.ip4_address]
                 unique_res[(host_qid, ip_qid)].add(row.response_type)
+
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
                 try:
