@@ -260,14 +260,13 @@ class OpenIntelCrawler(BaseCrawler):
         # Remove root '.' from fields.
         df.query_name = df.query_name.str[:-1]
         df.response_name = df.response_name.str[:-1]
-        # TODO should cast the whole column to be str
         df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None and isinstance(x, str) else None)
         df.cname_name = df.cname_name.map(lambda x: x[:-1] if x is not None and isinstance(x, str) else None)
 
         logging.info(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
-        # query_names for NS records are domain names
-        domain_names = set(df[df.response_type == 'NS']['query_name'])
+        # response_names for NS records are domain names
+        domain_names = set(df[df.response_type == 'NS']['response_name'])
 
         # response values of NS records are name servers
         name_servers = set(df[(df.ns_address.notnull()) & (df.response_type == 'NS')]['ns_address'])
@@ -311,14 +310,11 @@ class OpenIntelCrawler(BaseCrawler):
         # There are cases where NS queries receive a CNAME response, which we want to
         # ignore.
         for row in df[(df.query_type.isin(['A', 'AAAA'])) & (df.response_type == 'CNAME')].itertuples():
-            # TODO EXPLAIN
-            # Links can branch, i.e., there are two CNAME records for one response name,
-            # so keep a set.
-
+            # Keep track of how to go back from a cname to the queried name
             cnames[(row.query_name, row.query_type)][row.cname_name] = row.response_name
 
             # Also need to create HostName nodes for all CNAME entries
-            # FIXME these hostnames could be not resolving to an IP?
+            # Warning: these hostnames could be not resolving to an IP!
             host_names.add(row.query_name)
             host_names.add(row.cname_name)
 
