@@ -257,11 +257,12 @@ class OpenIntelCrawler(BaseCrawler):
                 (pandas_df.cname_name.notnull())
             )
         ].drop_duplicates()
+
         # Remove root '.' from fields.
         df.query_name = df.query_name.str[:-1]
         df.response_name = df.response_name.str[:-1]
-        df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None and isinstance(x, str) else None)
-        df.cname_name = df.cname_name.map(lambda x: x[:-1] if x is not None and isinstance(x, str) else None)
+        df.ns_address = df.ns_address.astype('string').map(lambda x: x[:-1] if x is not None else None)
+        df.cname_name = df.cname_name.astype('string').map(lambda x: x[:-1] if x is not None else None)
 
         logging.info(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
