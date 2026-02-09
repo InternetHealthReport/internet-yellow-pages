@@ -261,8 +261,8 @@ class OpenIntelCrawler(BaseCrawler):
         # Remove root '.' from fields.
         df.query_name = df.query_name.str[:-1]
         df.response_name = df.response_name.str[:-1]
-        df.ns_address = df.ns_address.astype('string').map(lambda x: x[:-1] if x is not None else None)
-        df.cname_name = df.cname_name.astype('string').map(lambda x: x[:-1] if x is not None else None)
+        df.ns_address = df.ns_address.astype('string').map(lambda x: x[:-1] if not pd.isna(x) else None)
+        df.cname_name = df.cname_name.astype('string').map(lambda x: x[:-1] if not pd.isna(x) else None)
 
         logging.info(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
@@ -347,7 +347,7 @@ class OpenIntelCrawler(BaseCrawler):
 
             # NS Record
             if row.response_type == 'NS' and row.ns_address:
-                domain_qid = domain_id[row.query_name]
+                domain_qid = domain_id[row.response_name]
                 ns_qid = ns_id[row.ns_address]
                 mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
 
