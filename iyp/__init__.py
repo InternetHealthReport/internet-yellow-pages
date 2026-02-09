@@ -1,5 +1,4 @@
 import bz2
-import glob
 import ipaddress
 import json
 import logging
@@ -700,21 +699,22 @@ class BaseCrawler(object):
         # connection to IYP database
         self.iyp = IYP()
 
-    def create_tmp_dir(self, root='./tmp/'):
-        """Create a temporary directory for this crawler. If the directory already
-        exists all and contains files then all files are deleted.
+    def create_tmp_dir(self, root='./tmp/', remove=False):
+        """Create a temporary directory for this crawler.
+
+        If remove is True, the directory is removed and recreated.
+        If remove is False (default), the directory is kept if it exists
+        (preserves cache).
 
         return: path to the temporary directory
         """
 
         path = self.get_tmp_dir(root)
 
-        try:
-            os.makedirs(path, exist_ok=False)
-        except OSError:
-            files = glob.glob(path + '*')
-            for file in files:
-                os.remove(file)
+        if remove and os.path.exists(path):
+            rmtree(path)
+
+        os.makedirs(path, exist_ok=True)
 
         return path
 
