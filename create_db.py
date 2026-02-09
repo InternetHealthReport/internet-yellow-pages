@@ -199,7 +199,7 @@ def main():
             status[module_name] = STATUS_OK
         except Exception as e:
             no_error = False
-            logging.error('Post-processing crashed!')
+            logging.error('Crawler crashed!')
             logging.error(e)
             status[module_name] = e
         finally:
