@@ -174,6 +174,7 @@ class IYP(object):
         self.session = self.db.session()
 
         self.tx = self.session.begin_transaction()
+        self._closed = False
 
     def __create_unique_constraint(self, label, prop):
         """Create a UNIQUE constraint on the given properties for the given node label.
@@ -241,9 +242,14 @@ class IYP(object):
 
     def close(self):
         """Commit pending queries and close IYP."""
-        self.tx.commit()
-        self.session.close()
-        self.db.close()
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self.tx.commit()
+        finally:
+            self.session.close()
+            self.db.close()
 
     def batch_get_nodes_by_single_prop(self, label, prop_name, prop_set=set(), all=True, create=True, batch_size=0):
         """Find the ID of all nodes in the graph for the given label and check that a
@@ -659,6 +665,12 @@ class BasePostProcess(object):
         # connection to IYP database
         self.iyp = IYP()
 
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
     def close(self):
         # Commit changes to IYP
         self.iyp.close()
@@ -763,6 +775,12 @@ class BaseCrawler(object):
                 passed = False
                 logging.error(f'Missing data for relation {relation_type}')
         return passed
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def close(self):
         # Commit changes to IYP
