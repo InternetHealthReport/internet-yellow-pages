@@ -1,0 +1,289 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "iyp.fullname" . }}
+  labels:
+    {{- include "iyp.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "iyp.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  selector:
+    matchLabels:
+      {{- include "iyp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iyp.selectorLabels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 300 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        {{- if .Values.initContainers.downloadDump.enabled }}
+        - name: download-dump
+          image: "{{ .Values.initContainers.downloadDump.image.repository }}:{{ .Values.initContainers.downloadDump.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainers.downloadDump.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              DUMP_URL="{{ .Values.initContainers.downloadDump.dumpUrl }}"
+              FILENAME=$(basename "$DUMP_URL")
+              TARGET_FILE="/dumps/$FILENAME"
+              SYMLINK="/dumps/neo4j.dump"
+
+              echo "Checking for existing dump file..."
+
+              # Check if the target file already exists
+              if [ -f "$TARGET_FILE" ]; then
+                echo "File $FILENAME already exists, skipping download"
+              else
+                echo "File $FILENAME not found"
+
+                # Clean up any existing files and symlink
+                if [ -L "$SYMLINK" ]; then
+                  echo "Removing old symlink"
+                  rm "$SYMLINK"
+                fi
+
+                # Remove any old dump files
+                rm -f /dumps/*.dump
+
+                echo "Downloading database dump from $DUMP_URL"
+                curl -L -o "$TARGET_FILE" "$DUMP_URL"
+
+                if [ $? -eq 0 ]; then
+                  echo "Database dump downloaded successfully as $FILENAME"
+                else
+                  echo "Failed to download database dump"
+                  exit 1
+                fi
+              fi
+
+              # Create or update symlink
+              if [ ! -L "$SYMLINK" ] || [ "$(readlink "$SYMLINK")" != "$FILENAME" ]; then
+                echo "Creating symlink: neo4j.dump -> $FILENAME"
+                ln -sf "$FILENAME" "$SYMLINK"
+              else
+                echo "Symlink already exists and is correct"
+              fi
+
+              echo "Download process completed"
+          volumeMounts:
+            - name: dumps-volume
+              mountPath: /dumps
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+        {{- end }}
+        {{- if .Values.initContainers.loadDatabase.enabled }}
+        - name: load-database
+          image: "{{ .Values.loaderImage.repository }}:{{ .Values.loaderImage.tag }}"
+          imagePullPolicy: {{ .Values.loaderImage.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Checking for existing neo4j database..."
+
+              # Check if neo4j database exists and delete it
+              if [ -d "/data/databases/neo4j" ]; then
+                echo "Found existing neo4j database, deleting..."
+                rm -rf /data/databases/neo4j
+                echo "Existing database deleted"
+              fi
+
+              # Also remove transaction logs if they exist
+              if [ -d "/data/transactions/neo4j" ]; then
+                echo "Found existing transaction logs, deleting..."
+                rm -rf /data/transactions/neo4j
+                echo "Transaction logs deleted"
+              fi
+
+              echo "Running database load command..."
+              exec neo4j-admin database load neo4j --from-path=/dumps --verbose
+          volumeMounts:
+            - name: neo4j-data
+              mountPath: /data
+            - name: dumps-volume
+              mountPath: /dumps
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+        {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          lifecycle:
+            {{- if .Values.neo4j.apoc.enabled }}
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "cp /var/lib/neo4j/labs/apoc-*.jar /var/lib/neo4j/plugins/ || true"]
+            {{- end }}
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "cypher-shell -u neo4j -p $NEO4J_AUTH 'CALL dbms.shutdown()' || true"]
+          ports:
+            - name: https
+              containerPort: 7473
+              protocol: TCP
+            - name: bolt
+              containerPort: 7687
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          env:
+            - name: NEO4J_AUTH
+              value: "{{ if .Values.neo4j.auth.enabled }}neo4j/password{{ else }}none{{ end }}"
+            - name: NEO4J_server_default__listen__address
+              value: "{{ .Values.neo4j.server.defaultListenAddress }}"
+            {{- if .Values.neo4j.server.defaultAdvertisedAddress }}
+            - name: NEO4J_server_default__advertised__address
+              value: "{{ .Values.neo4j.server.defaultAdvertisedAddress }}"
+            {{- else if .Values.ingress.enabled }}
+            - name: NEO4J_server_default__advertised__address
+              value: "{{ (index .Values.ingress.hosts 0).host }}"
+            {{- end }}
+            - name: NEO4J_server_databases_default__to__read__only
+              value: "{{ .Values.neo4j.server.readOnly }}"
+            - name: NEO4J_server_directories_logs
+              value: "/logs"
+            - name: NEO4J_server_https_enabled
+              value: "{{ .Values.neo4j.tls.https.enabled }}"
+            - name: NEO4J_server_https_listen__address
+              value: ":7473"
+            - name: NEO4J_server_https_advertised__address
+              value: ":7473"
+            - name: NEO4J_server_bolt_enabled
+              value: "{{ .Values.neo4j.tls.bolt.enabled }}"
+            - name: NEO4J_server_bolt_tls__level
+              value: "{{ if .Values.neo4j.tls.enabled }}OPTIONAL{{ else }}DISABLED{{ end }}"
+            - name: NEO4J_server_bolt_listen__address
+              value: ":7687"
+            - name: NEO4J_server_bolt_advertised__address
+              value: ":7687"
+            - name: NEO4J_server_http_enabled
+              value: "false"
+            {{- if .Values.neo4j.tls.enabled }}
+            - name: NEO4J_dbms_ssl_policy_bolt_enabled
+              value: "{{ .Values.neo4j.tls.bolt.enabled }}"
+            - name: NEO4J_dbms_ssl_policy_bolt_base__directory
+              value: "{{ .Values.neo4j.tls.bolt.baseDirectory }}"
+            - name: NEO4J_dbms_ssl_policy_bolt_private__key
+              value: "{{ .Values.neo4j.tls.bolt.privateKey }}"
+            - name: NEO4J_dbms_ssl_policy_bolt_public__certificate
+              value: "{{ .Values.neo4j.tls.bolt.publicCertificate }}"
+            - name: NEO4J_dbms_ssl_policy_https_enabled
+              value: "{{ .Values.neo4j.tls.https.enabled }}"
+            - name: NEO4J_dbms_ssl_policy_https_base__directory
+              value: "{{ .Values.neo4j.tls.https.baseDirectory }}"
+            - name: NEO4J_dbms_ssl_policy_https_private__key
+              value: "{{ .Values.neo4j.tls.https.privateKey }}"
+            - name: NEO4J_dbms_ssl_policy_https_public__certificate
+              value: "{{ .Values.neo4j.tls.https.publicCertificate }}"
+            {{- end }}
+            {{- if .Values.neo4j.memory.heap.initial }}
+            - name: NEO4J_server_memory_heap_initial__size
+              value: "{{ .Values.neo4j.memory.heap.initial }}"
+            {{- end }}
+            {{- if .Values.neo4j.memory.heap.max }}
+            - name: NEO4J_server_memory_heap_max__size
+              value: "{{ .Values.neo4j.memory.heap.max }}"
+            {{- end }}
+            {{- if .Values.neo4j.memory.pagecache }}
+            - name: NEO4J_server_memory_pagecache_size
+              value: "{{ .Values.neo4j.memory.pagecache }}"
+            {{- end }}
+            - name: NEO4J_browser_remote__content__hostname__whitelist
+              value: "*"
+            - name: NEO4J_browser_post__connect__cmd
+              value: "play https://{{ (index .Values.ingress.hosts 0).host }}/guides/start.html"
+            {{- if .Values.neo4j.apoc.enabled }}
+            - name: NEO4J_PLUGINS
+              value: "apoc"
+            - name: NEO4J_dbms_security_procedures_unrestricted
+              value: "apoc.*"
+            {{- end }}
+          volumeMounts:
+            - name: neo4j-data
+              mountPath: /data
+            {{- if .Values.neo4j.tls.enabled }}
+            - name: ssl-certs
+              mountPath: /ssl/certificates/https/neo4j.key
+              subPath: tls.key
+              readOnly: true
+            - name: ssl-certs
+              mountPath: /ssl/certificates/https/neo4j.cert
+              subPath: tls.crt
+              readOnly: true
+            - name: ssl-certs
+              mountPath: /ssl/certificates/bolt/neo4j.key
+              subPath: tls.key
+              readOnly: true
+            - name: ssl-certs
+              mountPath: /ssl/certificates/bolt/neo4j.cert
+              subPath: tls.crt
+              readOnly: true
+            {{- end }}
+            - name: logs-volume
+              mountPath: /logs
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      volumes:
+        - name: dumps-volume
+          {{- if .Values.persistence.dumps.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "iyp.fullname" . }}-dumps
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.neo4j.tls.enabled }}
+        - name: ssl-certs
+          secret:
+            secretName: {{ .Values.certificate.secretName }}
+        {{- end }}
+        - name: logs-volume
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: neo4j-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.persistence.data.storageClass }}
+      storageClassName: {{ .Values.persistence.data.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.data.size }}

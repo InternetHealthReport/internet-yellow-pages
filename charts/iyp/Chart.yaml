@@ -1,0 +1,17 @@
+apiVersion: v2
+name: iyp
+description: Internet Yellow Pages - Neo4j database with TLS support
+type: application
+version: 0.1.0
+appVersion: "5.26.3"
+keywords:
+  - neo4j
+  - database
+  - internet
+  - topology
+home: https://github.com/InternetHealthReport/internet-yellow-pages
+sources:
+  - https://github.com/InternetHealthReport/internet-yellow-pages
+maintainers:
+  - name: IHR Team
+    url: https://github.com/InternetHealthReport
