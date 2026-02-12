@@ -8,6 +8,7 @@ import tempfile
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from ipaddress import IPv6Address
+from typing import Iterable
 
 import arrow
 import boto3
@@ -33,18 +34,13 @@ S3A_OPENINTEL_ENDPOINT = 'https://object.openintel.nl'
 
 
 class OpenIntelCrawler(BaseCrawler):
-    def __init__(self, organization, url, name, dataset):
+    def __init__(self, organization, url, name, datasets):
         """Initialization of the OpenIntel crawler requires the name of the dataset
         (e.g. tranco or infra:ns)."""
 
-        self.dataset = dataset
+        self.datasets = datasets
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://openintel.nl/data/forward-dns/top-lists/'
-        if dataset == 'crux':
-            # We cannot link to the precise date, since the data is separated by country
-            # code first.
-            self.reference['reference_url_data'] = \
-                'https://openintel.nl/download/forward-dns/basis=toplist/source=crux/'
         self.warehouse_bucket = None
         self.fdns_warehouse_s3 = str()
         self.create_tmp_dir()
@@ -84,7 +80,7 @@ class OpenIntelCrawler(BaseCrawler):
         # The OpenINTEL bucket
         self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel-public')
 
-    def get_parquet_public(self):
+    def get_parquet_public(self, dataset: str):
         """Fetch and read dataframes for the specified toplist dataset from the public
         S3 bucket."""
 
@@ -92,9 +88,9 @@ class OpenIntelCrawler(BaseCrawler):
         # OpenINTEL measurement data objects base prefix
         self.fdns_warehouse_s3 = 'fdns/basis=toplist'
 
-        self.fetch_warehouse_data()
+        self.fetch_warehouse_data(dataset)
 
-    def get_parquet_closed(self):
+    def get_parquet_closed(self, dataset):
         """Fetch and read dataframes for the specified dataset from the closed S3
         bucket."""
 
@@ -119,7 +115,7 @@ class OpenIntelCrawler(BaseCrawler):
         # OpenINTEL measurement data objects base prefix
         self.fdns_warehouse_s3 = 'category=fdns/type=warehouse'
 
-        self.fetch_warehouse_data()
+        self.fetch_warehouse_data(dataset)
 
     def get_parquet_crux(self):
         """Fetch and read dataframes for CRuX toplist.
@@ -133,14 +129,14 @@ class OpenIntelCrawler(BaseCrawler):
 
         self.init_public_s3_bucket()
 
-        prefix = f'fdns/basis=toplist/source={self.dataset}'
+        prefix = 'fdns/basis=toplist/source=crux'
         for country_code in crux_country_codes:
             if country_code.upper() not in country_id:
                 continue
             logging.info(f'Fetching {country_code.upper()}')
-            self.fetch_warehouse_data(os.path.join(prefix, f'country-code={country_code}'))
+            self.fetch_warehouse_data('crux', os.path.join(prefix, f'country-code={country_code}'))
 
-    def fetch_warehouse_data(self, prefix: str = str()):
+    def fetch_warehouse_data(self, dataset: str, prefix: str = str()):
         """Fetch and read dataframes.
 
         Requires initialization of the S3 bucket.
@@ -149,7 +145,7 @@ class OpenIntelCrawler(BaseCrawler):
             prefix (str, optional): Custom filter prefix.
         """
         if not prefix:
-            prefix = os.path.join(self.fdns_warehouse_s3, f'source={self.dataset}')
+            prefix = os.path.join(self.fdns_warehouse_s3, f'source={dataset}')
         # Get latest available data.
         date = arrow.utcnow()
         for lookback_days in range(6):
@@ -165,7 +161,7 @@ class OpenIntelCrawler(BaseCrawler):
                 break
             date = date.shift(days=-1)
         else:
-            if self.dataset == 'crux':
+            if dataset == 'crux':
                 # For CRuX not all countries have lists all the time...
                 logging.warning('Failed to find data within the specified lookback interval.')
                 return
@@ -174,9 +170,9 @@ class OpenIntelCrawler(BaseCrawler):
         self.reference['reference_time_modification'] = \
             date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
 
-        if self.dataset in ['tranco', 'umbrella']:
+        if dataset in ['tranco', 'umbrella']:
             # Set data URL for public datasets.
-            self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=self.dataset))
+            self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=dataset))
 
         logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
@@ -216,57 +212,25 @@ class OpenIntelCrawler(BaseCrawler):
                                     ])
                 )
 
-    @staticmethod
-    def recurse_chain(current_chain: list, chain_links: dict, records: dict, state: dict):
-        """Recurse CNAME chains and populate state dictionary.
-
-        This is a depth-first traversal that just follows every possible chain from the
-        root.
-        If the current tail of the chain is an A/AAAA records, the IPs are added to all
-        names currently in the chain. As a consequence, the state dict only contains
-        names that resolve to at least one IP so if there is a branch that does not end
-        in an IP, the corresponding names will not be in the state and can be pruned.
-
-        Args:
-            current_chain (list): List of names that form the current chain.
-            chain_links (dict): Dictionary mapping names to a set of names forming the
-            chain links.
-            records (dict): Dictionary mapping names to a set of IPs (A/AAAA records).
-            state (dict): State dictionary that will be populated by this function.
-        """
-        chain_tail = current_chain[-1]
-        if chain_tail in records:
-            for record_type, ips in records[chain_tail].items():
-                # The state should only contain RESOLVES_TO relationships caused by
-                # CNAMEs, so ignore the end of the chain, which is the actual A/AAAA
-                # record.
-                for link in current_chain[:-1]:
-                    state[link][record_type].update(ips)
-        if chain_tail in chain_links:
-            for link in chain_links[chain_tail]:
-                if link in current_chain:
-                    # Prevent infinite recursion due to CNAME loops.
-                    continue
-                current_chain.append(link)
-                OpenIntelCrawler.recurse_chain(current_chain, chain_links, records, state)
-                current_chain.pop()
-
     def run(self):
         """Fetch the forward DNS data, populate a data frame, and process lines one by
         one."""
-        attempt = 5
         self.pandas_df_list = list()  # List of Parquet file-specific Pandas DataFrames
 
-        while len(self.pandas_df_list) == 0 and attempt > 0:
-            if self.dataset == 'tranco':
-                self.get_parquet_public()
-            elif self.dataset == 'umbrella':
-                self.get_parquet_public()
-            elif self.dataset == 'infra:ns':
-                self.get_parquet_closed()
-            elif self.dataset == 'crux':
-                self.get_parquet_crux()
-            attempt -= 1
+        for dataset in self.datasets:
+            attempt = 5
+            list_past_len = len(self.pandas_df_list)
+
+            while len(self.pandas_df_list) == list_past_len and attempt > 0:
+                if dataset == 'tranco':
+                    self.get_parquet_public(dataset)
+                elif dataset == 'umbrella':
+                    self.get_parquet_public(dataset)
+                elif dataset == 'infra:ns':
+                    self.get_parquet_closed(dataset)
+                elif dataset == 'crux':
+                    self.get_parquet_crux()
+                attempt -= 1
 
         # Concatenate Parquet file-specific DFs
         pandas_df = pd.concat(self.pandas_df_list)
@@ -293,21 +257,22 @@ class OpenIntelCrawler(BaseCrawler):
                 (pandas_df.cname_name.notnull())
             )
         ].drop_duplicates()
+
         # Remove root '.' from fields.
         df.query_name = df.query_name.str[:-1]
         df.response_name = df.response_name.str[:-1]
-        df.ns_address = df.ns_address.map(lambda x: x[:-1] if x is not None else None)
-        df.cname_name = df.cname_name.map(lambda x: x[:-1] if x is not None else None)
+        df.ns_address = df.ns_address.astype('string').map(lambda x: x[:-1] if not pd.isna(x) else None)
+        df.cname_name = df.cname_name.astype('string').map(lambda x: x[:-1] if not pd.isna(x) else None)
 
         logging.info(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
 
-        # query_names for NS records are domain names
-        domain_names = set(df[df.response_type == 'NS']['query_name'])
+        # response_names for NS records are domain names
+        domain_names = set(df[df.response_type == 'NS']['response_name'])
 
         # response values of NS records are name servers
         name_servers = set(df[(df.ns_address.notnull()) & (df.response_type == 'NS')]['ns_address'])
 
-        # query_names for A and AAAA records are host names
+        # response_name for A and AAAA records are host names
         host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['response_name'])
 
         ipv6_addresses = set()
@@ -341,51 +306,18 @@ class OpenIntelCrawler(BaseCrawler):
         # The dataset also contains CNAME chains that do not resolve to an IP (i.e., no
         # response with type A/AAAA exists), so we need to filter these out.
 
-        # Get query names which contain CNAMEs and resolved to an IP.
-        cname_query_names = set()
-        cname_ip_records = defaultdict(lambda: defaultdict(set))
-        for row in (
-            df
-            [
-                (df.response_type == 'A') |
-                (df.response_type == 'AAAA')
-            ]
-            .query('query_name != response_name')
-            [[
-                'response_type',
-                'query_name',
-                'response_name',
-                'ip4_address',
-                'ip6_address'
-            ]]
-            .drop_duplicates()
-        ).itertuples():
-            # There are cases where a single query name has multiple CNAME chains that
-            # end in different IPs. To check if chains are valid, we need to know the
-            # last entry that resolves to an IP to identify broken chains.
-            cname_query_names.add(row.query_name)
-            if row.response_type == 'A':
-                ip = row.ip4_address
-            else:
-                ip = IPv6Address(row.ip6_address).compressed
-            cname_ip_records[row.response_name][row.response_type].add(ip)
-
         # Get the components of CNAME chains for queries that successfully resolved.
-        cnames = defaultdict(set)
+        cnames = defaultdict(dict)
         # There are cases where NS queries receive a CNAME response, which we want to
         # ignore.
         for row in df[(df.query_type.isin(['A', 'AAAA'])) & (df.response_type == 'CNAME')].itertuples():
-            # Links can branch, i.e., there are two CNAME records for one response name,
-            # so keep a set.
-            cnames[row.response_name].add(row.cname_name)
+            # Keep track of how to go back from a cname to the queried name
+            cnames[(row.query_name, row.query_type)][row.cname_name] = row.response_name
 
-        # Assemble chains.
-        cname_resolves_to = defaultdict(lambda: {'A': set(), 'AAAA': set()})
-        for query_name in cname_query_names:
-            self.recurse_chain([query_name], cnames, cname_ip_records, cname_resolves_to)
-        # Also need to create HostName nodes for all CNAME entries that resolve to an
-        # IP.
-        host_names.update(cname_resolves_to.keys())
+            # Also need to create HostName nodes for all CNAME entries
+            # Warning: these hostnames could be not resolving to an IP!
+            host_names.add(row.query_name)
+            host_names.add(row.cname_name)
 
         # Get/create all nodes:
         domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName',
@@ -405,35 +337,47 @@ class OpenIntelCrawler(BaseCrawler):
                      f'{len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
 
         # Compute links
-        res_links = list()
         mng_links = list()
         partof_links = list()
-        aliasof_links = list()
         unique_alias = set()
-        unique_res = set()
+        unique_res = defaultdict(set)
 
         # RESOLVES_TO and MANAGED_BY links
-        for row in df.itertuples():
+        for row in df[(df.response_type.isin(['NS', 'A', 'AAAA', 'CNAME']))].itertuples():
 
             # NS Record
             if row.response_type == 'NS' and row.ns_address:
-                domain_qid = domain_id[row.query_name]
+                domain_qid = domain_id[row.response_name]
                 ns_qid = ns_id[row.ns_address]
                 mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
 
-            # We only add the actual A/AAAA records, for which the host name is
+            # We first add the actual A/AAAA records, for which the host name is
             # indicated by the response name. This can be different from the query name
             # in case of CNAME entries.
-            # The transitive RESOLVES_TO entries caused by CNAMES are added later.
+            # The transitive RESOLVES_TO entries caused by CNAMES are added
+            # based on the cnames dictionary.
             # A Record
             elif row.response_type == 'A' and row.ip4_address:
                 host_qid = host_id[row.response_name]
                 ip_qid = ip4_id[row.ip4_address]
-                if (host_qid, ip_qid, row.response_type) not in unique_res:
-                    res_links.append({'src_id': host_qid,
-                                      'dst_id': ip_qid,
-                                      'props': [self.reference, {'source': row.response_type}]})
-                    unique_res.add((host_qid, ip_qid, row.response_type))
+                unique_res[(host_qid, ip_qid)].add(row.response_type)
+
+                # CNAME: Add the RESOLVES_TO link for the corresponding cnames
+                cname = row.response_name
+                visited_cnames = set()
+
+                while (
+                        cname != row.query_name
+                        and cname in cnames[(row.query_name, row.query_type)]
+                        and cname not in visited_cnames
+                ):
+                    up = cnames[(row.query_name, row.query_type)][cname]
+                    host_qid = host_id[up]
+                    unique_res[(host_qid, ip_qid)].add('CNAME')
+
+                    visited_cnames.add(cname)
+                    cname = up
+
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
                 try:
@@ -443,57 +387,65 @@ class OpenIntelCrawler(BaseCrawler):
                     continue
                 host_qid = host_id[row.response_name]
                 ip_qid = ip6_id[ip_normalized]
-                if (host_qid, ip_qid, row.response_type) not in unique_res:
-                    res_links.append({'src_id': host_qid,
-                                      'dst_id': ip_qid,
-                                      'props': [self.reference, {'source': row.response_type}]})
-                    unique_res.add((host_qid, ip_qid, row.response_type))
+                unique_res[(host_qid, ip_qid)].add(row.response_type)
 
-        normal_resolve_to_links = len(res_links)
+                # CNAME: Add the RESOLVES_TO link for the corresponding cnames
+                cname = row.response_name
+                visited_cnames = set()
 
-        # Process CNAMES
-        # RESOLVES_TO relationships
-        for hostname, entries in cname_resolves_to.items():
-            host_qid = host_id[hostname]
-            for response_type, ips in entries.items():
-                ip_id = ip4_id if response_type == 'A' else ip6_id
-                for ip in ips:
-                    ip_qid = ip_id[ip]
-                    if (host_qid, ip_qid, 'CNAME') not in unique_res:
-                        res_links.append({'src_id': host_qid,
-                                          'dst_id': ip_qid,
-                                          'props': [self.reference, {'source': 'CNAME'}]})
-                        unique_res.add((host_qid, ip_qid, 'CNAME'))
-        # Add ALIAS_OF links for resolvable parts.
-        for source, destinations in cnames.items():
-            if source not in cname_resolves_to:
-                # Link is not resolvable so ignore.
-                continue
-            source_qid = host_id[source]
-            for destination in destinations:
-                if destination not in cname_resolves_to and destination not in cname_ip_records:
-                    continue
-                destination_qid = host_id[destination]
-                if (source_qid, destination_qid) not in unique_alias:
-                    aliasof_links.append({'src_id': source_qid,
-                                          'dst_id': destination_qid,
-                                          'props': [self.reference]})
-                    unique_alias.add((source_qid, destination_qid))
+                while (
+                        cname != row.query_name
+                        and cname in cnames[(row.query_name, row.query_type)]
+                        and cname not in visited_cnames
+                ):
+                    up = cnames[(row.query_name, row.query_type)][cname]
+                    host_qid = host_id[up]
+                    unique_res[(host_qid, ip_qid)].add('CNAME')
+
+                    visited_cnames.add(cname)
+                    cname = up
+
+            # CNAME Record
+            elif row.response_type == 'CNAME' and row.query_type in ['A', 'AAAA']:
+                host_qid = host_id[row.response_name]
+                cname_qid = host_id[row.cname_name]
+                unique_alias.add((host_qid, cname_qid))
+
+        normal_resolve_to_links = len(unique_res)
 
         # PART_OF links between HostNames and DomainNames
         for hd in host_names.intersection(domain_names):
             partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
 
-        cname_resolve_to_links = len(res_links) - normal_resolve_to_links
+        cname_resolve_to_links = len(unique_res) - normal_resolve_to_links
 
         logging.info(f'Computed {normal_resolve_to_links} A/AAAA and {cname_resolve_to_links} CNAME RESOLVES_TO links '
                      f'and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
-        self.iyp.batch_add_links('RESOLVES_TO', res_links)
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
         self.iyp.batch_add_links('PART_OF', partof_links)
-        self.iyp.batch_add_links('ALIAS_OF', aliasof_links)
+        self.iyp.batch_add_links('ALIAS_OF', self.link_generator(unique_alias))
+        self.iyp.batch_add_links('RESOLVES_TO', self.link_generator(unique_res))
+
+    def link_generator(self, elems: Iterable):
+        """Generator of links from a dict or set .
+
+        Generate a sequence of dictionaries representing links from either:
+             - a dictionary of sets where the key is a tuple (node0_id, node1_id)
+             and the value is a set of sources to add in the link properties,
+             - a set of (node0_id, node1_id) values.
+
+         Args:
+             elems (Iterable): A dictionary or set describing the links
+        """
+
+        if isinstance(elems, dict) or isinstance(elems, defaultdict):
+            for nodes, prop in elems.items():
+                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference, {'source': list(prop)}]}
+        elif isinstance(elems, set):
+            for nodes in elems:
+                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference]}
 
     def unit_test(self):
         # infra_ns and crux only have RESOLVES_TO and ALIAS_OF relationships.

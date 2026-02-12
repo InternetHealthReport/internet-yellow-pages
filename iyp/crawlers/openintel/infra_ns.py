@@ -8,12 +8,12 @@ URL = 'https://data.openintel.nl'
 ORG = 'OpenINTEL'
 NAME = 'openintel.infra_ns'
 
-DATASET = 'infra:ns'
+DATASETS = ['infra:ns']
 
 
 class Crawler(OpenIntelCrawler):
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name, DATASET)
+        super().__init__(organization, url, name, DATASETS)
 
 
 def main() -> None:
