@@ -1,16 +1,13 @@
 import argparse
 import logging
-import os
 import sys
-import tempfile
-from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from itertools import combinations
 
-import pandas as pd
 import requests
 from github import Github
 
-from iyp import BaseCrawler
+from iyp import BaseCrawler, DataNotAvailableError
 
 
 def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str):
@@ -19,168 +16,129 @@ def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str)
 
     Returns an empty string if no such file is found.
     """
-
     gh = Github()
     repo = gh.get_repo(github_repo)
     all_data_dir = sorted([d.path for d in repo.get_contents(data_dir)])
     latest_files = repo.get_contents(all_data_dir[-1])
     for file in latest_files:
         if file.path.endswith(file_extension):
-            logging.info(file.download_url)
             return file.download_url
+    return str()
 
-    return ''
 
-
-# Organization name and URL to data
 ORG = 'Internet Intelligence Lab'
-URL = get_latest_dataset_url('InetIntel/Dataset-AS-to-Organization-Mapping', '/data', '.json')
-NAME = 'inetintel.as_org'  # should reflect the directory and name of this file
+URL = 'https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping'
+NAME = 'inetintel.as_org'
 
 
 class Crawler(BaseCrawler):
-    # Base Crawler provides access to IYP via self.iyp
-    # and set up a dictionary with the org/url/today's date in self.reference
-    def __init__(self, organization, url, name):
-        super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping'
-        self.__get_modification_time_from_url()
-
-    def __get_modification_time_from_url(self):
-        expected_suffix = '.json'
-        try:
-            if not URL.endswith(expected_suffix):
-                raise ValueError(f'Expected "{expected_suffix}" file for data URL')
-            _, date_str = URL[:-len(expected_suffix)].rsplit('.', maxsplit=1)
-            date = datetime.strptime(date_str, '%Y-%m').replace(tzinfo=timezone.utc)
-            self.reference['reference_time_modification'] = date
-        except ValueError as e:
-            logging.warning(f'Failed to set modification time: {e}')
 
     def run(self):
         """Fetch data and push to IYP."""
+        dataset_url = get_latest_dataset_url('InetIntel/Dataset-AS-to-Organization-Mapping', '/data', '.json')
+        if not dataset_url:
+            logging.error('Failed to find valid file in repository.')
+            raise DataNotAvailableError('Failed to find valid file in repository.')
+        self.reference['reference_url_data'] = dataset_url
 
-        # Create a temporary directory
-        self.tmpdir = tempfile.mkdtemp()
+        logging.info(f'Fetching {dataset_url}')
+        r = requests.get(dataset_url)
+        r.raise_for_status()
+        data = r.json()
 
-        # Filename to save the JSON file as
-        self.filename = os.path.join(self.tmpdir, 'inetintel_as_org.json')
+        # Reference data is included as metadata.
+        self.reference['reference_url_info'] = data['metadata']['documentation_url']
+        data_creation_time = datetime.strptime(data['metadata']['snapshot_month'], '%Y-%m').replace(tzinfo=timezone.utc)
+        # Dataset is produced monthly.
+        if data_creation_time < datetime.now(tz=timezone.utc) - timedelta(days=60):
+            logging.error(f'Failed to find recent dataset. Latest available: {data_creation_time}')
+            raise DataNotAvailableError(f'Failed to find recent dataset. Latest available: {data_creation_time}')
 
-        # Fetch data
-        req = requests.get(URL)
-        req.raise_for_status()
-
-        with open(self.filename, 'w') as file:
-            file.write(req.text)
-
-        logging.info('Dataset crawled and saved in a temporary file.')
-
-        # The dataset is very large. Pandas has the ability to read JSON, and, in
-        # theory, it could do it in a more memory-efficient way.
-        df = pd.read_json(self.filename, orient='index')
-        logging.info('Dataset has {} rows.'.format(len(df)))
-
-        # Optimized code
-        batch_size = 10000
-        if len(df) < batch_size:
-            batch_size = len(df)
-
-        count_rows_global = 0
-        count_relationships_global = 0
-        connections = defaultdict(set)  # Remember the relationship between the "AS" and its Sibling.
-        connections_org = defaultdict(set)  # Remember the relationship between the organizations
+        # We only create SIBLING_OF relationships between existing PeeringDB
+        # organizations. Since this dataset is only produced monthly, it might contain
+        # organizations that were already deleted so use the peeringdb.org crawler as
+        # reference and create no organizations here.
         org_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', all=True, create=False)
 
-        for i in range(0, len(df), batch_size):
-            df_batch = df.iloc[i:i + batch_size]
-            batch_lines = []
-            batch_asns = set()
-            pdb_orgs = set()
-            batch_urls = set()
-            count_rows = 0
-            count_relationships = 0
+        asns = set()
+        urls = set()
+        website_links = list()
+        org_sibling_of_links = set()
+        asn_sibling_of_links = set()
 
-            for index, row in df_batch.iterrows():
-                asn = int(index)
-                batch_asns.add(asn)
-                sibling_asns = set()
+        for asn, as_data in data['data'].items():
+            asn = int(asn)
+            asns.add(asn)
 
-                for sibling_asn in row['Sibling ASNs']:
-                    sibling_asns.add(int(sibling_asn))
-                    batch_asns.add(int(sibling_asn))
+            # Process sibling ASes.
+            for sibling_asn in as_data['Sibling ASNs']:
+                sibling_asn = int(sibling_asn)
+                asns.add(sibling_asn)
+                if ((asn, sibling_asn) in asn_sibling_of_links
+                        or (sibling_asn, asn) in asn_sibling_of_links
+                        # There is at least one instance of this...
+                        or asn == sibling_asn):
+                    continue
+                asn_sibling_of_links.add((asn, sibling_asn))
 
-                pdb_orgs = set([org.removeprefix('PDB: ') for org in row['Reference Orgs'] if org.startswith('PDB: ')])
+            # Process PeeringDB sibling organizations.
+            pdb_orgs = [org.removeprefix('PDB: ')
+                        for org in as_data['Reference Orgs']
+                        if org.startswith('PDB: ')]
+            for org0, org1 in combinations(pdb_orgs, 2):
+                if (org0 not in org_id
+                        or org1 not in org_id):
+                    continue
+                org0_qid = org_id[org0]
+                org1_qid = org_id[org1]
+                if ((org0_qid, org1_qid) in org_sibling_of_links
+                        or (org1_qid, org0_qid) in org_sibling_of_links):
+                    continue
+                org_sibling_of_links.add((org0_qid, org1_qid))
 
-                url = row['Website']
-                if len(url) > 1:
-                    batch_urls.add(url)
+            # Add website if available.
+            url = as_data['Website']
+            if url:
+                urls.add(url)
+                website_links.append((asn, url))
 
-                batch_lines.append([asn, url, sibling_asns, pdb_orgs])
-                count_rows += 1
-
-            asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', batch_asns, all=False)
-            url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', batch_urls, all=False)
-
-            asn_to_url_links = []
-            asn_to_sibling_asn_links = []
-            org_to_sibling_org_links = []
-
-            for (asn, url, siblings, pdb_orgs) in batch_lines:
-                asn_qid = asn_id[asn]
-
-                if len(url) > 1:
-                    url_qid = url_id[url]
-                    asn_to_url_links.append({'src_id': asn_qid, 'dst_id': url_qid, 'props': [self.reference]})
-
-                for org0 in pdb_orgs:
-                    for org1 in pdb_orgs:
-                        if org0 in org_id and org1 in org_id:
-                            if org0 != org1 and org1 not in connections_org[org0]:
-                                org0_qid = org_id[org0]
-                                org1_qid = org_id[org1]
-                                org_to_sibling_org_links.append(
-                                    {'src_id': org0_qid, 'dst_id': org1_qid, 'props': [self.reference]})
-
-                                connections_org[org0].add(org1)
-                                connections_org[org1].add(org0)
-
-                for sibling in siblings:
-                    sibling_qid = asn_id[sibling]
-                    if asn_qid != sibling_qid:
-                        # A check whether asn and sibling are connected already.
-                        if asn in connections and sibling in connections[asn]:
-                            continue
-                        elif sibling in connections and asn in connections[sibling]:
-                            continue
-                        else:
-                            connections[asn].add(sibling)
-                            asn_to_sibling_asn_links.append(
-                                {'src_id': asn_qid, 'dst_id': sibling_qid, 'props': [self.reference]})
-                            count_relationships += 1
-
-            # Push all links to IYP
-            if len(asn_to_url_links) > 0:
-                self.iyp.batch_add_links('WEBSITE', asn_to_url_links)
-
-            if len(asn_to_sibling_asn_links) > 0:
-                self.iyp.batch_add_links('SIBLING_OF', asn_to_sibling_asn_links)
-
-            if len(org_to_sibling_org_links) > 0:
-                self.iyp.batch_add_links('SIBLING_OF', org_to_sibling_org_links)
-
-            count_rows_global += count_rows
-            count_relationships_global += count_relationships
-            logging.info('processed: {} rows and {} relationships'
-                         .format(count_rows_global, count_relationships_global))
-
-    def close(self):
-        super().close()
-
-        os.remove(self.filename)
-        os.rmdir(self.tmpdir)
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
+        url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls, all=False)
+        # Translate ASNs/URLs to QIDs on the fly.
+        self.iyp.batch_add_links('WEBSITE',
+                                 [
+                                     {
+                                         'src_id': asn_id[asn],
+                                         'dst_id': url_id[url],
+                                         'props': [self.reference]
+                                     }
+                                     for asn, url in website_links
+                                 ]
+                                 )
+        logging.info('AS siblings')
+        self.iyp.batch_add_links('SIBLING_OF',
+                                 [
+                                     {
+                                         'src_id': asn_id[asn0],
+                                         'dst_id': asn_id[asn1],
+                                         'props': [self.reference]
+                                     }
+                                     for asn0, asn1 in asn_sibling_of_links
+                                 ])
+        # Organizations are already QIDs.
+        logging.info('Organization siblings')
+        self.iyp.batch_add_links('SIBLING_OF',
+                                 [
+                                     {
+                                         'src_id': org0,
+                                         'dst_id': org1,
+                                         'props': [self.reference]
+                                     }
+                                     for org0, org1 in org_sibling_of_links
+                                 ])
 
     def unit_test(self):
-        return super().unit_test(['SIBLING_OF'])
+        return super().unit_test(['SIBLING_OF', 'WEBSITE'])
 
 
 def main() -> None:
