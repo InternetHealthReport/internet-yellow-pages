@@ -3,15 +3,15 @@ import importlib
 import json
 import logging
 import os
+import subprocess as sp
 import sys
 from datetime import datetime, timezone
+from shutil import rmtree
 from time import sleep
 
 import docker
 import paramiko
 from scp import SCPClient
-
-from send_email import send_email
 
 NEO4J_VERSION = '5.26.17'
 NEO4J_ADMIN_VERSION = '2025-community-debian'
@@ -19,9 +19,32 @@ NEO4J_ADMIN_VERSION = '2025-community-debian'
 STATUS_OK = 'OK'
 
 
+def log_commit_info():
+    try:
+        tag = sp.run(['git', 'tag', '--points-at=HEAD'], capture_output=True, text=True)
+        tag.check_returncode()
+    except sp.CalledProcessError as e:
+        logging.warning(e)
+        logging.warning(tag.stderr.strip())
+        return
+    try:
+        commit_info = sp.run(['git', 'show', '--no-patch', '--format=%H %cI'], capture_output=True, text=True)
+        commit_info.check_returncode()
+    except sp.CalledProcessError as e:
+        logging.warning(e)
+        logging.warning(commit_info.stderr.strip())
+        return
+    tag = tag.stdout.strip()
+    if not tag:
+        tag = 'none'
+    commit_hash, commit_timestamp = commit_info.stdout.split()
+    logging.info(f'commit:{commit_hash} date:{commit_timestamp} tag:{tag}')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--archive', action='store_true', help='push dump to archive server')
+    parser.add_argument('-d', '--directory', help='store database in a bind mount instead of a volume')
     args = parser.parse_args()
 
     today = datetime.now(tz=timezone.utc)
@@ -47,6 +70,7 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     logging.info(f'Started: {sys.argv}')
+    log_commit_info()
 
     # Load configuration file
     with open('config.json', 'r') as fp:
@@ -54,34 +78,43 @@ def main():
 
     # Neo4j container settings
     neo4j_volume = f'data-{date}'
+    bind_mount_directory = args.directory
+    if bind_mount_directory:
+        neo4j_volume = os.path.join(bind_mount_directory, neo4j_volume)
+        os.makedirs(neo4j_volume, exist_ok=True)
+        logging.info(f'Using bind mount: {neo4j_volume}')
 
     # Start a new neo4j container
     client = docker.from_env()
 
     # ######### Start a new docker image ##########
 
+    auth = 'none'
+    if 'login' in conf['neo4j'] and 'password' in conf['neo4j']:
+        auth = f'{conf["neo4j"]["login"]}/{conf["neo4j"]["password"]}'
+
     logging.info('Starting new container...')
     container = client.containers.run(
         'neo4j:' + NEO4J_VERSION,
         name=f'iyp-{date}',
         ports={
-            7474: 7474,
-            7687: 7687
+            7687: conf['neo4j']['port']
         },
         volumes={
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
         },
         environment={
-            'NEO4J_AUTH': 'neo4j/password',
+            'NEO4J_AUTH': auth,
             'NEO4J_server_memory_heap_initial__size': '16G',
             'NEO4J_server_memory_heap_max__size': '16G',
         },
+        user=os.getuid(),
         remove=True,
         detach=True
     )
 
     # Wait for the container to be ready
-    timeout = 120
+    timeout = 300
     stop_time = 1
     elapsed_time = 0
     container_ready = False
@@ -123,6 +156,7 @@ def main():
     status = {}
     no_error = True
     for module_name in conf['iyp']['crawlers']:
+        crawler = None
         try:
             module = importlib.import_module(module_name)
             logging.info(f'start {module}')
@@ -130,43 +164,51 @@ def main():
             crawler = module.Crawler(module.ORG, module.URL, name)
             crawler.run()
             passed = crawler.unit_test()
-            crawler.close()
             if not passed:
                 error_message = f'Did not receive data from crawler {name}'
                 raise RelationCountError(error_message)
             status[module_name] = STATUS_OK
-            logging.info(f'end {module}')
         except RelationCountError as relation_count_error:
             no_error = False
             logging.error(relation_count_error)
             status[module_name] = relation_count_error
-            send_email(relation_count_error)
-        except Exception as e:
-            no_error = False
-            logging.error('Crawler crashed!')
-            status[module_name] = e
-            send_email(e)
-
-    # ######### Post processing scripts ##########
-
-    logging.info('Post-processing...')
-    for module_name in conf['iyp']['post']:
-        module = importlib.import_module(module_name)
-        name = module_name.replace('iyp.post.', '')
-
-        try:
-            logging.info(f'start {module}')
-            post = module.PostProcess(name)
-            post.run()
-            post.close()
-            status[module_name] = STATUS_OK
-            logging.info(f'end {module}')
-
         except Exception as e:
             no_error = False
             logging.error('Crawler crashed!')
             logging.error(e)
             status[module_name] = e
+        finally:
+            if crawler is not None:
+                try:
+                    crawler.close()
+                except Exception as cleanup_error:
+                    logging.error(f'Failed to close crawler: {cleanup_error}')
+        logging.info(f'end {module}')
+
+    # ######### Post processing scripts ##########
+
+    logging.info('Post-processing...')
+    for module_name in conf['iyp']['post']:
+        post = None
+        try:
+            module = importlib.import_module(module_name)
+            name = module_name.replace('iyp.post.', '')
+            logging.info(f'start {module}')
+            post = module.PostProcess(name)
+            post.run()
+            status[module_name] = STATUS_OK
+        except Exception as e:
+            no_error = False
+            logging.error('Crawler crashed!')
+            logging.error(e)
+            status[module_name] = e
+        finally:
+            if post is not None:
+                try:
+                    post.close()
+                except Exception as cleanup_error:
+                    logging.error(f'Failed to close post-processor: {cleanup_error}')
+        logging.info(f'end {module}')
 
     # ######### Stop container and dump DB ##########
 
@@ -190,19 +232,21 @@ def main():
         volumes={
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
             dump_dir: {'bind': '/dumps', 'mode': 'rw'},
-        }
+        },
+        user=os.getuid()
     )
 
     # Delete the data volume once the dump been created
-    client.volumes.get(neo4j_volume).remove()
+    if bind_mount_directory:
+        rmtree(neo4j_volume)
+    else:
+        client.volumes.get(neo4j_volume).remove()
 
     # rename dump
 
     os.rename(dump_file, os.path.join(dump_dir, f'iyp-{date}.dump'))
 
     if not no_error:
-        # TODO send an email
-
         final_words = '\nErrors: '
         for module, status in status.items():
             if status != STATUS_OK:

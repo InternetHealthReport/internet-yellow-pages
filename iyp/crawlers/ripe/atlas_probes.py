@@ -130,8 +130,9 @@ class Crawler(BaseCrawler):
                 if geo_coordinates:
                     long, lat = geo_coordinates
                     # There is at least one probe with invalid coordinates.
-                    if long < -180 or long > 180 or lat < -90 or long > 90:
+                    if long < -180 or long > 180 or lat < -90 or lat > 90:
                         probe['geometry'] = None
+                        logging.warning(f'Ignoring invalid geo coordinates of probe {probe_id}: {lat=} {long=}')
                     else:
                         points.add(WGS84Point((long, lat)))
 

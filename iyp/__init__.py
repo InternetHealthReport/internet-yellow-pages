@@ -1,6 +1,6 @@
 import bz2
-import glob
 import ipaddress
+import json
 import logging
 import os
 import pickle
@@ -64,13 +64,11 @@ def dict2str(d, eq=':', pfx=''):
 
     data = []
     for key, value in d.items():
-        if isinstance(value, str) and '"' in value:
-            escaped = value.replace("'", r"\'")
+        if isinstance(value, str):
+            escaped = value.replace('\\', '\\\\').replace("'", "\\'")
             data.append(f"{pfx + key}{eq} '{escaped}'")
         elif isinstance(value, datetime):
             data.append(f'{pfx + key}{eq} datetime("{value.isoformat()}")')
-        elif isinstance(value, str):
-            data.append(f'{pfx + key}{eq} "{value}"')
         elif value is None:
             # Neo4j does not have the concept of empty properties.
             pass
@@ -151,16 +149,18 @@ class IYP(object):
         logging.debug('IYP: Enter initialization')
         self.neo4j_enterprise = False
 
-        # TODO: get config from configuration file
-        self.server = 'localhost'
-        self.port = 7687
-        self.login = 'neo4j'
-        self.password = 'password'
+        # Load configuration file
+        with open('config.json', 'r') as fp:
+            conf = json.load(fp)
+
+        auth = None
+        if 'login' in conf['neo4j'] and 'password' in conf['neo4j']:
+            auth = (conf['neo4j']['login'], conf['neo4j']['password'])
 
         # Connect to the database
-        uri = f'neo4j://{self.server}:{self.port}'
+        uri = f'neo4j://{conf["neo4j"]["server"]}:{conf["neo4j"]["port"]}'
         self.db = GraphDatabase.driver(uri,
-                                       auth=(self.login, self.password),
+                                       auth=auth,
                                        notifications_min_severity=NotificationMinimumSeverity.WARNING)
 
         if self.db is None:
@@ -173,6 +173,7 @@ class IYP(object):
         self.session = self.db.session()
 
         self.tx = self.session.begin_transaction()
+        self._closed = False
 
     def __create_unique_constraint(self, label, prop):
         """Create a UNIQUE constraint on the given properties for the given node label.
@@ -240,9 +241,14 @@ class IYP(object):
 
     def close(self):
         """Commit pending queries and close IYP."""
-        self.tx.commit()
-        self.session.close()
-        self.db.close()
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self.tx.commit()
+        finally:
+            self.session.close()
+            self.db.close()
 
     def batch_get_nodes_by_single_prop(self, label, prop_name, prop_set=set(), all=True, create=True, batch_size=0):
         """Find the ID of all nodes in the graph for the given label and check that a
@@ -658,6 +664,12 @@ class BasePostProcess(object):
         # connection to IYP database
         self.iyp = IYP()
 
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
     def close(self):
         # Commit changes to IYP
         self.iyp.close()
@@ -699,21 +711,22 @@ class BaseCrawler(object):
         # connection to IYP database
         self.iyp = IYP()
 
-    def create_tmp_dir(self, root='./tmp/'):
-        """Create a temporary directory for this crawler. If the directory already
-        exists all and contains files then all files are deleted.
+    def create_tmp_dir(self, root='./tmp/', remove=False):
+        """Create a temporary directory for this crawler.
+
+        If remove is True, the directory is removed and recreated.
+        If remove is False (default), the directory is kept if it exists
+        (preserves cache).
 
         return: path to the temporary directory
         """
 
         path = self.get_tmp_dir(root)
 
-        try:
-            os.makedirs(path, exist_ok=False)
-        except OSError:
-            files = glob.glob(path + '*')
-            for file in files:
-                os.remove(file)
+        if remove and os.path.exists(path):
+            rmtree(path)
+
+        os.makedirs(path, exist_ok=True)
 
         return path
 
@@ -762,6 +775,12 @@ class BaseCrawler(object):
                 passed = False
                 logging.error(f'Missing data for relation {relation_type}')
         return passed
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def close(self):
         # Commit changes to IYP

@@ -4,7 +4,7 @@ import sys
 
 from iyp import BasePostProcess
 
-NAME = 'post.clean_links'
+NAME = 'clean_links'
 
 
 class PostProcess(BasePostProcess):
@@ -91,7 +91,7 @@ def main() -> None:
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(
         format=FORMAT,
-        filename='log/' + NAME + '.log',
+        filename='log/post.' + NAME + '.log',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S',
     )

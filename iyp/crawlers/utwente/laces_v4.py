@@ -2,17 +2,17 @@ import argparse
 import logging
 import sys
 
-from iyp.crawlers.ut_dacs import LacesCrawler
+from iyp.crawlers.utwente import LacesCrawler
 
 # Organization name and URL to data
-ORG = 'University of Twente - Design and Analysis of Communication Systems'
+ORG = 'UTwente'
 URL = 'https://github.com/ut-dacs/anycast-census'
-NAME = 'ut_dacs.laces_v6'
+NAME = 'utwente.laces_v4'
 
 
 class Crawler(LacesCrawler):
     def __init__(self, organization: str, url: str, name: str):
-        super().__init__(organization, url, name, ip_version=6)
+        super().__init__(organization, url, name, ip_version=4)
 
 
 def main() -> None:
