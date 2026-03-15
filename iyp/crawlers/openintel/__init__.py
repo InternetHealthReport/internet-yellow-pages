@@ -300,8 +300,8 @@ class OpenIntelCrawler(BaseCrawler):
         #    A            example.org   A               b.example.org     192.0.2.1
         #
         # The beginning of the chain is the CNAME entry where query_name is equal to
-        # response_name. Chains can also branch out so parts of a chain resolve to
-        # different IPs.
+        # response_name. For a single query name / query type combination, the chain
+        # should not branch.
         #
         # The dataset also contains CNAME chains that do not resolve to an IP (i.e., no
         # response with type A/AAAA exists), so we need to filter these out.
@@ -311,7 +311,11 @@ class OpenIntelCrawler(BaseCrawler):
         # There are cases where NS queries receive a CNAME response, which we want to
         # ignore.
         for row in df[(df.query_type.isin(['A', 'AAAA'])) & (df.response_type == 'CNAME')].itertuples():
-            # Keep track of how to go back from a cname to the queried name
+            # Keep track of how to go back from a CNAME to the response / query name.
+            # We use this to rebuild a CNAME chain from an A/AAAA record to its initial
+            # query name.
+            # Using a dict here works since for a single query name / query type
+            # combination there are no branches.
             cnames[(row.query_name, row.query_type)][row.cname_name] = row.response_name
 
             # Also need to create HostName nodes for all CNAME entries
@@ -364,19 +368,16 @@ class OpenIntelCrawler(BaseCrawler):
 
                 # CNAME: Add the RESOLVES_TO link for the corresponding cnames
                 cname = row.response_name
-                visited_cnames = set()
 
-                while (
-                        cname != row.query_name
-                        and cname in cnames[(row.query_name, row.query_type)]
-                        and cname not in visited_cnames
-                ):
+                while cname in cnames[(row.query_name, row.query_type)]:
                     up = cnames[(row.query_name, row.query_type)][cname]
                     host_qid = host_id[up]
                     unique_res[(host_qid, ip_qid)].add('CNAME')
-
-                    visited_cnames.add(cname)
                     cname = up
+
+                if cname != row.query_name:
+                    logging.warning(f'Broken CNAME chain for A record {row.query_name} -> {row.ip4_address}. '
+                                    f'Last CNAME: {cname}')
 
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
@@ -391,19 +392,15 @@ class OpenIntelCrawler(BaseCrawler):
 
                 # CNAME: Add the RESOLVES_TO link for the corresponding cnames
                 cname = row.response_name
-                visited_cnames = set()
-
-                while (
-                        cname != row.query_name
-                        and cname in cnames[(row.query_name, row.query_type)]
-                        and cname not in visited_cnames
-                ):
+                while cname in cnames[(row.query_name, row.query_type)]:
                     up = cnames[(row.query_name, row.query_type)][cname]
                     host_qid = host_id[up]
                     unique_res[(host_qid, ip_qid)].add('CNAME')
-
-                    visited_cnames.add(cname)
                     cname = up
+
+                if cname != row.query_name:
+                    logging.warning(f'Broken CNAME chain for AAAA record {row.query_name} -> {row.ip6_address}. '
+                                    f'Last CNAME: {cname}')
 
             # CNAME Record
             elif row.response_type == 'CNAME' and row.query_type in ['A', 'AAAA']:
@@ -411,16 +408,9 @@ class OpenIntelCrawler(BaseCrawler):
                 cname_qid = host_id[row.cname_name]
                 unique_alias.add((host_qid, cname_qid))
 
-        normal_resolve_to_links = len(unique_res)
-
         # PART_OF links between HostNames and DomainNames
         for hd in host_names.intersection(domain_names):
             partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
-
-        cname_resolve_to_links = len(unique_res) - normal_resolve_to_links
-
-        logging.info(f'Computed {normal_resolve_to_links} A/AAAA and {cname_resolve_to_links} CNAME RESOLVES_TO links '
-                     f'and {len(mng_links)} MANAGED_BY links')
 
         # Push all links to IYP
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
