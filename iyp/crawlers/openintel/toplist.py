@@ -4,11 +4,11 @@ import sys
 
 from iyp.crawlers.openintel import OpenIntelCrawler
 
-URL = 'https://data.openintel.nl/data/'
+URL = 'https://openintel.nl/download/forward-dns/basis=toplist'
 ORG = 'OpenINTEL'
-NAME = 'openintel.crux'
+NAME = 'openintel.toplist'
 
-DATASETS = ['crux']
+DATASETS = ['umbrella', 'tranco', 'crux']
 
 
 class Crawler(OpenIntelCrawler):
