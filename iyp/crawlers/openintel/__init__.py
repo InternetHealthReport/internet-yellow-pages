@@ -173,6 +173,11 @@ class OpenIntelCrawler(BaseCrawler):
         if dataset in ['tranco', 'umbrella']:
             # Set data URL for public datasets.
             self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=dataset))
+        elif dataset == 'crux':
+            # This dataset combines multiple countries, so point to high-level
+            # directory.
+            self.reference['reference_url_data'] = \
+                'https://openintel.nl/download/forward-dns/basis=toplist/source=crux/'
 
         logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
@@ -231,6 +236,10 @@ class OpenIntelCrawler(BaseCrawler):
                 elif dataset == 'crux':
                     self.get_parquet_crux()
                 attempt -= 1
+
+        if self.name == 'openintel.toplist':
+            # This crawler combines multiple toplists, so no single data URL.
+            self.reference['reference_url_data'] = 'https://openintel.nl/download/forward-dns/basis=toplist/'
 
         # Concatenate Parquet file-specific DFs
         pandas_df = pd.concat(self.pandas_df_list)
