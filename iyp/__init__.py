@@ -7,7 +7,7 @@ import os
 import pickle
 from datetime import datetime, timezone
 from shutil import rmtree
-from typing import Optional
+from typing import Iterable, Optional
 
 import requests
 from github import Github
@@ -774,6 +774,27 @@ class BaseCrawler(object):
                 passed = False
                 logging.error(f'Missing data for relation {relation_type}')
         return passed
+
+    def link_generator(self, elems: Iterable):
+        """Generator of links from a dict or set.
+
+        Generate a sequence of dictionaries representing links from either:
+             - a dict where the key is a tuple (node0_id, node1_id) and the value
+             is a dict to add in the link properties,
+             - a set of (node0_id, node1_id) values.
+
+        In both cases the self.reference properties are added to the link.
+
+         Args:
+             elems (Iterable): A dictionary or set describing the links
+        """
+
+        if isinstance(elems, dict):
+            for nodes, props in elems.items():
+                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference, props]}
+        elif isinstance(elems, set):
+            for nodes in elems:
+                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference]}
 
     def __del__(self):
         try:

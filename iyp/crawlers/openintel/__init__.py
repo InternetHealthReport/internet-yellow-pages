@@ -8,7 +8,6 @@ import tempfile
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from ipaddress import IPv6Address
-from typing import Iterable
 
 import arrow
 import boto3
@@ -353,7 +352,7 @@ class OpenIntelCrawler(BaseCrawler):
         mng_links = list()
         partof_links = list()
         unique_alias = set()
-        unique_res = defaultdict(set)
+        unique_res = defaultdict(lambda: {'source': set()})
 
         # RESOLVES_TO and MANAGED_BY links
         for row in df[(df.response_type.isin(['NS', 'A', 'AAAA', 'CNAME']))].itertuples():
@@ -373,7 +372,7 @@ class OpenIntelCrawler(BaseCrawler):
             elif row.response_type == 'A' and row.ip4_address:
                 host_qid = host_id[row.response_name]
                 ip_qid = ip4_id[row.ip4_address]
-                unique_res[(host_qid, ip_qid)].add(row.response_type)
+                unique_res[(host_qid, ip_qid)]['source'].add(row.response_type)
 
                 # CNAME: Add the RESOLVES_TO link for the corresponding cnames
                 cname = row.response_name
@@ -381,7 +380,7 @@ class OpenIntelCrawler(BaseCrawler):
                 while cname in cnames[(row.query_name, row.query_type)]:
                     up = cnames[(row.query_name, row.query_type)][cname]
                     host_qid = host_id[up]
-                    unique_res[(host_qid, ip_qid)].add('CNAME')
+                    unique_res[(host_qid, ip_qid)]['source'].add('CNAME')
                     cname = up
 
                 if cname != row.query_name:
@@ -397,14 +396,14 @@ class OpenIntelCrawler(BaseCrawler):
                     continue
                 host_qid = host_id[row.response_name]
                 ip_qid = ip6_id[ip_normalized]
-                unique_res[(host_qid, ip_qid)].add(row.response_type)
+                unique_res[(host_qid, ip_qid)]['source'].add(row.response_type)
 
                 # CNAME: Add the RESOLVES_TO link for the corresponding cnames
                 cname = row.response_name
                 while cname in cnames[(row.query_name, row.query_type)]:
                     up = cnames[(row.query_name, row.query_type)][cname]
                     host_qid = host_id[up]
-                    unique_res[(host_qid, ip_qid)].add('CNAME')
+                    unique_res[(host_qid, ip_qid)]['source'].add('CNAME')
                     cname = up
 
                 if cname != row.query_name:
@@ -426,25 +425,6 @@ class OpenIntelCrawler(BaseCrawler):
         self.iyp.batch_add_links('PART_OF', partof_links)
         self.iyp.batch_add_links('ALIAS_OF', self.link_generator(unique_alias))
         self.iyp.batch_add_links('RESOLVES_TO', self.link_generator(unique_res))
-
-    def link_generator(self, elems: Iterable):
-        """Generator of links from a dict or set .
-
-        Generate a sequence of dictionaries representing links from either:
-             - a dictionary of sets where the key is a tuple (node0_id, node1_id)
-             and the value is a set of sources to add in the link properties,
-             - a set of (node0_id, node1_id) values.
-
-         Args:
-             elems (Iterable): A dictionary or set describing the links
-        """
-
-        if isinstance(elems, dict) or isinstance(elems, defaultdict):
-            for nodes, prop in elems.items():
-                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference, {'source': list(prop)}]}
-        elif isinstance(elems, set):
-            for nodes in elems:
-                yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference]}
 
     def unit_test(self):
         # infra_ns and crux only have RESOLVES_TO and ALIAS_OF relationships.
