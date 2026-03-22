@@ -4,11 +4,11 @@ import sys
 
 from iyp.crawlers.openintel import DnsgraphCrawler
 
-URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep/NL'
+URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep'
 ORG = 'OpenINTEL'
-NAME = 'openintel.dnsgraph_nl'
+NAME = 'openintel.dnsgraph'
 
-DATASETS = ['nl']
+DATASETS = ['crux', 'nl', 'rdns']
 
 
 class Crawler(DnsgraphCrawler):
