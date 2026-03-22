@@ -60,7 +60,7 @@
 |  | WhatsApp | https://github.com/ooni/spec/blob/master/nettests/ts-018-whatsapp.md | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ooni#readme) | ooni.whatsapp |
 | OpenINTEL | Top List (Tranco, Umbrella, CrUX)| https://openintel.nl/data/forward-dns/top-lists/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/openintel#readme)| openintel.toplist |
 | | Infrastructure | https://openintel.nl/data/forward-dns/infrastructure/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/openintel#readme)| openintel.infra_ns |
-| | DNS Dependency Graph| https://dnsgraph.dacs.utwente.nl | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/openintel#readme) | openintel.dnsgraph_nl, openintel.dnsgraph_rdns |
+| | DNS Dependency Graph| https://dnsgraph.dacs.utwente.nl | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/openintel#readme) | openintel.dnsgraph |
 | Packet Clearing House | Daily routing snapshots| https://www.pch.net/resources/Routing_Data | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/pch#readme) | pch.daily_routing_snapshots_v4, pch.daily_routing_snapshots_v6 |
 | PeeringDB | API endpoint: fac| https://www.peeringdb.com | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/peeringdb#readme)| peeringdb.fac |
 | | API endpoint: ix| https://www.peeringdb.com | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/peeringdb#readme)| peeringdb.ix |

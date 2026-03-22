@@ -585,7 +585,7 @@ class IYP(object):
             self.commit()
             nb_links += len(batch)
 
-        action_str = 'Creating' if action == 'create' else 'Merging'
+        action_str = 'Created' if action == 'create' else 'Merging'
         logging.info(f'{action_str} {nb_links} {type} relationships.')
 
     def add_links(self, src_node, links):
