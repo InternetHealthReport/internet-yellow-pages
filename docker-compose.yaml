@@ -1,6 +1,6 @@
 services:
   iyp_loader:
-    image: neo4j/neo4j-admin:2025-community-debian
+    image: neo4j/neo4j-admin:2026-community-debian
     profiles: ["local", "public_tls", "public_notls"]
     user: "${uid}:${gid}"
     container_name: iyp_loader
