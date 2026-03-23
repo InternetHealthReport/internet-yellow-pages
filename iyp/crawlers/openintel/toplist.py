@@ -2,16 +2,16 @@ import argparse
 import logging
 import sys
 
-from iyp.crawlers.openintel import DnsgraphCrawler
+from iyp.crawlers.openintel import OpenIntelCrawler
 
-URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep/NL'
+URL = 'https://openintel.nl/download/forward-dns/basis=toplist'
 ORG = 'OpenINTEL'
-NAME = 'openintel.dnsgraph_nl'
+NAME = 'openintel.toplist'
 
-DATASETS = ['nl']
+DATASETS = ['umbrella', 'tranco', 'crux']
 
 
-class Crawler(DnsgraphCrawler):
+class Crawler(OpenIntelCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, DATASETS)
 

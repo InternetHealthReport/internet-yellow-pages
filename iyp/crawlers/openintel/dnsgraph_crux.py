@@ -8,10 +8,12 @@ URL = 'https://storage.dacs.utwente.nl/sommeser-dnsdep/CRUX'
 ORG = 'OpenINTEL'
 NAME = 'openintel.dnsgraph_crux'
 
+DATASETS = ['crux']
+
 
 class Crawler(DnsgraphCrawler):
     def __init__(self, organization, url, name):
-        super().__init__(organization, url, name)
+        super().__init__(organization, url, name, DATASETS)
 
 
 def main() -> None:
