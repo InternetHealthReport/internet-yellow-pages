@@ -35,7 +35,7 @@ system_prompt = (
     'You are a highly sophisticated automated agent with expert-level knowledge '
     'about the Internet.\n'
     'If the user asks for factual data, retrieve '
-    "it by querying IYP with neo4j's Cypher language.\n"
+    "it by querying IYP with neo4j's Cypher language (get the schema before).\n"
     'If the user asks for meta-data or explanations about the data, '
     'retrieve the relevant information with the IYP documentation tool.\n'
     "Reply \"Sorry, I can't assist with that.\" if the user's request is not "
@@ -55,11 +55,15 @@ ollama_model = OpenAIChatModel(
     ),
 )
 
-doc_server = MCPServerStreamableHTTP('http://localhost:8002/mcp')
-neo4j_server = MCPServerStreamableHTTP('http://localhost:8001/api/mcp')
+mcp_server = MCPServerStreamableHTTP('http://localhost:8010/mcp')
+
+# Recommended: Use get_neo4j_schema_projected instead of get_neo4j_schema
+filtered_tools = mcp_server.filtered(
+    lambda ctx, tool: tool.name != 'get_neo4j_schema'
+)
 
 agent = Agent(
-    ollama_model, toolsets=[doc_server, neo4j_server], system_prompt=system_prompt
+    ollama_model, toolsets=[mcp_server], system_prompt=system_prompt
 )
 
 result = agent.run_sync(
