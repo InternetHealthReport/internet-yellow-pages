@@ -352,7 +352,10 @@ class OpenIntelCrawler(BaseCrawler):
         mng_links = list()
         partof_links = list()
         unique_alias = set()
-        unique_res = defaultdict(lambda: {'source': set()})
+        # The would like a set for 'source', but neo4j does not support set properties
+        # and converting it afterwards would require a copy of all links, so use a list
+        # instead. Will be max 2 entries, so lookup should not be terrible.
+        unique_res = defaultdict(lambda: {'source': list()})
 
         # RESOLVES_TO and MANAGED_BY links
         for row in df[(df.response_type.isin(['NS', 'A', 'AAAA', 'CNAME']))].itertuples():
@@ -372,7 +375,8 @@ class OpenIntelCrawler(BaseCrawler):
             elif row.response_type == 'A' and row.ip4_address:
                 host_qid = host_id[row.response_name]
                 ip_qid = ip4_id[row.ip4_address]
-                unique_res[(host_qid, ip_qid)]['source'].add(row.response_type)
+                if row.response_type not in unique_res[(host_qid, ip_qid)]['source']:
+                    unique_res[(host_qid, ip_qid)]['source'].append(row.response_type)
 
                 # CNAME: Add the RESOLVES_TO link for the corresponding cnames
                 cname = row.response_name
@@ -380,7 +384,8 @@ class OpenIntelCrawler(BaseCrawler):
                 while cname in cnames[(row.query_name, row.query_type)]:
                     up = cnames[(row.query_name, row.query_type)][cname]
                     host_qid = host_id[up]
-                    unique_res[(host_qid, ip_qid)]['source'].add('CNAME')
+                    if 'CNAME' not in unique_res[(host_qid, ip_qid)]['source']:
+                        unique_res[(host_qid, ip_qid)]['source'].append('CNAME')
                     cname = up
 
                 if cname != row.query_name:
@@ -396,14 +401,16 @@ class OpenIntelCrawler(BaseCrawler):
                     continue
                 host_qid = host_id[row.response_name]
                 ip_qid = ip6_id[ip_normalized]
-                unique_res[(host_qid, ip_qid)]['source'].add(row.response_type)
+                if row.response_type not in unique_res[(host_qid, ip_qid)]['source']:
+                    unique_res[(host_qid, ip_qid)]['source'].append(row.response_type)
 
                 # CNAME: Add the RESOLVES_TO link for the corresponding cnames
                 cname = row.response_name
                 while cname in cnames[(row.query_name, row.query_type)]:
                     up = cnames[(row.query_name, row.query_type)][cname]
                     host_qid = host_id[up]
-                    unique_res[(host_qid, ip_qid)]['source'].add('CNAME')
+                    if 'CNAME' not in unique_res[(host_qid, ip_qid)]['source']:
+                        unique_res[(host_qid, ip_qid)]['source'].append('CNAME')
                     cname = up
 
                 if cname != row.query_name:
