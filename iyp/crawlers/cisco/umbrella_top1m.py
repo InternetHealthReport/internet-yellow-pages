@@ -60,9 +60,13 @@ class Crawler(BaseCrawler):
         # open zip file and read top list
         with ZipFile(io.BytesIO(req.content)) as z:
             with z.open('top-1m.csv') as top_list:
-                for i, row in enumerate(io.TextIOWrapper(top_list)):
+                for row in io.TextIOWrapper(top_list):
                     row = row.rstrip()
-                    rank, domain = row.split(',')
+                    try:
+                        rank, domain = row.split(',')
+                    except ValueError as e:
+                        logging.warning(f'Skipping invalid line ({e}): {row}')
+                        continue
 
                     links.append({'src_name': domain, 'dst_id': self.cisco_qid,
                                   'props': [self.reference, {'rank': int(rank)}]})
