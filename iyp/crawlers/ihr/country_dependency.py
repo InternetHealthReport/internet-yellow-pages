@@ -44,7 +44,7 @@ class Crawler(BaseCrawler):
         for cc, _ in self.countries.items():
             # Query IHR
             self.url = URL.format(country=cc)
-            req = self.http_session.get(self.url + '&format=json')
+            req = self.http_session.get(self.url)
             req.raise_for_status()
             data = json.loads(req.text)
             ranking = data['results']
