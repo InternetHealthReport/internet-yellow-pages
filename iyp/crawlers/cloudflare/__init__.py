@@ -76,6 +76,13 @@ class DnsTopCrawler(BaseCrawler):
 
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
+    def make_url(self, domains: list) -> str:
+        get_params = f'?limit={TOP_LIMIT}'
+        for domain in domains:
+            get_params += f'&dateRange=7d&domain={domain}'
+
+        return self.url + get_params
+
     def make_batches(self):
         # Query Cloudflare API in batches.
         batch = list()
@@ -101,11 +108,7 @@ class DnsTopCrawler(BaseCrawler):
                 # broken request without names.
                 break
 
-            get_params = f'?limit={TOP_LIMIT}'
-            for domain in batch:
-                get_params += f'&dateRange=7d&domain={domain}'
-
-            url = self.url + get_params
+            url = self.make_url(batch)
             self.batches[batch_id] = {'url': url, 'domains': batch, 'fpaths': fpaths}
             batch = list()
             fpaths = dict()
@@ -136,6 +139,32 @@ class DnsTopCrawler(BaseCrawler):
                         sleep(5 * 60)
                         self.__init_session()
                         break
+                    elif res.status_code == 400:
+                        # The possible errors are not documented, so this is not
+                        # exhaustive.
+                        data: dict = res.json()
+                        if data.get('errors', [dict()])[0].get('code', 0) == 2001:
+                            # Invalid hostname requested. Remove the invalid hostname
+                            # and try again.
+                            # Format:
+                            #   {
+                            #     'code': 2001,
+                            #     'message': 'Invalid hostname',
+                            #     'path': ['query', 'domain', 4]
+                            #   }
+                            pop_idx = data['errors'][0]['path'][-1]
+                            batch_info = self.batches[query.batch_id]
+                            domains = batch_info['domains']
+                            invalid_domain = domains.pop(pop_idx)
+                            fpaths = batch_info['fpaths']
+                            fpaths.pop(invalid_domain)
+                            logging.warning(f'Ignoring invalid hostname "{invalid_domain}" and trying again.')
+                            self.batches[query.batch_id] = {
+                                'url': self.make_url(domains),
+                                'domains': domains,
+                                'fpaths': fpaths
+                            }
+                            continue
 
                     res.raise_for_status()
                     # Confirm JSON integrity.
