@@ -63,11 +63,11 @@ filtered_tools = mcp_server.filtered(
 )
 
 agent = Agent(
-    ollama_model, toolsets=[mcp_server], system_prompt=system_prompt
+    ollama_model, toolsets=[filtered_tools], system_prompt=system_prompt
 )
 
 result = agent.run_sync(
-    'Give me the list of IXPs where AS2497 is present and explain me where the data comes from.'
+    'Give me the list of IXPs where AS2497 is present, get the name of AS2497 and explain me where the data comes from.'
 )
 
 print(result.all_messages())
