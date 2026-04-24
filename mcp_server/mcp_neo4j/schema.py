@@ -97,7 +97,12 @@ def clean_schema(schema: dict) -> dict:
 
 
 async def retrieve_schema(neo4j_driver: AsyncDriver, sample_size: int = 100) -> dict:
-    """Call APOC procedure to retrieve the schema."""
+    """Call APOC procedure to retrieve the schema.
+
+    `sample_size` is the sample size used to infer the graph schema.
+    Larger samples are slower, but more accurate.
+    Smaller samples are faster, but might miss information.
+    """
 
     logger.info(f'Running `get_neo4j_schema` with sample size {sample_size}.'
                 f'(this might take few minutes)')

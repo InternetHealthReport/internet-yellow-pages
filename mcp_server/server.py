@@ -53,7 +53,7 @@ class ServerConfig(BaseModel):
     neo4j_read_timeout: int = Field(default=60, description='Timemout for Neo4j read in seconds (default 60)')
     token_limit: int | None = Field(default=None, description='GPT token limit per response (default None)')
     port: int = Field(default=8010)
-    sample_size: int = Field(default=5000, description='Sample size used when querying the schema at server startup')
+    sample_size: int = Field(default=1000, description='Sample size used when querying the schema at server startup')
 
 
 config = ServerConfig()
