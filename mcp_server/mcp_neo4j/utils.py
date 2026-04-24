@@ -84,7 +84,7 @@ def value_sanitize(d: Any, list_limit: int = 128) -> Any:
 
 def truncate_string_to_tokens(
     text: str, token_limit: int, model: str = 'gpt-4'
-) -> str:
+) -> tuple[str, bool]:
     """Truncates the input string to fit within the specified token limit.
 
     Parameters
@@ -108,9 +108,11 @@ def truncate_string_to_tokens(
     tokens = encoding.encode(text)
 
     # Truncate tokens if they exceed the limit
+    is_truncated = False
     if len(tokens) > token_limit:
         tokens = tokens[:token_limit]
+        is_truncated = True
 
     # Decode back into text
     truncated_text = encoding.decode(tokens)
-    return truncated_text
+    return truncated_text, is_truncated

@@ -27,7 +27,7 @@ import json
 import logging
 from typing import Any, Literal
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from neo4j import AsyncDriver, AsyncGraphDatabase, Query, RoutingControl
 from neo4j.exceptions import Neo4jError
@@ -204,7 +204,7 @@ def create_mcp_server(neo4j_driver: AsyncDriver, schema: dict):
     # Use `include_node_types` to project the schema onto a smaller, relevant
     # subgraph, as the full schema is often too large to process.
     @mcp.tool()
-    async def get_neo4j_schema_projected(include_node_types: list[str] = Field(
+    async def get_neo4j_schema_projected(ctx: Context, include_node_types: list[str] = Field(
         description='A list of node types to include in the returned schema.'),
         include_relationship_types: list[str] = Field(
         description='An optional list of relationship types to include in the returned schema.',
@@ -251,20 +251,40 @@ def create_mcp_server(neo4j_driver: AsyncDriver, schema: dict):
             projected_schema[key] = new_entry
 
         results_str = json.dumps(projected_schema, default=str)
-        return truncate_string_to_tokens(results_str, config.token_limit) if config.token_limit else results_str
+        if not config.token_limit:
+            return results_str
+
+        truncated, is_truncated = truncate_string_to_tokens(results_str, config.token_limit)
+        if is_truncated:
+            await ctx.warning('Output was truncated due to token limit.')
+            return ('<tool_warning>Output was truncated due to token limit.'
+                    'Consider refining your query.</tool_warning>\n') + truncated
+        else:
+            return truncated
 
     # Version withouth node types filtering
     # advantage: less opinionated, less steps
     # disadvantage: context (around 30k)
+
     @mcp.tool()
-    async def get_neo4j_schema() -> str:
+    async def get_neo4j_schema(ctx: Context) -> str:
         """Returns the neo4j schema, including node types, their properties, and
         relationship types."""
         results_str = json.dumps(schema, default=str)
-        return truncate_string_to_tokens(results_str, config.token_limit) if config.token_limit else results_str
+        if not config.token_limit:
+            return results_str
+
+        truncated, is_truncated = truncate_string_to_tokens(results_str, config.token_limit)
+        if is_truncated:
+            await ctx.warning('Output was truncated due to token limit.')
+            return ('<tool_warning>Output was truncated due to token limit.'
+                    'Consider projecting the schema with `get_neo4j_schema_projected`.</tool_warning>\n') + truncated
+        else:
+            return truncated
 
     @mcp.tool()
     async def read_neo4j_cypher(
+        ctx: Context,
         query: str = Field(..., description='The Cypher query to execute.'),
         params: dict[str, Any] = Field(dict(), description='Query parameters.'),
     ) -> str:
@@ -284,12 +304,17 @@ def create_mcp_server(neo4j_driver: AsyncDriver, schema: dict):
                 result_transformer_=lambda r: r.data(),
             )
             sanitized = [value_sanitize(el) for el in results]
-            res_str = json.dumps(sanitized, default=str)
+            results_str = json.dumps(sanitized, default=str)
+            if not config.token_limit:
+                return results_str
 
-            if config.token_limit:
-                res_str = truncate_string_to_tokens(res_str, config.token_limit)
-
-            return res_str
+            truncated, is_truncated = truncate_string_to_tokens(results_str, config.token_limit)
+            if is_truncated:
+                await ctx.warning('Output was truncated due to token limit.')
+                return ('<tool_warning>Output was truncated due to token limit.'
+                        'Consider refining your query.</tool_warning>\n') + truncated
+            else:
+                return truncated
 
         except Neo4jError as e:
             raise ToolError(f'Neo4j Error: {e}\n{query}\n{params}')
