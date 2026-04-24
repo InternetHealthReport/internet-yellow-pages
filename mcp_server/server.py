@@ -29,7 +29,7 @@ from typing import Any, Literal
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
-from neo4j import AsyncGraphDatabase, Query, RoutingControl
+from neo4j import AsyncDriver, AsyncGraphDatabase, Query, RoutingControl
 from neo4j.exceptions import Neo4jError
 from pydantic import BaseModel, Field
 
@@ -38,8 +38,7 @@ from mcp_server.documentation.models import (DatasetBase, DatasetFull,
 from mcp_server.documentation.parsers import (parse_datasets, parse_node_types,
                                               parse_relationship_types)
 from mcp_server.mcp_neo4j.schema import retrieve_schema
-from mcp_server.mcp_neo4j.utils import (is_write_query,
-                                        truncate_string_to_tokens,
+from mcp_server.mcp_neo4j.utils import (truncate_string_to_tokens,
                                         value_sanitize)
 
 # Setup Logging
@@ -63,9 +62,21 @@ node_types = {node_type.name: node_type for node_type in parse_node_types()}
 rel_types = {rel_type.name: rel_type for rel_type in parse_relationship_types()}
 
 
+async def _is_write_query(query: str, driver: AsyncDriver, database: str = 'neo4j') -> bool:
+    """Check if the query is a write query by running EXPLAIN and inspecting the query
+    type."""
+    explain_query = 'EXPLAIN ' + query
+    _, summary, _ = await driver.execute_query(
+        query_=explain_query,
+        database_=database,
+    )
+    # query_type is 'r', 'w', 'rw', or 's'; anything containing 'w' is a write
+    return 'w' in (summary.query_type or '')
+
+
 # Server factory function following neo4j structure
 # Not an expert but apparently needed for async event context
-def create_mcp_server(neo4j_driver, schema):
+def create_mcp_server(neo4j_driver: AsyncDriver, schema: dict):
     """Creates the FastMCP server instance with all tools registered.
 
     We pass the 'neo4j_driver' and 'schema' in as arguments so the tools can close over
@@ -87,7 +98,7 @@ def create_mcp_server(neo4j_driver, schema):
         instructions=instructions
     )
 
-    # Part 1: documentation tool
+    # Part 1: documentation tools
 
     @mcp.tool()
     async def list_iyp_datasets() -> list[DatasetBase]:
@@ -259,7 +270,7 @@ def create_mcp_server(neo4j_driver, schema):
     ) -> str:
         """Execute a read Cypher query on the neo4j database."""
 
-        if is_write_query(query):
+        if await _is_write_query(query, driver=neo4j_driver):
             raise ValueError('Only MATCH queries are allowed for read-query')
 
         try:
@@ -292,7 +303,7 @@ def create_mcp_server(neo4j_driver, schema):
     ) -> str:
         """Execute a write Cypher query on the neo4j database."""
 
-        if not is_write_query(query):
+        if not await _is_write_query(query, driver=neo4j_driver):
             raise ValueError('Only write queries are allowed for write-query')
 
         try:

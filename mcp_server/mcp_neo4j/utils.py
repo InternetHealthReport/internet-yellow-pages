@@ -21,21 +21,12 @@
 # SOFTWARE.
 
 import logging
-import re
 from typing import Any
 
 import tiktoken
 
 logger = logging.getLogger('mcp_neo4j_cypher')
 logger.setLevel(logging.INFO)
-
-
-def is_write_query(query: str) -> bool:
-    """Check if the query is a write query."""
-    return (
-        re.search(r'\b(MERGE|CREATE|INSERT|SET|DELETE|REMOVE|ADD)\b', query, re.IGNORECASE)
-        is not None
-    )
 
 
 def value_sanitize(d: Any, list_limit: int = 128) -> Any:
