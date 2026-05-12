@@ -156,6 +156,12 @@ class DnsTopCrawler(BaseCrawler):
                             batch_info = self.batches[query.batch_id]
                             domains = batch_info['domains']
                             invalid_domain = domains.pop(pop_idx)
+                            if len(domains) == 0:
+                                # No domains left in batch.
+                                logging.warning(f'Ignoring invalid hostname "{invalid_domain}", no domains left in '
+                                                'batch.')
+                                self.batches.pop[query.batch_id]
+                                continue
                             fpaths = batch_info['fpaths']
                             fpaths.pop(invalid_domain)
                             logging.warning(f'Ignoring invalid hostname "{invalid_domain}" and trying again.')
