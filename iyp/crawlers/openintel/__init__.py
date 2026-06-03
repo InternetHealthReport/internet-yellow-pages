@@ -8,6 +8,7 @@ import tempfile
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from ipaddress import IPv6Address
+from urllib.parse import quote
 
 import arrow
 import boto3
@@ -112,9 +113,9 @@ class OpenIntelCrawler(BaseCrawler):
         self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel')
 
         # OpenINTEL measurement data objects base prefix
-        self.fdns_warehouse_s3 = 'category=fdns/type=warehouse'
+        self.fdns_warehouse_s3 = 'catalog/warehouse/fdns/data'
 
-        self.fetch_warehouse_data(dataset)
+        self.fetch_warehouse_data(dataset, public=False)
 
     def get_parquet_crux(self):
         """Fetch and read dataframes for CRuX toplist.
@@ -135,7 +136,7 @@ class OpenIntelCrawler(BaseCrawler):
             logging.info(f'Fetching {country_code.upper()}')
             self.fetch_warehouse_data('crux', os.path.join(prefix, f'country-code={country_code}'))
 
-    def fetch_warehouse_data(self, dataset: str, prefix: str = str()):
+    def fetch_warehouse_data(self, dataset: str, prefix: str = str(), public: bool = True):
         """Fetch and read dataframes.
 
         Requires initialization of the S3 bucket.
@@ -148,14 +149,21 @@ class OpenIntelCrawler(BaseCrawler):
         # Get latest available data.
         date = arrow.utcnow()
         for lookback_days in range(6):
-            objects = list(self.warehouse_bucket.objects.filter(
-                # Build a partition path for the given source and date
-                Prefix=os.path.join(
+            # Build a partition path for the given source and date.
+            # Public and closed buckets use different date formats.
+            if public:
+                tmp_prefix = os.path.join(
                     prefix,
                     'year={}'.format(date.year),
                     'month={:02d}'.format(date.month),
                     'day={:02d}'.format(date.day)
-                )).all())
+                )
+            else:
+                tmp_prefix = os.path.join(
+                    prefix,
+                    f'date={date.date().isoformat()}'
+                )
+            objects = list(self.warehouse_bucket.objects.filter(Prefix=tmp_prefix).all())
             if len(objects) > 0:
                 break
             date = date.shift(days=-1)
@@ -231,7 +239,8 @@ class OpenIntelCrawler(BaseCrawler):
                 elif dataset == 'umbrella':
                     self.get_parquet_public(dataset)
                 elif dataset == 'infra:ns':
-                    self.get_parquet_closed(dataset)
+                    # Closed bucket requires %-escaped dataset name
+                    self.get_parquet_closed(quote(dataset))
                 elif dataset == 'crux':
                     self.get_parquet_crux()
                 attempt -= 1
