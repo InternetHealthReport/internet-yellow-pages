@@ -34,8 +34,8 @@
     },
 
     "pch": {
-        "parallel_downloads": 8,
-        "parallel_parsers": 40
+        "parallel_downloads": 1,
+        "parallel_parsers": 8
     },
 
     "openintel": {
