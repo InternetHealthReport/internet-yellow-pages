@@ -76,13 +76,20 @@ class Crawler(BaseCrawler):
                 logging.error(f'Failed to extract data from ZIP file: {e}')
                 raise ValueError(f'Failed to extract data from ZIP file: {e}')
 
+            # The geoname file maps the geoname_id to the actual country data
+            # (e.g., country code).
+            # Do not parse NA country code as NaN field...
             with zf.open(geoname_file) as f:
                 geoname_df = pd.read_csv(f, keep_default_na=False, na_values=[''])
+            # Locale is static "en", so not interesting.
             geoname_df.pop('locale_code')
             # Data contains Asia and Europe as locations with only a continent
             # code, which we do not model.
             geoname_df = geoname_df[geoname_df['country_iso_code'].notna()]
 
+            # Only load network and geoname_id columns. Remaining columns are
+            # either empty, deprecated, or we do not care about them:
+            # https://dev.maxmind.com/geoip/docs/databases/city-and-country/#blocks-files
             with zf.open(v4_file) as f:
                 ipv4_df = pd.read_csv(f, usecols=(0, 1))
             with zf.open(v6_file) as f:
@@ -92,6 +99,8 @@ class Crawler(BaseCrawler):
             # we already cover with the delegated stats file.
             ip_df = ip_df[ip_df['geoname_id'].notna()]
 
+        # Join IP data with geoname data based on geoname_id field (which we do
+        # not need afterwards).
         ip_merged_df = ip_df.merge(geoname_df)
         ip_merged_df.pop('geoname_id')
 
