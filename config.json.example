@@ -33,6 +33,11 @@
         "token": ""
     },
 
+    "maxmind": {
+        "account_id": "",
+        "license_key": ""
+    },
+
     "pch": {
         "parallel_downloads": 1,
         "parallel_parsers": 8

@@ -44,6 +44,7 @@
 | Internet Assigned Numbers Authority (IANA) | DNS Root Zone File | https://www.iana.org/domains/root/files | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.root_zone |
 | | IPv4/IPv6 Address Allocations (extract) | https://www.iana.org/numbers | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.address_space |
 | IPinfo | IP to Country Mapping| https://ipinfo.io | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ipinfo#readme) | ipinfo.ip_country |
+| MaxMind | IP to Country Mapping| https://www.maxmind.com/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/maxmind#readme) | maxmind.geolite_country |
 | NRO | Extended allocation and assignment reports| https://www.nro.net/about/rirs/statistics | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/nro#readme) | nro.delegated_stats |
 | OONI | Facebook Messenger | https://github.com/ooni/spec/blob/master/nettests/ts-019-facebook-messenger.md | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ooni#readme) | ooni.facebookmessenger |
 |  | Header Field Manipulation Test | https://github.com/ooni/spec/blob/master/nettests/ts-006-header-field-manipulation.md | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ooni#readme) | ooni.httpheaderfieldmanipulation |

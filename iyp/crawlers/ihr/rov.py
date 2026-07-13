@@ -61,12 +61,10 @@ class Crawler(BaseCrawler):
         asns = set()
         prefixes = set()
         tags = set()
-        countries = set()
 
         orig_links = list()
         tag_links = list()
         dep_links = list()
-        country_links = list()
 
         logging.info('Computing links...')
         for rec in csv.DictReader(csv_lines):
@@ -92,12 +90,10 @@ class Crawler(BaseCrawler):
                 originasn = int(rec['originasn_id'])
                 rpki_status = 'RPKI ' + rec['rpki_status']
                 irr_status = 'IRR ' + rec['irr_status']
-                cc = rec['country_id']
 
                 asns.add(originasn)
                 tags.add(rpki_status)
                 tags.add(irr_status)
-                countries.add(cc)
 
                 # Compute links
                 orig_links.append({
@@ -118,12 +114,6 @@ class Crawler(BaseCrawler):
                     'props': [self.reference, rec]
                 })
 
-                country_links.append({
-                    'src_id': prefix,
-                    'dst_id': cc,
-                    'props': [self.reference]
-                })
-
             # Dependency links
             asn = int(rec['asn_id'])
             asns.add(asn)
@@ -138,20 +128,17 @@ class Crawler(BaseCrawler):
         prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
         tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', tags, all=False)
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
 
         replace_link_ids(orig_links, asn_id, prefix_id)
         replace_link_ids(tag_links, prefix_id, tag_id)
-        replace_link_ids(country_links, prefix_id, country_id)
         replace_link_ids(dep_links, prefix_id, asn_id)
 
         self.iyp.batch_add_links('ORIGINATE', orig_links)
         self.iyp.batch_add_links('CATEGORIZED', tag_links)
         self.iyp.batch_add_links('DEPENDS_ON', dep_links)
-        self.iyp.batch_add_links('COUNTRY', country_links)
 
     def unit_test(self):
-        return super().unit_test(['ORIGINATE', 'CATEGORIZED', 'DEPENDS_ON', 'COUNTRY'])
+        return super().unit_test(['ORIGINATE', 'CATEGORIZED', 'DEPENDS_ON'])
 
 
 def main() -> None:
