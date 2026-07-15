@@ -1,6 +1,6 @@
 # MaxMind -- https://www.maxmind.com/
 
-MaxMind is an IP geolocation service, that provides different kinds of IP
+MaxMind is an IP geolocation service that provides different kinds of IP
 databases, including a [free
 tier](https://www.maxmind.com/en/geolite-free-ip-geolocation-data) that maps IP
 prefixes to countries. We import the free database into IYP.

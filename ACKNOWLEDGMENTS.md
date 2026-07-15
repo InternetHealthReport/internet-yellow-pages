@@ -159,7 +159,7 @@ License](https://creativecommons.org/licenses/by-sa/4.0/).
 
 We use the free [GeoLite
 Country](https://www.maxmind.com/en/geolite-free-ip-geolocation-data) database
-provided by [MaxMind](https://www.maxmind.com) and released the under the
+provided by [MaxMind](https://www.maxmind.com) and released under the
 [GeoLite End User License Agreement](https://www.maxmind.com/en/geolite/eula).
 
 ## Number Resource Organization
