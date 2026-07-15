@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "iyp.fullname" . }}-headless
+  labels:
+    {{- include "iyp.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "iyp.selectorLabels" . | nindent 4 }}
+  ports:
+    - port: {{ .Values.service.ports.https }}
+      targetPort: https
+      protocol: TCP
+      name: https
+    - port: {{ .Values.service.ports.bolt }}
+      targetPort: bolt
+      protocol: TCP
+      name: bolt
