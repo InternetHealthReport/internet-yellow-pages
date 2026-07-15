@@ -48,14 +48,12 @@ means that Japan ASes depends strongly (AS Hegemony equals 0.19) on AS2497.
 
 ### Prefixes' RPKI and IRR status - `rov.py`
 
-Connect prefixes to their origin AS, their AS dependencies, their RPKI/IRR status, and their country
-(provided by Maxmind).
+Connect prefixes to their origin AS, their AS dependencies, and their RPKI/IRR status.
 
 ```Cypher
 (:BGPPrefix {prefix: '8.8.8.0/24'})<-[:ORIGINATE]-(:AS {asn: 15169})
 (:BGPPrefix {prefix: '8.8.8.0/24'})-[:DEPENDS_ON]->(:AS {asn: 15169})
 (:BGPPrefix {prefix: '8.8.8.0/24'})-[:CATEGORIZED]->(:Tag {label: 'RPKI Valid'})
-(:BGPPrefix {prefix: '8.8.8.0/24'})-[:COUNTRY]->(:Country {country_code: 'US'})
 ```
 
 Tag labels (possibly) added by this crawler:
@@ -68,8 +66,6 @@ Tag labels (possibly) added by this crawler:
 - `IRR Invalid`
 - `IRR Invalid,more-specific`
 - `IRR NotFound`
-
-The country geo-location is provided by Maxmind.
 
 ## Dependence
 

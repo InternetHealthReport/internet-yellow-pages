@@ -155,6 +155,13 @@ provided by [IPinfo](https://ipinfo.io) and released the under [Creative Commons
 Attribution-ShareAlike 4.0 International
 License](https://creativecommons.org/licenses/by-sa/4.0/).
 
+## MaxMind
+
+We use the free [GeoLite
+Country](https://www.maxmind.com/en/geolite-free-ip-geolocation-data) database
+provided by [MaxMind](https://www.maxmind.com) and released under the
+[GeoLite End User License Agreement](https://www.maxmind.com/en/geolite/eula).
+
 ## Number Resource Organization
 
 We use the [extended allocation and assignment
