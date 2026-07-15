@@ -63,39 +63,54 @@ def get_ports_from_caddy_config(config: dict):
         logging.error(f'Failed to parse Caddy config: {e}')
         sys.exit(1)
 
-    routes = body['apps']['http']['servers']['srv0']['routes']
-    active = dict()
-    for route in routes:
-        # This happens with a fresh caddy build. No ports are active, so
-        # return an empty dict.
-        # TODO So there is a route dict, but without a 'match' entry?
-        if 'match' not in route:
-            return dict()
-        host = route['match'][0]['host'][0]
-        dial = route['handle'][0]['routes'][0]['handle'][0]['upstreams'][0]['dial']
-        active[host] = dial
+    servers = (
+        body.get('apps', {}).get('http', {}).get('servers', {})
+    )
+    active = {}
+    for server in servers.values():
+        for route in server.get('routes', []):
+            if 'match' not in route:
+                continue
 
-    # TODO We want to have both active_bolt and active_http URLs in the config, right?
-    # If only one is present, we have a problem.
-    # Also, if we reach this point there _must_ be at least a currently active
-    # deployment?
-    ports = dict()
-    active_bolt = config['urls']['active_bolt']
-    active_http = config['urls']['active_http']
-    if active_bolt in active:
-        ports['active_bolt'] = active[active_bolt].split(':')[1]
-    if active_http in active:
-        ports['active_http'] = active[active_http].split(':')[1]
+            try:
+                host = route['match'][0]['host'][0]
+                dial = (
+                    route['handle'][0]
+                    .get('routes', [])[0]
+                    .get('handle', [])[0]
+                    .get('upstreams', [])[0]
+                    .get('dial')
+                )
+            except (IndexError, KeyError, TypeError):
+                continue
 
-    # It's possible for there to be only one active deployment, and there
-    # are no previous ports. Only attempt to parse the previous ports
-    # if they have been filled in on the caddy config
-    prev_bolt = config['urls']['prev_bolt']
-    prev_http = config['urls']['prev_http']
-    if prev_bolt in active and 'PREV_BOLT_PORT' not in active[prev_bolt]:
-        ports['prev_bolt'] = active[prev_bolt].split(':')[1]
-    if prev_http in active and 'PREV_HTTP_PORT' not in active[prev_http]:
-        ports['prev_http'] = active[prev_http].split(':')[1]
+            if dial:
+                active[host] = dial
+    if not active:
+        return {}
+    ports = {}
+    urls = config['urls']
+
+    for key in ('active_bolt', 'active_http'):
+        url = urls.get(key)
+        if url in active and ':' in active[url]:
+            ports[key] = active[url].split(':', 1)[1]
+
+    placeholder_for_key = {
+        'prev_bolt': 'PREV_BOLT_PORT',
+        'prev_http': 'PREV_HTTP_PORT',
+    }
+    for key in ('prev_bolt', 'prev_http'):
+        url = urls.get(key)
+        if url not in active or ':' not in active[url]:
+            continue
+
+        dial = active[url].split(':', 1)[1]
+        if placeholder_for_key[key] in dial:
+            continue
+
+        ports[key] = dial
+
     return ports
 
 
@@ -214,8 +229,7 @@ def main():
     except requests.HTTPError as e:
         logging.error(f'Failed to fetch dump from {dump_url}: {e}')
         sys.exit(1)
-    # TODO Is the + necessary?
-    with open(os.path.join(dump_dir, 'neo4j.dump'), 'wb+') as f:
+    with open(os.path.join(dump_dir, 'neo4j.dump'), 'wb') as f:
         f.write(r.content)
 
     # Load dump into volume
