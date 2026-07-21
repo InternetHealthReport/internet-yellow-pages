@@ -1,6 +1,9 @@
 # Configuration file
 config.json
 
+# APOC plugin will be installed from Docker image
+plugins/apoc.jar
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
