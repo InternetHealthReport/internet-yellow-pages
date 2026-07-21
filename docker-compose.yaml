@@ -19,7 +19,7 @@ services:
       "
 
   iyp:
-    image: neo4j:5.26.21
+    image: neo4j:5.26.28
     profiles: ["local"]
     user: "${uid}:${gid}"
     container_name: iyp
@@ -38,7 +38,7 @@ services:
         condition: service_completed_successfully
 
   iyp_readonly_tls:
-    image: neo4j:5.26.21
+    image: neo4j:5.26.28
     profiles: ["public_tls"]
     user: "${uid}:${gid}"
     container_name: iyp
@@ -56,7 +56,7 @@ services:
         condition: service_completed_successfully
 
   iyp_readonly_notls:
-    image: neo4j:5.26.21
+    image: neo4j:5.26.28
     profiles: ["public_notls"]
     user: "${uid}:${gid}"
     container_name: iyp

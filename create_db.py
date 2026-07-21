@@ -13,7 +13,7 @@ import docker
 import paramiko
 from scp import SCPClient
 
-NEO4J_VERSION = '5.26.21'
+NEO4J_VERSION = '5.26.28'
 NEO4J_ADMIN_VERSION = '2026-community-debian'
 
 STATUS_OK = 'OK'
