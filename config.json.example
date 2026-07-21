@@ -108,6 +108,7 @@
             "iyp.crawlers.alice_lg.six",
             "iyp.crawlers.alice_lg.topix",
             "iyp.crawlers.ipinfo.ip_country",
+            "iyp.crawlers.maxmind.geolite_country",
             "iyp.crawlers.amazon.aws_ip_ranges",
             "iyp.crawlers.worldbank.country_pop",
             "iyp.crawlers.simulamet.rirdata_rdns",
