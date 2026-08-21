@@ -3,6 +3,7 @@
 
 | Node types              | Description                                                                                                                       |
 |-------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| ArkMonitor              | CAIDA Ark monitor, uniquely identified with the **name** property.                                                                   |
 | AS                      | Autonomous System, uniquely identified with the **asn** property.                                                                 |
 | AtlasMeasurement        | RIPE Atlas Measurement, uniquely identified with the **id** property.                                                             |
 | AtlasProbe              | RIPE Atlas probe, uniquely identified with the **id** property.                                                                   |

@@ -128,3 +128,34 @@ same name but different IDs that may map to different countries.
 ### Dependence
 
 The as2org crawler does not depend on other crawlers.
+
+## Ark Monitors (ark_monitors.py)
+
+Information about Ark monitors including their AS, country, and geocoordinates.
+
+Similar to the `AtlasProbe` node, the `ArkMonitor` node is special, since it
+contains more than just the identifier property. We also add some properties
+derived from the original data with a more suitable format:
+
+- `country_code`: Original data only contains a city string that includes the
+  code.
+- `last_seen`: Absolute timestamp. Original data only contains "last seen x
+  minutes ago" in string form.
+- `uptime`: Duration. Original data only contains this in a combined string with
+  last_seen.
+- `org_name` / `org_url`: Split and cleaned. Original data has an HTML hyperlink
+  wrapped around the name, which we split into its own property. Also some
+  organizations have a placeholder link to CAIDA's website, which we drop if not
+  appropriate.
+
+### Graph representation
+
+```cypher
+(:ArkMonitor {name: 'nrt3-jp'})-[:COUNTRY]->(:Country {country_code: 'JP'})
+(:ArkMonitor {name: 'nrt3-jp'})-[:LOCATED_IN]->(:AS {asn: 2497})
+(:ArkMonitor {name: 'nrt3-jp'})-[:LOCATED_IN]->(:Point)
+```
+
+### Dependence
+
+The ark_monitors crawler does not depend on other crawlers.

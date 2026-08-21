@@ -54,8 +54,8 @@ tags](https://github.com/bgptools/anycast-prefixes) provided by
 
 ## CAIDA
 
-We use three datasets from [CAIDA](https://www.caida.org/) which use is authorized
-under their [Acceptable Use Agreement](https://www.caida.org/about/legal/aua/).
+We use datasets from [CAIDA](https://www.caida.org/) authorized under their
+[Acceptable Use Agreement](https://www.caida.org/about/legal/aua/).
 
 > AS Rank https://doi.org/10.21986/CAIDA.DATA.AS-RANK.
 
@@ -71,6 +71,8 @@ and
 and
 
 > AS to organization mappings, https://catalog.caida.org/dataset/as_organizations/
+
+We also import information about [Ark monitors](https://www.caida.org/projects/ark/).
 
 ## Cisco
 

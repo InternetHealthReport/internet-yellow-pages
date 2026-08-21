@@ -57,6 +57,7 @@
             "iyp.crawlers.ripe.as_names",
             "iyp.crawlers.bgptools.as_names",
             "iyp.crawlers.apnic.eyeball",
+            "iyp.crawlers.caida.ark_monitors",
             "iyp.crawlers.caida.asrank",
             "iyp.crawlers.caida.as_relationships_v4",
             "iyp.crawlers.caida.as_relationships_v6",
