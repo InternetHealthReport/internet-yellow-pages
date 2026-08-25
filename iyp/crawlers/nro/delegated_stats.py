@@ -98,6 +98,13 @@ class Crawler(BaseCrawler):
             rec['status'] = rec['status'].upper()
 
             additional_props = {'registry': rec['registry']}
+            try:
+                additional_props['date'] = datetime.strptime(rec['date'], '%Y%m%d').date()
+            except ValueError:
+                # From README:
+                #   It is noted that where records do not show a date of first
+                #   assignment, this can take the 0000/00/00 value.
+                pass
 
             if rec['type'] == 'asn':
                 start_asn = int(rec['start'])
