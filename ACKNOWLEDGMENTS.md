@@ -110,6 +110,17 @@ We use the top 1M websites per country from the Google [Chrome User Experience R
 This data is licensed under  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 No changes were made to the data.
 
+## Hagezi
+
+We use the [DNS blocklists](https://github.com/hagezi/dns-blocklists) maintained by
+Hagezi. The names of these lists are resolved by IHR, which publishes the results
+[here](https://github.com/InternetHealthReport/hagezi-blocklists-forward-dns). List
+membership is attributed to Hagezi in IYP, the DNS data to IHR.
+
+The blocklists are licensed under [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html)
+and the resolution results under [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
+No changes were made to the data.
+
 ## Internet Health Report
 
 We use three datasets from the [Internet Health Report](https://ihr.iijlab.net/) (that's

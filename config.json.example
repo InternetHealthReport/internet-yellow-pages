@@ -118,6 +118,7 @@
             "iyp.crawlers.google.crux_top1m_country",
             "iyp.crawlers.iana.address_space",
             "iyp.crawlers.openintel.dnsgraph",
+            "iyp.crawlers.hagezi.blocklists_forward_dns",
             "iyp.crawlers.cloudflare.dns_top_locations",
             "iyp.crawlers.cloudflare.dns_top_ases",
             "iyp.crawlers.ooni.facebookmessenger",
