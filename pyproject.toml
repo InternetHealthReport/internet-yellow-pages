@@ -1,0 +1,43 @@
+[project]
+name = "internet-yellow-pages"
+version = "4.4.0"
+description = "The Internet Yellow Pages (IYP) is a knowledge database that gathers information about Internet resources."
+readme = "README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.12"
+dependencies = [
+    "neo4j",
+    "iso3166",
+    "progressbar2",
+    "arrow",
+    "tldextract",
+    "py-radix",
+    "requests",
+    "urllib3",
+    "chardet",
+    "bs4",
+    "requests-cache",
+    "lz4",
+    "frozendict",
+    "docker",
+    "boto3",
+    "botocore",
+    "pandas",
+    "flatdict",
+    "requests_futures",
+    "autopep8",
+    "flake8",
+    "pre-commit",
+    "PyGithub",
+    "clickhouse_driver",
+    "paramiko",
+    "scp",
+    "pyarrow",
+    "ijson",
+]
+
+# This repository is a collection of scripts (crawlers) rather than an installable
+# library, so tell uv not to try to build/install it as a package.
+[tool.uv]
+package = false
+
