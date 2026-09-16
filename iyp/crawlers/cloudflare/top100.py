@@ -31,7 +31,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch data and push to IYP."""
-
         self.cf_qid = self.iyp.get_node(
             'Ranking', {'name': 'Cloudflare top 100 domains'})
 
@@ -59,7 +58,6 @@ class Crawler(BaseCrawler):
 
     def update(self, entry):
         """Add the entry to IYP if it's not already there and update its properties."""
-
         # set rank
         statements = [['RANK', self.cf_qid, dict({'rank': entry['rank']}, **self.reference)]]
 

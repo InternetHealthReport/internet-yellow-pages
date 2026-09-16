@@ -101,7 +101,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch AWS IP ranges and push to IYP."""
-
         # Fetch region-to-country mapping from AWS documentation
         region_to_country = fetch_region_to_country_mapping()
 

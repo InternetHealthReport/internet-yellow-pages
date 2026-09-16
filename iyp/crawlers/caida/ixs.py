@@ -19,8 +19,7 @@ URL_FMT = 'https://publicdata.caida.org/datasets/ixps/%Y/%m/ixs_%Y%m.jsonl'
 
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
-        """Initialization: Find the latest file and set the URL"""
-
+        """Initialization: Find the latest file and set the URL."""
         date = arrow.now()
 
         for _ in range(2):
@@ -57,7 +56,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch the latest file and process lines one by one."""
-
         req = requests.get(self.url)
         req.raise_for_status()
 

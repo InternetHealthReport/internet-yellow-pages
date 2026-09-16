@@ -10,7 +10,6 @@ NAME = 'address_family'
 class PostProcess(BasePostProcess):
     def run(self):
         """Add address family (4 or 6 for IPv4 or IPv6) to all IP and Prefix nodes."""
-
         # Update prefixes
         self.iyp.tx.run("MATCH (pfx:Prefix) WHERE pfx.prefix CONTAINS ':' SET pfx.af = 6")
         self.iyp.commit()

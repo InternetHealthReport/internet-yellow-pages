@@ -22,7 +22,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch peer stats for each collector."""
-
         req = requests.get(MAIN_PAGE)
         req.raise_for_status()
 

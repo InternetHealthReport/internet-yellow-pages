@@ -23,7 +23,6 @@ MIN_HEGE = 0.01
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialize IYP."""
-
         # list of countries
         self.countries = iso3166.countries_by_alpha2
 
@@ -40,7 +39,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch data from API and push to IYP."""
-
         for cc, _ in self.countries.items():
             # Query IHR
             self.url = URL.format(country=cc)

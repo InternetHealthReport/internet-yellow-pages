@@ -33,7 +33,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch the AS name file from bgp.tools website and push it to IYP."""
-
         req = requests.get(URL, headers=self.headers)
         req.raise_for_status()
 

@@ -22,7 +22,6 @@ TALS = ['afrinic.tal', 'apnic.tal', 'arin.tal', 'lacnic.tal', 'ripencc.tal']
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialize IYP and statements for pushed data."""
-
         now = datetime.now(tz=timezone.utc)
         self.date_path = f'{now.year}/{now.month:02d}/{now.day:02d}'
 

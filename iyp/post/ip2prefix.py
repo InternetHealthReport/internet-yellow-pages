@@ -25,7 +25,6 @@ class PostProcess(BasePostProcess):
     def run(self):
         """Fetch all IP and Prefix nodes, then link IPs to their most specific
         prefix."""
-
         # Find all different types of prefixes
         prefixes_labels = self.iyp.tx.run('MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels')
 
@@ -113,12 +112,11 @@ class PostProcess(BasePostProcess):
     def delete(self):
         logging.info('Deleting existing relationships.')
         self.iyp.tx.commit()
-        self.iyp.session.run("""
-            MATCH ()-[r:PART_OF {reference_name: 'iyp.ip2prefix'}]->(:Prefix)
-            CALL (r) {
-                DELETE r
-            } IN TRANSACTIONS OF 100000 ROWS
-        """)
+        self.iyp.session.run(
+            """MATCH ()-[r:PART_OF {reference_name:
+                             'iyp.ip2prefix'}]->(:Prefix) CALL (r) { DELETE r } IN
+                             TRANSACTIONS OF 100000 ROWS."""
+        )
         self.iyp.tx = self.iyp.session.begin_transaction()
 
 

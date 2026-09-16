@@ -26,7 +26,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch data and push to IYP."""
-
         headers = {'Authorization': f'Bearer {IPINFO_TOKEN}'}
         req = requests.get(self.reference['reference_url_data'], headers=headers)
         req.raise_for_status()

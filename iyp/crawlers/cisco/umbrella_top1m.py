@@ -47,7 +47,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch Umbrella top 1M and push to IYP."""
-
         self.cisco_qid = self.iyp.get_node('Ranking', {'name': 'Cisco Umbrella Top 1 million'})
 
         logging.info('Downloading latest list...')

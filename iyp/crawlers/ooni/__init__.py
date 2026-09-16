@@ -34,7 +34,6 @@ class OoniCrawler(BaseCrawler):
 
     def run(self):
         """Fetch data and push to IYP."""
-
         # Create a temporary directory
         tmpdir = self.create_tmp_dir()
 
@@ -64,7 +63,6 @@ class OoniCrawler(BaseCrawler):
         Return True if an error occurred and no result was added, i.e., the extended
         class should not continue to process this line.
         """
-
         # No test result. Can happen sometimes.
         if not one_line.get('test_keys'):
             return True
@@ -95,7 +93,6 @@ class OoniCrawler(BaseCrawler):
             probe_cc = None
         if probe_cc:
             self.all_countries.add(probe_cc)
-
         # Append the results to the list.
         self.all_results.append((probe_asn, probe_cc))
         """The base function adds a skeleton to the all_results list, which includes the

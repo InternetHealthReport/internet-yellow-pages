@@ -65,6 +65,7 @@ from iyp import BaseCrawler, CacheHandler
 class Crawler(BaseCrawler):
     """Import IXP members and optionally prefix announcements based on routes received
     via members from Alice-LG-based looking glasses."""
+
     # In principle, the fetching process can be sped up by performing parallel queries.
     # However, some tests showed that many looking glasses perform poorly when queried
     # in parallel, which is why I leave the functionality in the code, but set the

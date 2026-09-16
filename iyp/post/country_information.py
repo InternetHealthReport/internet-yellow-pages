@@ -13,7 +13,6 @@ class PostProcess(BasePostProcess):
     def run(self):
         """Enrich Country nodes with additional information like alpha-3 codes and
         country names."""
-
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code')
 
         for country_code in country_id:
@@ -23,13 +22,14 @@ class PostProcess(BasePostProcess):
             country_info = iso3166.countries_by_alpha2[country_code]
             new_props = {'name': country_info.apolitical_name,
                          'alpha3': country_info.alpha3}
-            self.iyp.tx.run("""
+            self.iyp.tx.run(
+                """
                             MATCH (n:Country)
                             WHERE elementId(n) = $id
                             SET n += $props
                             """,
-                            id=country_id[country_code],
-                            props=new_props)
+                id=country_id[country_code],
+                props=new_props)
         self.iyp.commit()
 
     def unit_test(self):

@@ -19,7 +19,6 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch the prefix to ASN file from BGPKIT website and process lines one by
         one."""
-
         req = requests.get(URL, stream=True)
         req.raise_for_status()
 

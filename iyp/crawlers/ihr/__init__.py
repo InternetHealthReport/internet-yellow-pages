@@ -17,7 +17,6 @@ class HegemonyCrawler(BaseCrawler):
 
     def run(self):
         """Fetch data from file and push to IYP."""
-
         today = datetime.now(tz=timezone.utc)
         max_lookback = today - timedelta(days=7)
         url = today.strftime(self.url)

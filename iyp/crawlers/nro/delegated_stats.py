@@ -55,7 +55,6 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch the delegated stat file from RIPE website and process lines one by
         one."""
-
         req = requests.get(URL)
         req.raise_for_status()
 

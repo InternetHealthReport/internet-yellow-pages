@@ -39,7 +39,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch the ASdb file and push it to IYP."""
-
         req = requests.get(self.reference['reference_url_data'])
         req.raise_for_status()
 

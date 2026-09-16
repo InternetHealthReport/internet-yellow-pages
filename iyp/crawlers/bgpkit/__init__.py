@@ -16,7 +16,6 @@ class AS2RelCrawler(BaseCrawler):
     def run(self):
         """Fetch the AS relationship file from BGPKIT website and process lines one by
         one."""
-
         req = requests.get(self.url, stream=True)
         req.raise_for_status()
 

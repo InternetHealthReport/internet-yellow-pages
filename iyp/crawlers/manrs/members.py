@@ -16,7 +16,6 @@ NAME = 'manrs.members'
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Fetch nodes for MANRS actions (create them if they are not in IYP)."""
-
         # connect to IYP database
         super().__init__(organization, url, name)
 

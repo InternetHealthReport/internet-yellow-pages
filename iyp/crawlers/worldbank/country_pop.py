@@ -23,7 +23,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Get country population from Worldbank API and push it to IYP."""
-
         # Get content
         req = requests.get(URL)
         req.raise_for_status()

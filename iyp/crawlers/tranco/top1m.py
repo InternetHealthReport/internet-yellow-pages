@@ -31,7 +31,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch Tranco top 1M and push to IYP."""
-
         self.tranco_qid = self.iyp.get_node('Ranking', {'name': 'Tranco top 1M'})
 
         logging.info('Downloading latest list...')

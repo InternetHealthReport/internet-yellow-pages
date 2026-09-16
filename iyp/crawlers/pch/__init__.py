@@ -45,7 +45,10 @@ class RoutingSnapshotCrawler(BaseCrawler):
     """
 
     def __init__(self, organization: str, url: str, name: str, af: int):
-        """af: Address family of the crawler. Must be 4 or 6."""
+        """Af: Address family of the crawler.
+
+        Must be 4 or 6.
+        """
         if af not in (4, 6):
             logging.error(f'Invalid address family: {af}')
             raise AddressValueError(f'Invalid address family: {af}')
@@ -162,7 +165,6 @@ class RoutingSnapshotCrawler(BaseCrawler):
 
         Return True if there was an error during the fetching process, else False.
         """
-
         tmp_dir = self.get_tmp_dir()
         if not os.path.exists(tmp_dir):
             tmp_dir = self.create_tmp_dir()

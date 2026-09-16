@@ -12,7 +12,6 @@ NAME = 'url2hostname'
 class PostProcess(BasePostProcess):
     def run(self):
         """Link URLs and their corresponding HostNames."""
-
         # Get all URL nodes.
         url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url')
 
@@ -44,12 +43,11 @@ class PostProcess(BasePostProcess):
     def delete(self):
         logging.info('Deleting existing relationships.')
         self.iyp.tx.commit()
-        self.iyp.session.run("""
-            MATCH (:URL)-[r:PART_OF {reference_name: 'iyp.url2hostname'}]->(:HostName)
-            CALL (r) {
-                DELETE r
-            } IN TRANSACTIONS OF 100000 ROWS
-        """)
+        self.iyp.session.run(
+            """MATCH (:URL)-[r:PART_OF {reference_name:
+                             'iyp.url2hostname'}]->(:HostName) CALL (r) { DELETE r } IN
+                             TRANSACTIONS OF 100000 ROWS."""
+        )
         self.iyp.tx = self.iyp.session.begin_transaction()
 
 

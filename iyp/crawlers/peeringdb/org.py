@@ -38,7 +38,6 @@ if os.path.exists('config.json'):
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB organizations to IYP."""
-
         self.headers = {'Authorization': 'Api-Key ' + API_KEY}
         self.requests = requests_cache.CachedSession(os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION)
 
@@ -47,7 +46,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP."""
-
         req = self.requests.get(URL, headers=self.headers)
         req.raise_for_status()
 

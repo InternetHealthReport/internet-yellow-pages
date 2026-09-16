@@ -17,14 +17,12 @@ MIN_POP_PERC = 0.01  # ASes with less population will be ignored
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialize IYP and list of countries."""
-
         self.url = URL  # url will change for each country
         self.countries = iso3166.countries_by_alpha2
         super().__init__(organization, url, name)
 
     def run(self):
         """Fetch data from APNIC and push to IYP."""
-
         processed_asn = set()
 
         logging.info(f'Processing {len(self.countries)} countries...')

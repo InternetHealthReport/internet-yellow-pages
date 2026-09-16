@@ -33,9 +33,8 @@ class DnsTopCrawler(BaseCrawler):
 
         # Fetch domain names registered in IYP
         existing_dn = self.iyp.tx.run(
-            """MATCH (dn:DomainName)-[r:RANK]-(:Ranking)
-                WHERE r.rank <= $rank_threshold
-                RETURN elementId(dn) AS _id, dn.name AS dname""",
+            """MATCH (dn:DomainName)-[r:RANK]-(:Ranking) WHERE r.rank <= $rank_threshold
+            RETURN elementId(dn) AS _id, dn.name AS dname.""",
             rank_threshold=RANK_THRESHOLD)
 
         self.domain_names_id = {node['dname']: node['_id'] for node in existing_dn}
@@ -118,7 +117,6 @@ class DnsTopCrawler(BaseCrawler):
     def fetch(self):
         """Download data for top RANK_THRESHOLD domain names registered in IYP and save
         it on disk."""
-
         self.__init_session()
 
         num_retries = 0

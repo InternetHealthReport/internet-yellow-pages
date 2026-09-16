@@ -71,7 +71,6 @@ def set_reference_time_from_metadata(reference_dict, data):
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         """Initialisation for pushing peeringDB IXPs to IYP."""
-
         self.headers = {'Authorization': 'Api-Key ' + API_KEY}
 
         self.reference_ix = {
@@ -115,7 +114,6 @@ class Crawler(BaseCrawler):
 
         Using multiple threads for better performances.
         """
-
         # get organization, country nodes
         self.org_id = self.iyp.batch_get_node_extid(ORGID_LABEL)
         self.fac_id = self.iyp.batch_get_node_extid(FACID_LABEL)
@@ -158,7 +156,6 @@ class Crawler(BaseCrawler):
 
     def register_net_fac(self):
         """Link ASes to facilities."""
-
         net_id = self.iyp.batch_get_node_extid(NETID_LABEL)
 
         # compute links
@@ -188,7 +185,6 @@ class Crawler(BaseCrawler):
 
     def register_ix_membership(self):
         """Add IXPs LAN and members."""
-
         # Create prefix nodes
         prefixes = set()
         net_names = set()
@@ -309,7 +305,6 @@ class Crawler(BaseCrawler):
 
     def register_ixs(self):
         """Add IXs to IYP and populate corresponding nodes' ID."""
-
         # Create nodes
         all_ixs_id = set()
         all_ixs_name = set()

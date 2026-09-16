@@ -31,7 +31,6 @@ def format_properties(prop):
     For example IPv6 addresses are stored in lowercase, or ASN are kept as integer not
     string.
     """
-
     prop = dict(prop)
 
     for prop_name, formatter in prop_formatters.items():
@@ -62,7 +61,6 @@ def batch_format_link_properties(links: list, inplace=True) -> Optional[list]:
 
 def dict2str(d, eq=':', pfx=''):
     """Converts a python dictionary to a Cypher map."""
-
     data = []
     for key, value in d.items():
         if isinstance(value, str):
@@ -229,14 +227,12 @@ class IYP(object):
     def commit(self):
         """Commit all pending queries (node/link creation) and start a new
         transaction."""
-
         self.tx.commit()
         self.tx = self.session.begin_transaction()
 
     def rollback(self):
         """Rollback all pending queries (node/link creation) and start a new
         transaction."""
-
         self.tx.rollback()
         self.tx = self.session.begin_transaction()
 
@@ -459,7 +455,6 @@ class IYP(object):
 
         Return the node ID or None if the node does not exist and create=False.
         """
-
         if isinstance(label, list) and create:
             raise NotImplementedError('Can not implicitly create multi-label nodes.')
 
@@ -519,7 +514,6 @@ class IYP(object):
 
         Return None if the node does not exist.
         """
-
         result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, elementId(a) AS nodeid')
 
         ids = {}
@@ -534,7 +528,6 @@ class IYP(object):
 
         Return None if the node does not exist.
         """
-
         result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN elementId(a)').single()
 
         if result is not None:
@@ -551,7 +544,6 @@ class IYP(object):
 
         Notice: this method commit changes to neo4j
         """
-
         self.__create_range_index(type, 'reference_name', on_relationship=True)
 
         nb_links = 0
@@ -597,7 +589,6 @@ class IYP(object):
         By convention link_type is written in UPPERCASE and keys in prop_dict are in
         lowercase.
         """
-
         if len(links) == 0:
             return
 
@@ -650,7 +641,6 @@ class IYP(object):
 class BasePostProcess(object):
     def __init__(self, name):
         """IYP and references initialization."""
-
         self.reference = {
             'reference_name': f'iyp.{name}',
             'reference_org': 'Internet Yellow Pages',
@@ -693,7 +683,6 @@ class BaseCrawler(object):
 
         The crawler name should be unique.
         """
-
         self.organization = organization
         self.url = url
         self.name = name
@@ -719,7 +708,6 @@ class BaseCrawler(object):
 
         return: path to the temporary directory
         """
-
         path = self.get_tmp_dir(root)
 
         if remove and os.path.exists(path):
@@ -734,7 +722,6 @@ class BaseCrawler(object):
 
         The directory may not exist yet.
         """
-
         assert self.name != ''
         if not root.endswith('/'):
             root += '/'
@@ -751,7 +738,6 @@ class BaseCrawler(object):
     def count_relations(self):
         """Count the number of relations in the graph with the reference name of
         crawler."""
-
         result = self.iyp.tx.run(
             f"MATCH ()-[r]->() WHERE r.reference_name = '{self.name}' RETURN count(r) AS count").single()
 
@@ -788,7 +774,6 @@ class BaseCrawler(object):
          Args:
              elems (Iterable): A dictionary or set describing the links
         """
-
         if isinstance(elems, dict):
             for nodes, props in elems.items():
                 yield {'src_id': nodes[0], 'dst_id': nodes[1], 'props': [self.reference, props]}

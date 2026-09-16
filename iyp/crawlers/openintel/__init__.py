@@ -37,7 +37,6 @@ class OpenIntelCrawler(BaseCrawler):
     def __init__(self, organization, url, name, datasets):
         """Initialization of the OpenIntel crawler requires the name of the dataset
         (e.g. tranco or infra:ns)."""
-
         self.datasets = datasets
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://openintel.nl/data/forward-dns/top-lists/'
@@ -83,7 +82,6 @@ class OpenIntelCrawler(BaseCrawler):
     def get_parquet_public(self, dataset: str):
         """Fetch and read dataframes for the specified toplist dataset from the public
         S3 bucket."""
-
         self.init_public_s3_bucket()
         # OpenINTEL measurement data objects base prefix
         self.fdns_warehouse_s3 = 'fdns/basis=toplist'
@@ -93,7 +91,6 @@ class OpenIntelCrawler(BaseCrawler):
     def get_parquet_closed(self, dataset):
         """Fetch and read dataframes for the specified dataset from the closed S3
         bucket."""
-
         # Get a boto3 resource
         S3R_OPENINTEL = boto3.resource(
             's3',

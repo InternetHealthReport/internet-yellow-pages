@@ -34,7 +34,6 @@ class Crawler(BaseCrawler):
 
     def run(self):
         """Fetch data and push to IYP."""
-
         # setup HTTPS session with credentials and retry
         req_session = requests.Session()
         req_session.headers['Authorization'] = 'Bearer ' + API_KEY
