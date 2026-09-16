@@ -16,9 +16,7 @@ repos:
     hooks:
     -   id: autopep8
 -   repo: https://github.com/PyCQA/docformatter
-    # Pin to v1.7.7 until this is resolved: https://github.com/PyCQA/docformatter/issues/344
-    # Messes up some of our query strings.
-    rev: v1.7.7
+    rev: v1.7.8
     hooks:
     -   id: docformatter
         args: [--in-place, --wrap-summaries, '88', --wrap-descriptions, '88']

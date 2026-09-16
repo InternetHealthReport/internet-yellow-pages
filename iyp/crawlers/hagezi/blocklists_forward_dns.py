@@ -23,8 +23,8 @@ RESULTS_DIR = 'results'
 # membership is therefore attributed to Hagezi, the DNS data to IHR.
 HAGEZI_ORG = 'Hagezi'
 HAGEZI_URL_INFO = 'https://github.com/hagezi/dns-blocklists#readme'
-# Scans are performed roughly once a week. Refuse to import data that is much older
-# than that, since it would mean the measurement pipeline stopped working.
+# Scans are performed roughly once a week. Refuse to import data that is much
+# older than that.
 MAX_AGE_IN_DAYS = 30
 
 
@@ -268,7 +268,7 @@ class Crawler(BaseCrawler):
             for _, ip in pairs:
                 self.ips.add(ip)
 
-        # Get/create nodes. 
+        # Get/create nodes.
         host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', self.host_names,
                                                           all=False, batch_size=100000)
         domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', self.domain_names,
