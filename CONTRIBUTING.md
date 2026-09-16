@@ -18,7 +18,7 @@ this code. Please report unacceptable behavior to admin@ihr.live
 1. Make sure that your code is formatted and passed linting according to the project
    requirements. This can easily be achieved by installing the `pre-commit` command as
    described below.
-1. Ensure any new dependencies are added to the `requirements.txt` file.
+1. Ensure any new dependencies are added to the `pyproject.toml` file.
 1. Add only relevant files to the commit and ignore the rest to keep the repo clean.
     - If you add a new dataset / crawler, include a README.md describing the crawler
        and the nodes / relationships it will push to the database.
@@ -42,9 +42,9 @@ git fetch upstream
 git merge upstream/main
 
 ## Step 3: Setup Virtual Environment and Install Dependencies
-python3 -m venv --upgrade-deps .venv
+# Requires uv: https://docs.astral.sh/uv/getting-started/installation/
+uv sync
 source .venv/bin/activate
-pip install -r requirements.txt
 
 ## Step 4: Setup pre-commit
 pre-commit install
