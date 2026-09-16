@@ -25,3 +25,4 @@ clickhouse_driver
 paramiko
 scp
 pyarrow
+ijson

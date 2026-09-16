@@ -38,6 +38,7 @@
 | | Cloudflare Radar API endpoint radar/ranking/top (top 100 domain names)| https://radar.cloudflare.com | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/cloudflare#readme)| cloudflare.top100 |
 | Emile Aben | AS names| https://github.com/emileaben/asnames | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/emileaben#readme)| emileaben.as_names |
 | Google | CrUX top 1M websites per country| https://developer.chrome.com/docs/crux | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/google#readme) | google.crux_top1m_country |
+| Hagezi | DNS blocklists, DNS resolution by IHR | https://github.com/hagezi/dns-blocklists | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/hagezi#readme) | hagezi.blocklists_forward_dns |
 | IHR | AS Hegemony| https://www.ihr.live/en/documentation#AS-dependency | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.local_hegemony_v4, ihr.local_hegemony_v6 |
 | | Country Dependency| https://www.ihr.live/en/documentation#Country-s-network-dependency | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.country_dependency |
 | | ROV| https://www.ihr.live/en/documentation#Route-Origin-Validation | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.rov |
