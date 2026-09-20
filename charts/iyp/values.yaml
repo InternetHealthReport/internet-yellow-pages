@@ -1,0 +1,157 @@
+image:
+  repository: neo4j
+  tag: "5.26.3"
+  pullPolicy: IfNotPresent
+
+loaderImage:
+  repository: neo4j/neo4j-admin
+  tag: "5.26.2-community-debian"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+# Graceful shutdown timeout in seconds
+terminationGracePeriodSeconds: 300
+
+# Init container configuration
+initContainers:
+  # First init container: Download data dump from remote URL
+  downloadDump:
+    # set to false to disable the download dump init container
+    enabled: true
+    image:
+      repository: curlimages/curl
+      tag: "8.10.1"
+      pullPolicy: IfNotPresent
+    # URL to download the database dump from
+    dumpUrl: "https://archive.ihr.live/ihr/iyp/YYYY/MM/DD/iyp-YYYY-MM-DD.dump"
+
+  # Second init container: Load the dump into Neo4j
+  loadDatabase:
+    # set to false to disable the load database init container. If enabled, this initContainer will delete any existing database and load the dump
+    enabled: true
+
+# Neo4j configuration
+neo4j:
+  auth:
+    enabled: false
+
+  # APOC plugin configuration
+  apoc:
+    enabled: true
+
+  # TLS configuration
+  tls:
+    enabled: true
+    bolt:
+      enabled: true
+      baseDirectory: "/ssl/certificates/bolt"
+      privateKey: "neo4j.key"
+      publicCertificate: "neo4j.cert"
+    https:
+      enabled: true
+      baseDirectory: "/ssl/certificates/https"
+      privateKey: "neo4j.key"
+      publicCertificate: "neo4j.cert"
+
+  # Server configuration
+  server:
+    defaultListenAddress: "0.0.0.0"
+    defaultAdvertisedAddress: ""  # Will be set by ingress hostname
+    readOnly: true
+
+  # Memory settings
+  memory:
+    heap:
+      initial: "512m"
+      max: "1024m"
+    pagecache: "1g"
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    https: 7473
+    bolt: 7687
+  # MetalLB configuration (only applies when service.type is LoadBalancer)
+  metallb:
+    # Specify MetalLB IP pool name to request IP from specific pool
+    pool: ""
+    # Example: pool: "public-pool"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+  hosts:
+    - host: iyp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: iyp-tls
+      hosts:
+        - iyp.example.com
+
+# Certificate configuration
+certificate:
+  enabled: true
+  issuer: "letsencrypt-prod"
+  secretName: "iyp-tls"
+  commonName: "iyp.example.com"
+  dnsNames:
+    - "iyp.example.com"
+
+# Persistent Volume configuration
+persistence:
+  data:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 200Gi
+    mountPath: /data
+
+  dumps:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    mountPath: /dumps
+
+# Resource limits
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Security context (for containers)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 7474
+  runAsGroup: 7474
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 7474
+  runAsGroup: 7474
+  fsGroup: 7474
