@@ -54,12 +54,12 @@ git clone https://github.com/InternetHealthReport/internet-yellow-pages.git
 cd internet-yellow-pages
 ```
 
-Create Python environment and install Python libraries:
+Create the Python environment and install the dependencies. This requires
+[uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```bash
-python3 -m venv --upgrade-deps .venv
+uv sync
 source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 Create a configuration file from the example file and add API keys. **Note that some

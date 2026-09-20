@@ -28,7 +28,8 @@ If you update the ontology (i.e., add a new node and/or relationship type):
 
 If you add a new Python dependency:
 
-- [ ] Update [requirements.txt](../requirements.txt)
+- [ ] Update [pyproject.toml](../pyproject.toml) and run `uv lock` to update
+  [uv.lock](../uv.lock)
 
 ## Code considerations
 
