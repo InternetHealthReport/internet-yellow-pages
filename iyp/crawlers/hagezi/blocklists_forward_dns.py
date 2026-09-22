@@ -190,7 +190,7 @@ class Crawler(BaseCrawler):
 
             for record_type, addresses in (('A', record['a']), ('AAAA', record['aaaa'])):
                 for address in addresses:
-                    ip = self.normalize_ip(address, host_name)
+                    ip = self.normalize_ip(address)
                     if ip is None:
                         continue
                     expected_type = 'AAAA' if ':' in ip else 'A'
@@ -212,7 +212,7 @@ class Crawler(BaseCrawler):
 
                 # The data gives the IPs of the name servers, but not the record type
                 # they were obtained with, so infer it from the address family.
-                ip = self.normalize_ip(name_server['ip'], ns_name)
+                ip = self.normalize_ip(name_server['ip'])
                 if ip is None:
                     continue
                 self.resolves_to['AAAA' if ':' in ip else 'A'].add((ns_name, ip))
@@ -224,12 +224,12 @@ class Crawler(BaseCrawler):
         elif failed_resolutions == records:
             logging.warning(f'No name of list "{list_name}" was resolved successfully.')
 
-    def normalize_ip(self, address: str, name: str):
+    def normalize_ip(self, address: str):
         """Return the compressed form of an IP address or None if it is malformed."""
         try:
             return sys.intern(ip_address(address).compressed)
         except ValueError as e:
-            logging.warning(f'Ignoring malformed IP address "{address}" of "{name}": {e}')
+            logging.warning(f'Ignoring malformed IP address "{address}": {e}')
             return None
 
     def categorized_link_generator(self, host_id: dict, tag_id: dict):
@@ -239,12 +239,12 @@ class Crawler(BaseCrawler):
             for host_name in host_names:
                 yield {'src_id': host_id[host_name], 'dst_id': tag_qid, 'props': [reference]}
 
-    def name_link_generator(self, pairs, src_id: dict, dst_id: dict):
+    def generic_link_generator(self, pairs, src_id: dict, dst_id: dict):
         for src, dst in pairs:
             yield {'src_id': src_id[src], 'dst_id': dst_id[dst], 'props': [self.reference]}
 
     def resolves_to_link_generator(self, host_id: dict, ip_id: dict):
-        for record_type, pairs in self.resolves_to.items():
+        for pairs in self.resolves_to.values():
             for host_name, ip in pairs:
                 yield {'src_id': host_id[host_name],
                        'dst_id': ip_id[ip],
@@ -268,7 +268,7 @@ class Crawler(BaseCrawler):
             for _, ip in pairs:
                 self.ips.add(ip)
 
-        # Get/create nodes. 
+        # Get/create nodes.
         host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', self.host_names,
                                                           all=False, batch_size=100000)
         domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', self.domain_names,
@@ -279,8 +279,8 @@ class Crawler(BaseCrawler):
 
         # Push all links to IYP.
         self.iyp.batch_add_links('CATEGORIZED', self.categorized_link_generator(host_id, tag_id))
-        self.iyp.batch_add_links('PART_OF', self.name_link_generator(self.part_of, host_id, domain_id))
-        self.iyp.batch_add_links('MANAGED_BY', self.name_link_generator(self.managed_by, domain_id, host_id))
+        self.iyp.batch_add_links('PART_OF', self.generic_link_generator(self.part_of, host_id, domain_id))
+        self.iyp.batch_add_links('MANAGED_BY', self.generic_link_generator(self.managed_by, domain_id, host_id))
         self.iyp.batch_add_links('RESOLVES_TO', self.resolves_to_link_generator(host_id, ip_id))
 
     def unit_test(self):
