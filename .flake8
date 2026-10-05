@@ -1,7 +1,0 @@
-[flake8]
-max-line-length = 120
-max-doc-length = 88
-extend-ignore = E741
-show-source = true
-# autopep8 argument
-aggressive = 3
