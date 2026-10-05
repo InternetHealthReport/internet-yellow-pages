@@ -149,9 +149,9 @@ class DnsTopCrawler(BaseCrawler):
                             #   {
                             #     'code': 2001,
                             #     'message': 'Invalid hostname',
-                            #     'path': ['query', 'domain', 4]
+                            #     'path': ['query', 'domain', '4']
                             #   }
-                            pop_idx = data['errors'][0]['path'][-1]
+                            pop_idx = int(data['errors'][0]['path'][-1])
                             batch_info = self.batches[query.batch_id]
                             domains = batch_info['domains']
                             invalid_domain = domains.pop(pop_idx)
