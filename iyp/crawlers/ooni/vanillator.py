@@ -13,7 +13,6 @@ label = 'OONI Vanilla Tor Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'vanillator')
         self.categories = ['ok', 'failure']

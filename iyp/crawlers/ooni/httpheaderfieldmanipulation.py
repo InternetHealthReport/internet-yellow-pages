@@ -13,7 +13,6 @@ label = 'OONI HTTP Header Field Manipulation Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'httpheaderfieldmanipulation')
         self.categories = [
@@ -44,7 +43,8 @@ class Crawler(OoniCrawler):
         request_line_capitalization = (
             'request_line_capitalization'
             if test_keys.get('request_line_capitalization', False)
-            else 'no_request_line_capitalization')
+            else 'no_request_line_capitalization'
+        )
         header_name_capitalization = (
             'header_name_capitalization'
             if test_keys.get('header_name_capitalization', False)

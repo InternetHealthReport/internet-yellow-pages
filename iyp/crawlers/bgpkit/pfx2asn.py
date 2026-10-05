@@ -15,7 +15,6 @@ NAME = 'bgpkit.pfx2asn'
 
 
 class Crawler(BaseCrawler):
-
     def run(self):
         """Fetch the prefix to ASN file from BGPKIT website and process lines one by
         one."""
@@ -44,7 +43,9 @@ class Crawler(BaseCrawler):
 
         # get ASNs and prefixes IDs
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
+        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'BGPPrefix', 'prefix', prefixes, all=False
+        )
         # Add the Prefix label
         self.iyp.batch_add_node_label(list(self.prefix_id.values()), 'Prefix')
 
@@ -54,7 +55,9 @@ class Crawler(BaseCrawler):
             asn_qid = self.asn_id[entry['asn']]
             prefix_qid = self.prefix_id[entry['prefix']]
 
-            links.append({'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, entry]})
+            links.append(
+                {'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, entry]}
+            )
 
         # Push all links to IYP
         self.iyp.batch_add_links('ORIGINATE', links)
@@ -73,7 +76,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

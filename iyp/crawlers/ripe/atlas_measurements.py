@@ -10,8 +10,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from iyp import (BaseCrawler, JSONDecodeError, MissingKeyError,
-                 RequestStatusError)
+from iyp import BaseCrawler, JSONDecodeError, MissingKeyError, RequestStatusError
 
 ORG = 'RIPE NCC'
 
@@ -23,7 +22,9 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         self.__initialize_session()
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://atlas.ripe.net/docs/apis/rest-api-manual/measurements/'
+        self.reference['reference_url_info'] = (
+            'https://atlas.ripe.net/docs/apis/rest-api-manual/measurements/'
+        )
         # Atlas API is real-time, i.e., we can use the same timestamp.
         self.reference['reference_time_modification'] = self.reference['reference_time_fetch']
 
@@ -32,7 +33,7 @@ class Crawler(BaseCrawler):
         retry = Retry(
             backoff_factor=0.1,
             status_forcelist=(429, 500, 502, 503, 504),
-            respect_retry_after_header=True
+            respect_retry_after_header=True,
         )
         adapter = HTTPAdapter(max_retries=retry)
         self.session.mount('http://', adapter)
@@ -41,11 +42,15 @@ class Crawler(BaseCrawler):
     @staticmethod
     def __process_response(response: requests.Response):
         if response.status_code != requests.codes.ok:
-            raise RequestStatusError(f'Request to {response.url} failed with status: {response.status_code}')
+            raise RequestStatusError(
+                f'Request to {response.url} failed with status: {response.status_code}'
+            )
         try:
             data = response.json()
         except json.decoder.JSONDecodeError as e:
-            raise JSONDecodeError(f'Decoding JSON reply from {response.url} failed with exception: {e}')
+            raise JSONDecodeError(
+                f'Decoding JSON reply from {response.url} failed with exception: {e}'
+            )
         if 'next' not in data or 'results' not in data:
             raise MissingKeyError('"next" or "results" key missing from response data.')
 
@@ -87,10 +92,7 @@ class Crawler(BaseCrawler):
 
             # Flatten the group information, They are the same as target
             # information as they are prefixed with 'group_'.
-            group_info = {
-                'value': item.pop('group', None),
-                'id': item.pop('group_id', None)
-            }
+            group_info = {'value': item.pop('group', None), 'id': item.pop('group_id', None)}
             item['group'] = group_info
 
             auto_topup_info = {
@@ -111,7 +113,9 @@ class Crawler(BaseCrawler):
     @staticmethod
     def __get_all_resolved_ips(probe_measurement):
         # Ensure 'resolved_ips' takes precedence over 'target_ip.
-        resolved_ips = probe_measurement['target']['resolved_ips'] or probe_measurement['target']['ip'] or []
+        resolved_ips = (
+            probe_measurement['target']['resolved_ips'] or probe_measurement['target']['ip'] or []
+        )
         resolved_ips = [resolved_ips] if not isinstance(resolved_ips, list) else resolved_ips
         valid_resolved_ips = [ip for ip in resolved_ips if ip is not None and ip != '']
         return valid_resolved_ips
@@ -138,11 +142,13 @@ class Crawler(BaseCrawler):
         return set(e['prb_id'] for e in self.iyp.tx.run(query))
 
     def run(self):
-        params = {'format': 'json',
-                  'is_public': True,
-                  'status': 2,
-                  'optional_fields': 'current_probes',
-                  'page_size': 500}
+        params = {
+            'format': 'json',
+            'is_public': True,
+            'status': 2,
+            'optional_fields': 'current_probes',
+            'page_size': 500,
+        }
         r = self.session.get(URL, params=params)
         next_url, data = self.__process_response(r)
         while next_url:
@@ -171,7 +177,9 @@ class Crawler(BaseCrawler):
         for probe_measurement in data:
             probe_measurement_id = probe_measurement['id']
             if not probe_measurement_id:
-                logging.error(f'Probe Measurement without ID. Should never happen: {probe_measurement}.')
+                logging.error(
+                    f'Probe Measurement without ID. Should never happen: {probe_measurement}.'
+                )
                 continue
             if probe_measurement_id in probe_measurement_ids:
                 logging.warning(f'Duplicate probe measurement ID: {probe_measurement_id}.')
@@ -180,7 +188,11 @@ class Crawler(BaseCrawler):
             resolved_ips = self.__get_all_resolved_ips(probe_measurement)
             for i in range(len(resolved_ips)):
                 probe_af = int(probe_measurement['af'])
-                resolved_ips[i] = ipaddress.ip_address(resolved_ips[i]).compressed if probe_af == 6 else resolved_ips[i]
+                resolved_ips[i] = (
+                    ipaddress.ip_address(resolved_ips[i]).compressed
+                    if probe_af == 6
+                    else resolved_ips[i]
+                )
 
             hostname = probe_measurement['target']['hostname']
             if hostname == '' or self.__is_valid_ip(hostname):
@@ -205,13 +217,21 @@ class Crawler(BaseCrawler):
         for probe_measurement in valid_probe_measurements:
             probe_measurement_copy = probe_measurement.copy()
             del probe_measurement_copy['current_probes']
-            probe_measurement_flattened = dict(flatdict.FlatterDict(probe_measurement_copy, delimiter='_'))
+            probe_measurement_flattened = dict(
+                flatdict.FlatterDict(probe_measurement_copy, delimiter='_')
+            )
             attrs_flattened.append(probe_measurement_flattened)
 
-        probe_measurement_ids = self.iyp.batch_get_nodes('AtlasMeasurement', attrs_flattened, ['id'], create=True)
-        probe_ids = self.iyp.batch_get_nodes_by_single_prop('AtlasProbe', 'id', probe_ids, all=False, create=True)
+        probe_measurement_ids = self.iyp.batch_get_nodes(
+            'AtlasMeasurement', attrs_flattened, ['id'], create=True
+        )
+        probe_ids = self.iyp.batch_get_nodes_by_single_prop(
+            'AtlasProbe', 'id', probe_ids, all=False, create=True
+        )
         ip_ids = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False, create=True)
-        hostname_ids = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', hostnames, all=False, create=True)
+        hostname_ids = self.iyp.batch_get_nodes_by_single_prop(
+            'HostName', 'name', hostnames, all=False, create=True
+        )
         asn_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False, create=True)
 
         # compute links
@@ -222,26 +242,42 @@ class Crawler(BaseCrawler):
         for probe_measurement in valid_probe_measurements:
             probe_measurement_qid = probe_measurement_ids[probe_measurement['id']]
             probe_measurement_reference = self.reference.copy()
-            probe_measurement_reference['reference_url_data'] = probe_measurement_reference['reference_url_data'] + \
-                f'/{probe_measurement["id"]}'
+            probe_measurement_reference['reference_url_data'] = (
+                probe_measurement_reference['reference_url_data'] + f'/{probe_measurement["id"]}'
+            )
 
             probe_measurement_asn = probe_measurement['target']['asn']
             if probe_measurement_asn:
                 asn_qid = asn_ids[probe_measurement_asn]
-                target_links.append({'src_id': probe_measurement_qid, 'dst_id': asn_qid,
-                                    'props': [probe_measurement_reference]})
+                target_links.append(
+                    {
+                        'src_id': probe_measurement_qid,
+                        'dst_id': asn_qid,
+                        'props': [probe_measurement_reference],
+                    }
+                )
 
             probe_measurement_hostname = probe_measurement['target']['hostname']
             if probe_measurement_hostname:
                 hostname_qid = hostname_ids[probe_measurement_hostname]
-                target_links.append({'src_id': probe_measurement_qid, 'dst_id': hostname_qid,
-                                    'props': [probe_measurement_reference]})
+                target_links.append(
+                    {
+                        'src_id': probe_measurement_qid,
+                        'dst_id': hostname_qid,
+                        'props': [probe_measurement_reference],
+                    }
+                )
 
             probe_measurement_ips = self.__get_all_resolved_ips(probe_measurement)
             for probe_measurement_ip in probe_measurement_ips:
                 ip_qid = ip_ids[probe_measurement_ip]
-                target_links.append({'src_id': probe_measurement_qid, 'dst_id': ip_qid,
-                                    'props': [probe_measurement_reference]})
+                target_links.append(
+                    {
+                        'src_id': probe_measurement_qid,
+                        'dst_id': ip_qid,
+                        'props': [probe_measurement_reference],
+                    }
+                )
 
             probe_ids_participated = probe_measurement['current_probes']
             if probe_ids_participated:
@@ -249,8 +285,13 @@ class Crawler(BaseCrawler):
                     if probe_id in abandoned_prb_ids:
                         continue
                     probe_qid = probe_ids[probe_id]
-                    part_of_links.append({'src_id': probe_qid, 'dst_id': probe_measurement_qid,
-                                          'props': [probe_measurement_reference]})
+                    part_of_links.append(
+                        {
+                            'src_id': probe_qid,
+                            'dst_id': probe_measurement_qid,
+                            'props': [probe_measurement_reference],
+                        }
+                    )
 
         # Push all links to IYP
         self.iyp.batch_add_links('TARGET', target_links)
@@ -270,7 +311,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

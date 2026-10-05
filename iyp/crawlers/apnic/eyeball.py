@@ -65,17 +65,29 @@ class Crawler(BaseCrawler):
             pop_links = []
             name_links = []
             for asn in ranking:
-                asn_qid = self.asn_id[asn['as']]  # self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
+                asn_qid = self.asn_id[
+                    asn['as']
+                ]  # self.iyp.get_node('AS', {'asn': asn[2:]}, create=True)
 
                 if asn['as'] not in processed_asn:
-                    name_qid = self.name_id[asn['autnum']]  # self.iyp.get_node('Name', {'name': name}, create=True)
-                    name_links.append({'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]})
-                    country_links.append({'src_id': asn_qid, 'dst_id': cc_qid, 'props': [self.reference]})
+                    name_qid = self.name_id[
+                        asn['autnum']
+                    ]  # self.iyp.get_node('Name', {'name': name}, create=True)
+                    name_links.append(
+                        {'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]}
+                    )
+                    country_links.append(
+                        {'src_id': asn_qid, 'dst_id': cc_qid, 'props': [self.reference]}
+                    )
 
                     processed_asn.add(asn['as'])
 
-                rank_links.append({'src_id': asn_qid, 'dst_id': ranking_qid, 'props': [self.reference, asn]})
-                pop_links.append({'src_id': asn_qid, 'dst_id': cc_qid, 'props': [self.reference, asn]})
+                rank_links.append(
+                    {'src_id': asn_qid, 'dst_id': ranking_qid, 'props': [self.reference, asn]}
+                )
+                pop_links.append(
+                    {'src_id': asn_qid, 'dst_id': cc_qid, 'props': [self.reference, asn]}
+                )
 
             # Push all links to IYP
             self.iyp.batch_add_links('NAME', name_links)
@@ -97,7 +109,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

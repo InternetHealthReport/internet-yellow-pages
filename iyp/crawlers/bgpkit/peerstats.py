@@ -36,9 +36,13 @@ class Crawler(BaseCrawler):
         curr_date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         max_lookback_days = 7
         for _ in range(max_lookback_days):
-            url = URL.format(collector='rrc10', year=curr_date.year,
-                             month=curr_date.month, day=curr_date.day,
-                             epoch=int(curr_date.timestamp()))
+            url = URL.format(
+                collector='rrc10',
+                year=curr_date.year,
+                month=curr_date.month,
+                day=curr_date.day,
+                epoch=int(curr_date.timestamp()),
+            )
             req = requests.head(url)
             if req.ok:
                 break
@@ -55,9 +59,13 @@ class Crawler(BaseCrawler):
 
         logging.info(f'Fetching data for {len(available_collectors)} collectors.')
         for collector in available_collectors:
-            url = URL.format(collector=collector, year=curr_date.year,
-                             month=curr_date.month, day=curr_date.day,
-                             epoch=int(curr_date.timestamp()))
+            url = URL.format(
+                collector=collector,
+                year=curr_date.year,
+                month=curr_date.month,
+                day=curr_date.day,
+                epoch=int(curr_date.timestamp()),
+            )
 
             req = requests.get(url, stream=True)
             if req.status_code != 200:
@@ -67,10 +75,7 @@ class Crawler(BaseCrawler):
             stats = json.load(bz2.open(req.raw))
             # Name should be the same as in URL, but just in case use name from file.
             collector_name = stats['collector']
-            collectors.append({
-                'name': collector_name,
-                'project': stats['project']
-            })
+            collectors.append({'name': collector_name, 'project': stats['project']})
 
             # Copy since data URL is different per collector.
             reference = dict(self.reference)
@@ -80,11 +85,9 @@ class Crawler(BaseCrawler):
             for peer in stats['peers'].values():
                 peer_asn = peer['asn']
                 asns.add(peer_asn)
-                peers_with.append({
-                    'src_id': peer_asn,
-                    'dst_id': collector_name,
-                    'props': [reference, peer]
-                })
+                peers_with.append(
+                    {'src_id': peer_asn, 'dst_id': collector_name, 'props': [reference, peer]}
+                )
 
         # Get nodes.
         collector_id = self.iyp.batch_get_nodes('BGPCollector', collectors, id_properties=['name'])
@@ -111,7 +114,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

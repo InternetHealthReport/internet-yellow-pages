@@ -34,18 +34,15 @@ def get_latest_dataset_url(github_repo: str, data_dir: str, file_extension: str)
 
 
 class Crawler(BaseCrawler):
-
     def link_generator(self, elems, src_map: dict, dst_map: dict):
         for src, dst in elems:
-            yield {
-                'src_id': src_map[src],
-                'dst_id': dst_map[dst],
-                'props': [self.reference]
-            }
+            yield {'src_id': src_map[src], 'dst_id': dst_map[dst], 'props': [self.reference]}
 
     def run(self):
         """Fetch data and push to IYP."""
-        dataset_url = get_latest_dataset_url('InetIntel/Dataset-AS-to-Organization-Mapping', '/data', '.json')
+        dataset_url = get_latest_dataset_url(
+            'InetIntel/Dataset-AS-to-Organization-Mapping', '/data', '.json'
+        )
         if not dataset_url:
             logging.error('Failed to find valid file in repository.')
             raise DataNotAvailableError('Failed to find valid file in repository.')
@@ -58,17 +55,23 @@ class Crawler(BaseCrawler):
 
         # Reference data is included as metadata.
         self.reference['reference_url_info'] = data['metadata']['documentation_url']
-        data_creation_time = datetime.strptime(data['metadata']['snapshot_month'], '%Y-%m').replace(tzinfo=timezone.utc)
+        data_creation_time = datetime.strptime(data['metadata']['snapshot_month'], '%Y-%m').replace(
+            tzinfo=timezone.utc
+        )
         # Dataset is produced monthly.
         if data_creation_time < datetime.now(tz=timezone.utc) - timedelta(days=60):
             logging.error(f'Failed to find recent dataset. Latest available: {data_creation_time}')
-            raise DataNotAvailableError(f'Failed to find recent dataset. Latest available: {data_creation_time}')
+            raise DataNotAvailableError(
+                f'Failed to find recent dataset. Latest available: {data_creation_time}'
+            )
 
         # We only create SIBLING_OF relationships between existing PeeringDB
         # organizations. Since this dataset is only produced monthly, it might contain
         # organizations that were already deleted so use the peeringdb.org crawler as
         # reference and create no organizations here.
-        iyp_org_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', all=True, create=False)
+        iyp_org_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Organization', 'name', all=True, create=False
+        )
 
         asns = set()
         urls = set()
@@ -113,7 +116,9 @@ class Crawler(BaseCrawler):
         # Translate ASNs/URLs to QIDs on the fly.
         self.iyp.batch_add_links('WEBSITE', self.link_generator(website_links, asn_id, url_id))
         logging.info('AS siblings')
-        self.iyp.batch_add_links('SIBLING_OF', self.link_generator(asn_sibling_of_links, asn_id, asn_id))
+        self.iyp.batch_add_links(
+            'SIBLING_OF', self.link_generator(asn_sibling_of_links, asn_id, asn_id)
+        )
         # Organizations are already QIDs.
         logging.info('Organization siblings')
         self.iyp.batch_add_links('SIBLING_OF', super().link_generator(org_sibling_of_links))
@@ -132,7 +137,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

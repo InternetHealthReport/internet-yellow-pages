@@ -14,7 +14,6 @@ NAME = 'iana.root_zone'  # should reflect the directory and name of this file
 
 
 class Crawler(BaseCrawler):
-
     def run(self):
         r = requests.get(self.url)
         r.raise_for_status()
@@ -36,7 +35,9 @@ class Crawler(BaseCrawler):
                 logging.warning(f'DNS record line is too short: {l}')
                 continue
             if l[2] != 'IN':
-                logging.warning(f'Unexpected DNS record class: "{l[2]}". Expecting only IN records.')
+                logging.warning(
+                    f'Unexpected DNS record class: "{l[2]}". Expecting only IN records.'
+                )
                 continue
             record_type = l[3]
             if record_type not in {'A', 'AAAA', 'NS'}:
@@ -78,24 +79,34 @@ class Crawler(BaseCrawler):
                 domainnames.add(name)
 
         logging.info(f'Fetching/Creating {len(domainnames)} DomainName nodes')
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domainnames, all=False)
+        domain_id = self.iyp.batch_get_nodes_by_single_prop(
+            'DomainName', 'name', domainnames, all=False
+        )
         logging.info(f'Fetching/Creating {len(ips)} IP nodes')
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False)
         authoritativenameservers_id = {name: domain_id[name] for name in authoritativenameservers}
-        logging.info(f'Adding AuthoritativeNameServer label to {len(authoritativenameservers_id)} DomainName nodes.')
-        self.iyp.batch_add_node_label(list(authoritativenameservers_id.values()), 'AuthoritativeNameServer')
+        logging.info(
+            f'Adding AuthoritativeNameServer label to {len(authoritativenameservers_id)} DomainName nodes.'
+        )
+        self.iyp.batch_add_node_label(
+            list(authoritativenameservers_id.values()), 'AuthoritativeNameServer'
+        )
 
         logging.info('Computing relationships')
         resolves_to_relationships = list()
-        for (name, ip) in resolves_to:
-            resolves_to_relationships.append({'src_id': domain_id[name],
-                                              'dst_id': ip_id[ip],
-                                              'props': [self.reference]})
+        for name, ip in resolves_to:
+            resolves_to_relationships.append(
+                {'src_id': domain_id[name], 'dst_id': ip_id[ip], 'props': [self.reference]}
+            )
         managed_by_relationships = list()
-        for (name, nsdname) in managed_by:
-            managed_by_relationships.append({'src_id': domain_id[name],
-                                             'dst_id': authoritativenameservers_id[nsdname],
-                                             'props': [self.reference]})
+        for name, nsdname in managed_by:
+            managed_by_relationships.append(
+                {
+                    'src_id': domain_id[name],
+                    'dst_id': authoritativenameservers_id[nsdname],
+                    'props': [self.reference],
+                }
+            )
         logging.info(f'Pushing {len(resolves_to_relationships)} RESOLVES_TO relationships.')
         self.iyp.batch_add_links('RESOLVES_TO', resolves_to_relationships)
         logging.info(f'Pushing {len(managed_by)} MANAGED_BY relationships.')
@@ -115,7 +126,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

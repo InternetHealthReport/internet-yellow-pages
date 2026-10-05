@@ -46,10 +46,16 @@ class Crawler(BaseCrawler):
                 prefix = prefix.compressed
                 countries.add(country_code)
                 prefixes.add(prefix)
-                links.append({'src_id': prefix, 'dst_id': country_code, 'props': [self.reference, doc]})
+                links.append(
+                    {'src_id': prefix, 'dst_id': country_code, 'props': [self.reference, doc]}
+                )
 
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('GeoPrefix', 'prefix', prefixes, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'GeoPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
         for link in links:

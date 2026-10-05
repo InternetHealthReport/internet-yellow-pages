@@ -37,11 +37,15 @@ class Crawler(BaseCrawler):
         else:
             # for loop was not 'broken', no file available
             raise Exception('No recent CAIDA ix-asns file available')
-        date = date.datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        date = date.datetime.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+        )
 
         logging.info(f'Fetching data from: {url}')
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://publicdata.caida.org/datasets/ixps/README.txt'
+        self.reference['reference_url_info'] = (
+            'https://publicdata.caida.org/datasets/ixps/README.txt'
+        )
         self.reference['reference_time_modification'] = date
 
     def __set_modification_time_from_metadata_line(self, line):
@@ -85,8 +89,9 @@ class Crawler(BaseCrawler):
             asn_qid = as_id.get(mem['asn'])
             flat_mem = dict(flatdict.FlatDict(mem))
 
-            member_links.append({'src_id': asn_qid, 'dst_id': ixp_qid,
-                                 'props': [self.reference, flat_mem]})
+            member_links.append(
+                {'src_id': asn_qid, 'dst_id': ixp_qid, 'props': [self.reference, flat_mem]}
+            )
         # Push all links to IYP
         self.iyp.batch_add_links('MEMBER_OF', member_links)
 
@@ -104,7 +109,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

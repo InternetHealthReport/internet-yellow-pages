@@ -25,7 +25,9 @@ class Crawler(BaseCrawler):
         try:
             res = requests.get('https://tranco-list.eu/top-1m-id')
             res.raise_for_status()
-            self.reference['reference_url_data'] = f'https://tranco-list.eu/download_daily/{res.text}'
+            self.reference['reference_url_data'] = (
+                f'https://tranco-list.eu/download_daily/{res.text}'
+            )
         except requests.HTTPError as e:
             logging.warning(f'Failed to update data URL: {e}')
 
@@ -51,8 +53,13 @@ class Crawler(BaseCrawler):
                     rank, domain = row.split(',')
 
                     domains.add(domain)
-                    links.append({'src_name': domain, 'dst_id': self.tranco_qid,
-                                 'props': [self.reference, {'rank': int(rank)}]})
+                    links.append(
+                        {
+                            'src_name': domain,
+                            'dst_id': self.tranco_qid,
+                            'props': [self.reference, {'rank': int(rank)}],
+                        }
+                    )
 
         name_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', domains)
 
@@ -76,7 +83,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

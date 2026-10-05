@@ -20,7 +20,9 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://github.com/emileaben/asnames'
-        self.reference['reference_time_modification'] = get_commit_datetime('emileaben/asnames', 'asnames.csv')
+        self.reference['reference_time_modification'] = get_commit_datetime(
+            'emileaben/asnames', 'asnames.csv'
+        )
 
     def run(self):
         # Create a temporary directory
@@ -48,7 +50,9 @@ class Crawler(BaseCrawler):
                 lines.append(values)
 
             asns_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
-            as_names_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', as_names, all=False)
+            as_names_id = self.iyp.batch_get_nodes_by_single_prop(
+                'Name', 'name', as_names, all=False
+            )
 
             links = []
 
@@ -56,7 +60,12 @@ class Crawler(BaseCrawler):
                 asn_qid = asns_id[int(line[0])]
                 as_name_qid = as_names_id[line[2]]
                 links.append(
-                    {'src_id': asn_qid, 'dst_id': as_name_qid, 'props': [self.reference, {'contributor': line[1]}]})
+                    {
+                        'src_id': asn_qid,
+                        'dst_id': as_name_qid,
+                        'props': [self.reference, {'contributor': line[1]}],
+                    }
+                )
 
             # Push all links to IYP
             self.iyp.batch_add_links('NAME', links)
@@ -75,7 +84,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

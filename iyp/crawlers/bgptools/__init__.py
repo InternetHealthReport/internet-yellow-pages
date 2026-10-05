@@ -38,16 +38,17 @@ class AnycastPrefixesCrawler(BaseCrawler):
                 logging.warning(f'Ignoring malformed prefix: "{row.prefix}": {e}')
                 continue
             bgp_prefixes.add(prefix)
-            categorized_links.append({
-                'src_id': prefix,
-                'dst_id': anycast_tag_qid,
-                'props': [
-                    self.reference,
-                    {'probed_ip': row.probed_ip}
-                ]
-            })
+            categorized_links.append(
+                {
+                    'src_id': prefix,
+                    'dst_id': anycast_tag_qid,
+                    'props': [self.reference, {'probed_ip': row.probed_ip}],
+                }
+            )
 
-        bgp_prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', bgp_prefixes, all=False)
+        bgp_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'BGPPrefix', 'prefix', bgp_prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(bgp_prefix_id.values()), 'Prefix')
 
         for link in categorized_links:

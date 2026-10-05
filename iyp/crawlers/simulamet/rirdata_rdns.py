@@ -62,7 +62,7 @@ class Crawler(BaseCrawler):
             endpoint_url=S3A_RIR_DATA_ENDPOINT,
             config=botocore.config.Config(
                 signature_version=botocore.UNSIGNED,
-            )
+            ),
         )
 
         # Get its client, for lower-level actions, if needed
@@ -76,23 +76,30 @@ class Crawler(BaseCrawler):
         # The rDNS data base prefix
         RIR_DATA_RDNS_BASE = 'rirs-rdns-formatted/type=enriched'
         # Get current date
-        current_date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        current_date = datetime.now(tz=timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
         for lookback_days in range(6):
-            objects = list(RIR_DATA_BUCKET.objects.filter(
-                # Build a partition path for the given source and date
-                Prefix=os.path.join(
-                    RIR_DATA_RDNS_BASE,
-                    'year={}'.format(current_date.year),
-                    'month={:02d}'.format(current_date.month),
-                    'day={:02d}'.format(current_date.day)
-                )).all())
+            objects = list(
+                RIR_DATA_BUCKET.objects.filter(
+                    # Build a partition path for the given source and date
+                    Prefix=os.path.join(
+                        RIR_DATA_RDNS_BASE,
+                        'year={}'.format(current_date.year),
+                        'month={:02d}'.format(current_date.month),
+                        'day={:02d}'.format(current_date.day),
+                    )
+                ).all()
+            )
             if len(objects) > 0:
                 break
             current_date -= timedelta(days=1)
         else:
             logging.error('Failed to find data within the specified lookback interval.')
-            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError(
+                'Failed to find data within the specified lookback interval.'
+            )
         self.reference['reference_time_modification'] = current_date
 
         tmp_dir = self.create_tmp_dir()
@@ -109,25 +116,26 @@ class Crawler(BaseCrawler):
                 logging.warning(f'Ignoring file with unexpected format: {obj.key}')
                 continue
             # Open a temporary file to download the object into
-            with tempfile.NamedTemporaryFile(mode='w+b',
-                                             dir=tmp_dir,
-                                             prefix=current_date.strftime('%Y-%m-%d.'),
-                                             suffix='.jsonl.bz2',
-                                             delete=False) as tempFile:
-
+            with tempfile.NamedTemporaryFile(
+                mode='w+b',
+                dir=tmp_dir,
+                prefix=current_date.strftime('%Y-%m-%d.'),
+                suffix='.jsonl.bz2',
+                delete=False,
+            ) as tempFile:
                 logging.info(f'Opened temporary file for object download: {tempFile.name}')
                 RIR_DATA_BUCKET.download_fileobj(
                     Key=obj.key,
                     Fileobj=tempFile,
-                    Config=boto3.s3.transfer.TransferConfig(multipart_chunksize=16 * 1024 * 1024)
+                    Config=boto3.s3.transfer.TransferConfig(multipart_chunksize=16 * 1024 * 1024),
                 )
                 data_url = os.path.join(S3A_RIR_DATA_ENDPOINT, RIR_DATA_BUCKET.name, obj.key)
                 self.reference['reference_url_data'] = data_url
-                logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
-                    data_url,
-                    os.path.getsize(tempFile.name) / (1024 * 1024),
-                    tempFile.name
-                ))
+                logging.info(
+                    "Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
+                        data_url, os.path.getsize(tempFile.name) / (1024 * 1024), tempFile.name
+                    )
+                )
                 # Use Pandas to read file into a DF and append to list
                 pandas_df_list.append(self.__read_json(tempFile.name))
 
@@ -141,7 +149,9 @@ class Crawler(BaseCrawler):
         # Remove trailing root "."
         rir_data_df['auth_ns'] = rir_data_df['auth_ns'].str[:-1]
         # Normalize prefixes.
-        rir_data_df.loc[:, 'prefix'] = rir_data_df.loc[:, 'prefix'].map(lambda pfx: ip_network(pfx).compressed)
+        rir_data_df.loc[:, 'prefix'] = rir_data_df.loc[:, 'prefix'].map(
+            lambda pfx: ip_network(pfx).compressed
+        )
 
         logging.info('Reading NSes')
         ns_set = set(rir_data_df['auth_ns'].unique())
@@ -150,17 +160,24 @@ class Crawler(BaseCrawler):
 
         ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', ns_set, all=False)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('RDNSPrefix', 'prefix', prefix_set, all=False)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'RDNSPrefix', 'prefix', prefix_set, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
         logging.info('Computing relationships')
         links_managed_by = list()
         for relationship in rir_data_df.itertuples():
-            links_managed_by.append({
-                'src_id': prefix_id[relationship.prefix],
-                'dst_id': ns_id[relationship.auth_ns],
-                'props': [self.reference, {'source': relationship.source, 'ttl': relationship.ttl}],
-            })
+            links_managed_by.append(
+                {
+                    'src_id': prefix_id[relationship.prefix],
+                    'dst_id': ns_id[relationship.auth_ns],
+                    'props': [
+                        self.reference,
+                        {'source': relationship.source, 'ttl': relationship.ttl},
+                    ],
+                }
+            )
 
         self.iyp.batch_add_links('MANAGED_BY', links_managed_by)
 
@@ -178,7 +195,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

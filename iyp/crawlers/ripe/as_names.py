@@ -12,7 +12,6 @@ NAME = 'ripe.as_names'
 
 
 class Crawler(BaseCrawler):
-
     def run(self):
         """Fetch the AS name file from RIPE website and process lines one by one."""
 
@@ -56,10 +55,12 @@ class Crawler(BaseCrawler):
             name_qid = name_id[name]
             country_qid = country_id[cc]
 
-            name_links.append({'src_id': asn_qid, 'dst_id': name_qid,
-                               'props': [self.reference]})  # Set AS name
-            country_links.append({'src_id': asn_qid, 'dst_id': country_qid,
-                                  'props': [self.reference]})  # Set country
+            name_links.append(
+                {'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]}
+            )  # Set AS name
+            country_links.append(
+                {'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]}
+            )  # Set country
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
@@ -79,7 +80,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

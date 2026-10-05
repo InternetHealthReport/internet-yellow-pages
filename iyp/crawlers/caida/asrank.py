@@ -23,9 +23,12 @@ class Crawler(BaseCrawler):
 
     def __set_modification_time(self):
         try:
-            date = requests.get('https://api.asrank.caida.org/v2/restful/datasets').json()['data'][0]['date']
-            self.reference['reference_time_modification'] = datetime.strptime(date,
-                                                                              '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            date = requests.get('https://api.asrank.caida.org/v2/restful/datasets').json()['data'][
+                0
+            ]['date']
+            self.reference['reference_time_modification'] = datetime.strptime(
+                date, '%Y-%m-%d'
+            ).replace(tzinfo=timezone.utc)
             logging.info(f'Dataset modification time: {date}')
         except Exception as e:
             logging.warning(f'Failed to set modification time: {e}')
@@ -71,7 +74,9 @@ class Crawler(BaseCrawler):
 
         # Get/create ASNs, names, and country nodes
         self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries
+        )
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names, all=False)
         self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'})
         self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
@@ -91,23 +96,34 @@ class Crawler(BaseCrawler):
             country_code = asn['country']['iso']
             if country_code:
                 country_qid = self.country_id[country_code]
-                country_links.append({'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]})
+                country_links.append(
+                    {'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]}
+                )
 
             # Some ASes do not have a name.
             name = asn['asnName']
             if name:
                 name_qid = self.name_id[name]
-                name_links.append({'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]})
+                name_links.append(
+                    {'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]}
+                )
 
             # flatten all attributes into one dictionary
             flat_asn = dict(flatdict.FlatDict(asn))
 
-            rank_links.append({'src_id': asn_qid, 'dst_id': self.asrank_qid, 'props': [self.reference, flat_asn]})
+            rank_links.append(
+                {'src_id': asn_qid, 'dst_id': self.asrank_qid, 'props': [self.reference, flat_asn]}
+            )
 
             if asn['latitude'] and asn['longitude']:
                 position = WGS84Point((asn['longitude'], asn['latitude']))
                 located_in_links.append(
-                    {'src_id': asn_qid, 'dst_id': self.point_id[position], 'props': [self.reference]})
+                    {
+                        'src_id': asn_qid,
+                        'dst_id': self.point_id[position],
+                        'props': [self.reference],
+                    }
+                )
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
@@ -129,7 +145,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

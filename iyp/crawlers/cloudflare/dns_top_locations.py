@@ -15,7 +15,9 @@ class Crawler(DnsTopCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
 
-        self.reference['reference_url_info'] = 'https://developers.cloudflare.com/radar/investigate/dns/#top-locations'
+        self.reference['reference_url_info'] = (
+            'https://developers.cloudflare.com/radar/investigate/dns/#top-locations'
+        )
 
     def compute_link(self, param):
 
@@ -37,14 +39,14 @@ class Crawler(DnsTopCrawler):
             entry['value'] = float(entry['value'])
 
             flat_prop = dict(flatdict.FlatDict(entry))
-            self.links.append({
-                'src_id': domain_qid,
-                'dst_id': cc,
-                'props': [flat_prop, self.reference]
-            })
+            self.links.append(
+                {'src_id': domain_qid, 'dst_id': cc, 'props': [flat_prop, self.reference]}
+            )
 
     def map_links(self):
-        cc_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', self.to_nodes, all=False)
+        cc_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', self.to_nodes, all=False
+        )
         for link in self.links:
             link['dst_id'] = cc_id[link['dst_id']]
 
@@ -59,7 +61,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

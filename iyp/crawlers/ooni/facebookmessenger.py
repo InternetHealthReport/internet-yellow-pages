@@ -13,7 +13,6 @@ label = 'OONI Facebook Messenger Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'facebookmessenger')
         self.categories = ['unblocked', 'dns_blocking', 'tcp_blocking', 'both_blocked']

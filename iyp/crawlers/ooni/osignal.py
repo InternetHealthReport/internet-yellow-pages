@@ -15,7 +15,6 @@ label = 'OONI Signal Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'signal')
         self.categories = ['ok', 'blocked']

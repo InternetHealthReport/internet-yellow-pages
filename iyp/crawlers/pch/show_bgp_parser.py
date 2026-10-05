@@ -1,8 +1,7 @@
 import logging
 import re
 from collections import defaultdict, namedtuple
-from ipaddress import (AddressValueError, IPv4Address, IPv4Network,
-                       IPv6Address, IPv6Network)
+from ipaddress import AddressValueError, IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from typing import Tuple
 
 Route = namedtuple('Route', 'status_codes network next_hop metric weight path origin_code')
@@ -26,20 +25,20 @@ class ShowBGPParser:
             logging.error(f'Invalid address family specified: {af}')
             AddressValueError('Invalid address family specified.')
         self.af = af
-        self.status_codes = {'s': 'suppressed',
-                             'd': 'damped',
-                             'h': 'history',
-                             'u': 'unsorted',
-                             '*': 'valid',
-                             '>': 'best',
-                             '=': 'multipath',
-                             'i': 'internal',
-                             'r': 'RIB-failure',
-                             'S': 'Stale',
-                             'R': 'Removed'}
-        self.origin_codes = {'i': 'IGP',
-                             'e': 'EGP',
-                             '?': 'incomplete'}
+        self.status_codes = {
+            's': 'suppressed',
+            'd': 'damped',
+            'h': 'history',
+            'u': 'unsorted',
+            '*': 'valid',
+            '>': 'best',
+            '=': 'multipath',
+            'i': 'internal',
+            'r': 'RIB-failure',
+            'S': 'Stale',
+            'R': 'Removed',
+        }
+        self.origin_codes = {'i': 'IGP', 'e': 'EGP', '?': 'incomplete'}
         # AS hops can be integers, single integers wrapped in curly
         # parenthesis, or AS sets that are comma-separated integers
         # wrapped in curly parenthesis.
@@ -179,7 +178,9 @@ class ShowBGPParser:
         if as_sets:
             logging.debug(f'{self.collector}: Ignored {as_sets} AS set origins.')
         if incomplete_origin_routes:
-            logging.info(f'{self.collector}: Ignored {incomplete_origin_routes} routes with incomplete origin.')
+            logging.info(
+                f'{self.collector}: Ignored {incomplete_origin_routes} routes with incomplete origin.'
+            )
         return prefix_map
 
     def parse_file(self, input_file: str) -> dict:

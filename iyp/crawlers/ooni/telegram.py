@@ -13,7 +13,6 @@ label = 'OONI Telegram Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'telegram')
         # 'total' and 'no_total' are meta categories that indicate if any of the three
@@ -51,7 +50,11 @@ class Crawler(OoniCrawler):
         result_tcp = 'tcp_blocked' if telegram_tcp_blocking else 'tcp_ok'
 
         total = 'total_ok'
-        if result_web == 'web_blocked' or result_http == 'http_blocked' or result_tcp == 'tcp_blocked':
+        if (
+            result_web == 'web_blocked'
+            or result_http == 'http_blocked'
+            or result_tcp == 'tcp_blocked'
+        ):
             total = 'total_blocked'
 
         # Using the last result from the base class, add our unique variables

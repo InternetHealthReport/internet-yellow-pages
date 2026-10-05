@@ -80,7 +80,7 @@ class Crawler(BaseCrawler):
             'reference_url_data': URL_PDB_IXS,
             'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20ix',
             'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
-            'reference_time_modification': None
+            'reference_time_modification': None,
         }
 
         self.reference_lan = {
@@ -89,7 +89,7 @@ class Crawler(BaseCrawler):
             'reference_url_data': URL_PDB_LANS,
             'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20ixlan',
             'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
-            'reference_time_modification': None
+            'reference_time_modification': None,
         }
 
         self.reference_netfac = {
@@ -98,14 +98,16 @@ class Crawler(BaseCrawler):
             'reference_url_data': URL_PDB_NETFAC,
             'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20netfac',
             'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
-            'reference_time_modification': None
+            'reference_time_modification': None,
         }
 
         # keep track of added networks
         self.nets = {}
 
         # Using cached queries
-        self.requests = requests_cache.CachedSession(os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION)
+        self.requests = requests_cache.CachedSession(
+            os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION
+        )
 
         # connection to IYP database
         super().__init__(organization, url, name)
@@ -180,8 +182,13 @@ class Crawler(BaseCrawler):
             fac_qid = self.fac_id[netfac['fac_id']]
             flat_netfac = dict(flatdict.FlatDict(netfac))
 
-            netfac_links.append({'src_id': net_qid, 'dst_id': fac_qid,
-                                 'props': [self.reference_netfac, flat_netfac]})
+            netfac_links.append(
+                {
+                    'src_id': net_qid,
+                    'dst_id': fac_qid,
+                    'props': [self.reference_netfac, flat_netfac],
+                }
+            )
 
         # Push links to IYP
         self.iyp.batch_add_links('LOCATED_IN', netfac_links)
@@ -200,7 +207,9 @@ class Crawler(BaseCrawler):
             if 'ixlan_set' in ix:
                 for ixlan in ix['ixlan_set']:
                     if ixlan['id'] not in self.ixlans:
-                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in self.ixlans dict')
+                        logging.error(
+                            f'LAN not found: ixlan ID {ixlan["id"]} not in self.ixlans dict'
+                        )
                         continue
 
                     lan = self.ixlans[ixlan['id']]
@@ -221,7 +230,9 @@ class Crawler(BaseCrawler):
                             net_website.add(network['website'])
                         handle_social_media(network, net_website)
 
-        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop('PeeringLAN', 'prefix', prefixes, all=False)
+        self.prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'PeeringLAN', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(self.prefix_id.values()), 'Prefix')
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', net_names)
         self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', net_website)
@@ -243,7 +254,9 @@ class Crawler(BaseCrawler):
             if 'ixlan_set' in ix:
                 for ixlan in ix['ixlan_set']:
                     if ixlan['id'] not in self.ixlans:
-                        logging.error(f'LAN not found: ixlan ID {ixlan["id"]} not in self.ixlans dict')
+                        logging.error(
+                            f'LAN not found: ixlan ID {ixlan["id"]} not in self.ixlans dict'
+                        )
                         continue
 
                     ix_qid = self.ix_id[ix['id']]
@@ -255,12 +268,12 @@ class Crawler(BaseCrawler):
                         except ValueError:
                             continue
                         prefix_qid = self.prefix_id[prefix]
-                        prefix_links.append({'src_id': prefix_qid, 'dst_id': ix_qid,
-                                             'props': [self.reference_lan]})
+                        prefix_links.append(
+                            {'src_id': prefix_qid, 'dst_id': ix_qid, 'props': [self.reference_lan]}
+                        )
 
                     # Add networks found for the LAN
                     for network in lan['net_set']:
-
                         net_asn = int(network['asn'])
                         flat_net = dict(flatdict.FlatDict(network))
                         network_qid = self.asn_id[int(network['asn'])]
@@ -277,26 +290,51 @@ class Crawler(BaseCrawler):
 
                             if network['org_id'] in self.org_id:
                                 org_qid = self.org_id[network['org_id']]
-                                netorg_links.append({'src_id': network_qid, 'dst_id': org_qid,
-                                                     'props': [self.reference_lan, flat_net]})
+                                netorg_links.append(
+                                    {
+                                        'src_id': network_qid,
+                                        'dst_id': org_qid,
+                                        'props': [self.reference_lan, flat_net],
+                                    }
+                                )
                             else:
                                 logging.error(f'Organization unknown org_id={network["org_id"]}')
 
                             if network['website']:
                                 website_qid = self.website_id[network['website']]
-                                website_links.append({'src_id': network_qid, 'dst_id': website_qid,
-                                                      'props': [self.reference_lan, flat_net]})
+                                website_links.append(
+                                    {
+                                        'src_id': network_qid,
+                                        'dst_id': website_qid,
+                                        'props': [self.reference_lan, flat_net],
+                                    }
+                                )
 
-                            name_links.append({'src_id': network_qid, 'dst_id': name_qid,
-                                               'props': [self.reference_lan, flat_net]})
-                            netid_links.append({'src_id': network_qid, 'dst_id': netid_qid,
-                                                'props': [self.reference_lan, flat_net]})
+                            name_links.append(
+                                {
+                                    'src_id': network_qid,
+                                    'dst_id': name_qid,
+                                    'props': [self.reference_lan, flat_net],
+                                }
+                            )
+                            netid_links.append(
+                                {
+                                    'src_id': network_qid,
+                                    'dst_id': netid_qid,
+                                    'props': [self.reference_lan, flat_net],
+                                }
+                            )
 
                             # Remember that this network has been processed
                             processed_net.add(net_asn)
 
-                        member_links.append({'src_id': network_qid, 'dst_id': ix_qid,
-                                             'props': [self.reference_lan, flat_net]})
+                        member_links.append(
+                            {
+                                'src_id': network_qid,
+                                'dst_id': ix_qid,
+                                'props': [self.reference_lan, flat_net],
+                            }
+                        )
                         processed_membership.add(f'{network_qid}-{ix_qid}')
 
         # Push all links to IYP
@@ -340,7 +378,9 @@ class Crawler(BaseCrawler):
 
             # link to corresponding organization
             if org_qid is not None:
-                org_links.append({'src_id': ix_qid, 'dst_id': org_qid, 'props': [self.reference_ix]})
+                org_links.append(
+                    {'src_id': ix_qid, 'dst_id': org_qid, 'props': [self.reference_ix]}
+                )
             else:
                 logging.error(f'Error this organization is not in IYP: {ix["org_id"]}')
 
@@ -348,23 +388,31 @@ class Crawler(BaseCrawler):
             for fac in ix.get('fac_set', []):
                 fac_qid = self.fac_id.get(fac['id'], None)
                 if fac_qid is not None:
-                    fac_links.append({'src_id': ix_qid, 'dst_id': fac_qid, 'props': [self.reference_ix]})
+                    fac_links.append(
+                        {'src_id': ix_qid, 'dst_id': fac_qid, 'props': [self.reference_ix]}
+                    )
                 else:
                     logging.error(f'Error this facility is not in IYP: {fac["id"]}')
 
             # set country
             if ix['country']:
                 country_qid = self.country_id[ix['country']]
-                country_links.append({'src_id': ix_qid, 'dst_id': country_qid, 'props': [self.reference_ix]})
+                country_links.append(
+                    {'src_id': ix_qid, 'dst_id': country_qid, 'props': [self.reference_ix]}
+                )
 
             # set website
             if ix['website']:
                 website_qid = self.website_id[ix['website']]
-                website_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props': [self.reference_ix]})
+                website_links.append(
+                    {'src_id': ix_qid, 'dst_id': website_qid, 'props': [self.reference_ix]}
+                )
             # set social media website if different from normal website
             if 'social_media_website' in ix and ix['social_media_website'] != ix['website']:
                 website_qid = self.website_id[ix['social_media_website']]
-                website_links.append({'src_id': ix_qid, 'dst_id': website_qid, 'props': [self.reference_ix]})
+                website_links.append(
+                    {'src_id': ix_qid, 'dst_id': website_qid, 'props': [self.reference_ix]}
+                )
 
             id_qid = self.ixext_id[ix['id']]
             id_links.append({'src_id': ix_qid, 'dst_id': id_qid, 'props': [self.reference_ix]})
@@ -374,8 +422,8 @@ class Crawler(BaseCrawler):
 
         # set traffic webpage
         # if ix['url_stats']:
-            # statements.append([
-            # self.wh.get_pid('website'), ix['url_stats'],  # statement
+        # statements.append([
+        # self.wh.get_pid('website'), ix['url_stats'],  # statement
 
         # Push all links to IYP
         self.iyp.batch_add_links('MANAGED_BY', org_links)
@@ -386,7 +434,9 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('NAME', name_links)
 
     def unit_test(self):
-        return super().unit_test(['MANAGED_BY', 'LOCATED_IN', 'COUNTRY', 'WEBSITE', 'EXTERNAL_ID', 'NAME'])
+        return super().unit_test(
+            ['MANAGED_BY', 'LOCATED_IN', 'COUNTRY', 'WEBSITE', 'EXTERNAL_ID', 'NAME']
+        )
 
 
 def main() -> None:
@@ -399,7 +449,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

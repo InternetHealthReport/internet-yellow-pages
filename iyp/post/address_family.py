@@ -23,7 +23,9 @@ class PostProcess(BasePostProcess):
         # Update IP addresses
         self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS ':' SET ip.af = 6")
         self.iyp.commit()
-        self.iyp.tx.run("MATCH (ip:IP) WHERE ip.ip CONTAINS '.' AND NOT ip.ip CONTAINS ':' SET ip.af = 4")
+        self.iyp.tx.run(
+            "MATCH (ip:IP) WHERE ip.ip CONTAINS '.' AND NOT ip.ip CONTAINS ':' SET ip.af = 4"
+        )
         self.iyp.commit()
 
     def rerun(self):
@@ -45,7 +47,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/post.' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

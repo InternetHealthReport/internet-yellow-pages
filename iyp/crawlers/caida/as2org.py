@@ -21,18 +21,22 @@ NAME = 'caida.as2org'
 # (:Organization)-[:COUNTRY]->(:Country)
 # (:Organization)-[:NAME]->(:Name)
 
-class Crawler(BaseCrawler):
 
+class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://publicdata.caida.org/datasets/as-organizations/README.txt'
+        self.reference['reference_url_info'] = (
+            'https://publicdata.caida.org/datasets/as-organizations/README.txt'
+        )
 
     def __set_modification_time_from_metadata_line(self, date_str):
         try:
             date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
             self.reference['reference_time_modification'] = date
         except (json.JSONDecodeError, KeyError, ValueError) as e:
-            logging.warning(f'Failed to get modification date from metadata line: {date_str.strip()}')
+            logging.warning(
+                f'Failed to get modification date from metadata line: {date_str.strip()}'
+            )
             logging.warning(e)
             logging.warning('Using date from filename.')
 
@@ -52,7 +56,9 @@ class Crawler(BaseCrawler):
         else:
             # for loop was not 'broken', no file available
             raise DataNotAvailableError('No recent CAIDA as2org file available')
-        date = date.datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        date = date.datetime.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+        )
         self.reference['reference_time_modification'] = date
         self.reference['reference_url_data'] = url
 
@@ -133,8 +139,13 @@ class Crawler(BaseCrawler):
         for asn, org_id in asn_orgid.items():
             org_qid = organization_id[orgid_name[org_id]]
             asn_qid = as_id[asn]
-            managed_links.append({'src_id': asn_qid, 'dst_id': org_qid,
-                                 'props': [self.reference, {'org_id': org_id}]})
+            managed_links.append(
+                {
+                    'src_id': asn_qid,
+                    'dst_id': org_qid,
+                    'props': [self.reference, {'org_id': org_id}],
+                }
+            )
 
         name_links = list()
         country_links = list()
@@ -145,17 +156,29 @@ class Crawler(BaseCrawler):
             org_qid = organization_id[name]
             name_qid = name_id[name]
 
-            name_links.append({'src_id': org_qid, 'dst_id': name_qid,
-                               'props': [self.reference, {'org_ids': list(org_ids)}]})
+            name_links.append(
+                {
+                    'src_id': org_qid,
+                    'dst_id': name_qid,
+                    'props': [self.reference, {'org_ids': list(org_ids)}],
+                }
+            )
 
             for org_id in org_ids:
                 caida_org_id_qid = caida_org_id[org_id]
-                external_id_links.append({'src_id': org_qid, 'dst_id': caida_org_id_qid, 'props': [self.reference]})
+                external_id_links.append(
+                    {'src_id': org_qid, 'dst_id': caida_org_id_qid, 'props': [self.reference]}
+                )
 
             for country, org_ids in name_country_orgids[name].items():
                 country_qid = country_id[country]
-                country_links.append({'src_id': org_qid, 'dst_id': country_qid,
-                                      'props': [self.reference, {'org_ids': list(org_ids)}]})
+                country_links.append(
+                    {
+                        'src_id': org_qid,
+                        'dst_id': country_qid,
+                        'props': [self.reference, {'org_ids': list(org_ids)}],
+                    }
+                )
 
         self.iyp.batch_add_links('COUNTRY', country_links)
         self.iyp.batch_add_links('EXTERNAL_ID', external_id_links)
@@ -176,7 +199,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

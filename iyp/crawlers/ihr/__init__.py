@@ -13,7 +13,9 @@ class HegemonyCrawler(BaseCrawler):
     def __init__(self, organization, url, name, af):
         self.af = af
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://ihr.iijlab.net/ihr/en-us/documentation#AS_dependency'
+        self.reference['reference_url_info'] = (
+            'https://ihr.iijlab.net/ihr/en-us/documentation#AS_dependency'
+        )
 
     def run(self):
         """Fetch data from file and push to IYP."""
@@ -28,7 +30,9 @@ class HegemonyCrawler(BaseCrawler):
             req = requests.head(url)
         if req.status_code != 200:
             logging.error('Failed to find data within the specified lookback interval.')
-            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError(
+                'Failed to find data within the specified lookback interval.'
+            )
 
         self.reference['reference_url_data'] = url
 
@@ -55,7 +59,9 @@ class HegemonyCrawler(BaseCrawler):
 
             if timebin is None:
                 timebin = rec['timebin']
-                mod_time = datetime.strptime(timebin, '%Y-%m-%d %H:%M:%S+00').replace(tzinfo=timezone.utc)
+                mod_time = datetime.strptime(timebin, '%Y-%m-%d %H:%M:%S+00').replace(
+                    tzinfo=timezone.utc
+                )
                 self.reference['reference_time_modification'] = mod_time
             elif timebin != rec['timebin']:
                 break
@@ -65,11 +71,7 @@ class HegemonyCrawler(BaseCrawler):
             asns.add(originasn)
             asns.add(asn)
 
-            links.append({
-                'src_id': originasn,
-                'dst_id': asn,
-                'props': [self.reference, rec]
-            })
+            links.append({'src_id': originasn, 'dst_id': asn, 'props': [self.reference, rec]})
 
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
         # Replace values in links with node IDs.

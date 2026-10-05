@@ -19,7 +19,9 @@ NAME = 'cisco.umbrella_top1m'
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://s3-us-west-1.amazonaws.com/umbrella-static/index.html'
+        self.reference['reference_url_info'] = (
+            'https://s3-us-west-1.amazonaws.com/umbrella-static/index.html'
+        )
 
     def __set_modification_time(self):
         """Set the modification time by looking for the last available historical file.
@@ -36,14 +38,18 @@ class Crawler(BaseCrawler):
                 break
             date -= timedelta(days=1)
         else:
-            logging.warning(f'Failed to find historical list within search interval (>{date}); '
-                            'Will not set modification time.')
+            logging.warning(
+                f'Failed to find historical list within search interval (>{date}); '
+                'Will not set modification time.'
+            )
             return
 
         # date now points to the last available historical file , which means the
         # current file is the day after this date.
         self.reference['reference_time_modification'] = date + timedelta(days=1)
-        logging.info(f'Got list for date {self.reference["reference_time_modification"].strftime("%Y-%m-%d")}')
+        logging.info(
+            f'Got list for date {self.reference["reference_time_modification"].strftime("%Y-%m-%d")}'
+        )
 
     def run(self):
         """Fetch Umbrella top 1M and push to IYP."""
@@ -68,8 +74,13 @@ class Crawler(BaseCrawler):
                         logging.warning(f'Skipping invalid line ({e}): {row}')
                         continue
 
-                    links.append({'src_name': domain, 'dst_id': self.cisco_qid,
-                                  'props': [self.reference, {'rank': int(rank)}]})
+                    links.append(
+                        {
+                            'src_name': domain,
+                            'dst_id': self.cisco_qid,
+                            'props': [self.reference, {'rank': int(rank)}],
+                        }
+                    )
 
         domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name')
         host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name')
@@ -104,9 +115,17 @@ class Crawler(BaseCrawler):
                     new_host_names.add(name)
 
         if new_domain_names:
-            domain_id.update(self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', new_domain_names, all=False))
+            domain_id.update(
+                self.iyp.batch_get_nodes_by_single_prop(
+                    'DomainName', 'name', new_domain_names, all=False
+                )
+            )
         if new_host_names:
-            host_id.update(self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', new_host_names, all=False))
+            host_id.update(
+                self.iyp.batch_get_nodes_by_single_prop(
+                    'HostName', 'name', new_host_names, all=False
+                )
+            )
 
         for link in unprocessed_links:
             if link['src_name'] in domain_id:
@@ -114,7 +133,9 @@ class Crawler(BaseCrawler):
             elif link['src_name'] in host_id:
                 link['src_id'] = host_id[link['src_name']]
             else:
-                logging.error(f'Missing DomainName/HostName node for name "{link["src_name"]}". Should not happen.')
+                logging.error(
+                    f'Missing DomainName/HostName node for name "{link["src_name"]}". Should not happen.'
+                )
                 continue
             processed_links.append(link)
 
@@ -135,7 +156,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

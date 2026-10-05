@@ -14,7 +14,6 @@ NAME = 'ooni.stunreachability'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'stunreachability')
         self.all_urls = set()
@@ -50,7 +49,9 @@ class Crawler(OoniCrawler):
             host_ip_set = process_dns_queries(one_line['test_keys']['queries'])
             for hostname, ip in host_ip_set:
                 if hostname != stun_hostname:
-                    logging.warning(f'STUN hostname is "{stun_hostname}" but requested "{hostname}"')
+                    logging.warning(
+                        f'STUN hostname is "{stun_hostname}" but requested "{hostname}"'
+                    )
                     continue
                 self.all_hostname_ips.add((hostname, ip))
         elif one_line['test_keys']['queries']:
@@ -86,9 +87,7 @@ class Crawler(OoniCrawler):
                 'hostname': self.iyp.batch_get_nodes_by_single_prop(
                     'HostName', 'name', hostnames, all=False
                 ),
-                'ip': self.iyp.batch_get_nodes_by_single_prop(
-                    'IP', 'ip', ips, all=False
-                ),
+                'ip': self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False),
             }
         )
 

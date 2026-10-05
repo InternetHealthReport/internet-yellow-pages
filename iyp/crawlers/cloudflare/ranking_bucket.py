@@ -30,7 +30,9 @@ class Crawler(BaseCrawler):
     # See https://blog.cloudflare.com/radar-domain-rankings/
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/'  # noqa: E501
+        )
 
     def run(self):
         """Fetch data and push to IYP."""
@@ -40,9 +42,7 @@ class Crawler(BaseCrawler):
         req_session.headers['Authorization'] = 'Bearer ' + API_KEY
         req_session.headers['Content-Type'] = 'application/json'
 
-        retries = Retry(total=5,
-                        backoff_factor=0.1,
-                        status_forcelist=[500, 502, 503, 504])
+        retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
 
         req_session.mount('http://', HTTPAdapter(max_retries=retries))
         req_session.mount('https://', HTTPAdapter(max_retries=retries))
@@ -76,7 +76,9 @@ class Crawler(BaseCrawler):
             # Get the dataset URL
             req = req_session.post(URL_DL, json={'datasetId': dataset['id']})
             if req.status_code != 200:
-                logging.error(f'Cannot get url for dataset {dataset["id"]} {req.status_code}: {req.text}')
+                logging.error(
+                    f'Cannot get url for dataset {dataset["id"]} {req.status_code}: {req.text}'
+                )
                 continue
 
             logging.info(req.json())
@@ -84,7 +86,9 @@ class Crawler(BaseCrawler):
             dataset['url'] = req.json()['result']['dataset']['url']
             req = requests.get(dataset['url'])
             if req.status_code != 200:
-                logging.error(f'Cannot download dataset {dataset["id"]} {req.status_code}: {req.text}')
+                logging.error(
+                    f'Cannot download dataset {dataset["id"]} {req.status_code}: {req.text}'
+                )
                 continue
 
             # Read top list and skip header
@@ -101,17 +105,21 @@ class Crawler(BaseCrawler):
         for dataset, domains in datasets:
             dataset_title = f'Cloudflare {dataset["title"]}'
             logging.info(f'Processing dataset: {dataset_title}')
-            ranking_id = self.iyp.get_node('Ranking',
-                                           {
-                                               'name': dataset_title,
-                                               'description': dataset['description'],
-                                               'top': dataset['meta']['top']
-                                           },
-                                           id_properties={'name'})
+            ranking_id = self.iyp.get_node(
+                'Ranking',
+                {
+                    'name': dataset_title,
+                    'description': dataset['description'],
+                    'top': dataset['meta']['top'],
+                },
+                id_properties={'name'},
+            )
 
             # Create RANK relationships
-            domain_links = [{'src_id': domain_ids[domain], 'dst_id': ranking_id, 'props': [self.reference]}
-                            for domain in domains]
+            domain_links = [
+                {'src_id': domain_ids[domain], 'dst_id': ranking_id, 'props': [self.reference]}
+                for domain in domains
+            ]
             if domain_links:
                 # Push RANK relationships to IYP
                 self.iyp.batch_add_links('RANK', domain_links)
@@ -128,10 +136,7 @@ if __name__ == '__main__':
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
-        format=FORMAT,
-        filename=f'log/{NAME}.log',
-        level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format=FORMAT, filename=f'log/{NAME}.log', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S'
     )
     logging.info(f'Started: {sys.argv}')
 

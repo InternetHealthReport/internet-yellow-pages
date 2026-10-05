@@ -27,7 +27,9 @@ class PostProcess(BasePostProcess):
         prefix."""
 
         # Find all different types of prefixes
-        prefixes_labels = self.iyp.tx.run('MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels')
+        prefixes_labels = self.iyp.tx.run(
+            'MATCH (pfx:Prefix) RETURN DISTINCT labels(pfx) AS pfx_labels'
+        )
 
         all_labels = set([label for row in prefixes_labels for label in row['pfx_labels']])
         all_labels.remove('Prefix')
@@ -47,7 +49,8 @@ class PostProcess(BasePostProcess):
                 prefix_split = self.__get_network_and_prefixlen(prefix)
                 if prefix_split is not None:
                     additional_properties.append(
-                        (prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]}))
+                        (prefix_qid, {'network': prefix_split[0], 'prefixlen': prefix_split[1]})
+                    )
 
             # Add network and prefixlen properties
             self.iyp.batch_add_properties(additional_properties)
@@ -63,13 +66,7 @@ class PostProcess(BasePostProcess):
                 if rnode:
                     src = ip_qid
                     dst = rnode.data['id']
-                    links.append(
-                        {
-                            'src_id': src,
-                            'dst_id': dst,
-                            'props': [self.reference]
-                        }
-                    )
+                    links.append({'src_id': src, 'dst_id': dst, 'props': [self.reference]})
 
         # push IP to prefix links to IYP
         self.iyp.batch_add_links('PART_OF', links)
@@ -84,7 +81,6 @@ class PostProcess(BasePostProcess):
 
                 # Find covering prefixes for all sub-prefix node labels
                 for prefix_label1, rtree1 in rtrees.items():
-
                     covering = None
                     if prefix_label0 == prefix_label1:
                         # If same node types then find a larger prefix
@@ -96,13 +92,7 @@ class PostProcess(BasePostProcess):
                     if covering:
                         src = rnode.data['id']
                         dst = covering.data['id']
-                        links.append(
-                            {
-                                'src_id': src,
-                                'dst_id': dst,
-                                'props': [self.reference]
-                            }
-                        )
+                        links.append({'src_id': src, 'dst_id': dst, 'props': [self.reference]})
 
             # push sub-prefix to covering-prefix links
             self.iyp.batch_add_links('PART_OF', links)
@@ -133,7 +123,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/post.' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

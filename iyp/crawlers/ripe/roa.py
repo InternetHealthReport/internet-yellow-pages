@@ -69,33 +69,31 @@ class Crawler(BaseCrawler):
 
                 asn = int(asn.replace('AS', ''))
                 asns.add(asn)
-                prefix_info[prefix].append({
-                    'url': url,
-                    'asn': asn,
-                    'max_length': max_length,
-                    'start': start,
-                    'end': end})
+                prefix_info[prefix].append(
+                    {'url': url, 'asn': asn, 'max_length': max_length, 'start': start, 'end': end}
+                )
 
             # get ASNs and prefixes IDs
             asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
             prefix_id = self.iyp.batch_get_nodes_by_single_prop(
-                'RPKIPrefix', 'prefix', set(prefix_info.keys()), all=False)
+                'RPKIPrefix', 'prefix', set(prefix_info.keys()), all=False
+            )
             self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
             links = []
             for prefix, attributes in prefix_info.items():
                 for att in attributes:
-
                     vrp = {
                         'notBefore': att['start'],
                         'notAfter': att['end'],
                         'uri': att['url'],
-                        'maxLength': att['max_length']
+                        'maxLength': att['max_length'],
                     }
                     asn_qid = asn_id[att['asn']]
                     prefix_qid = prefix_id[prefix]
-                    links.append({'src_id': asn_qid, 'dst_id': prefix_qid,
-                                  'props': [self.reference, vrp]})  # Set AS name
+                    links.append(
+                        {'src_id': asn_qid, 'dst_id': prefix_qid, 'props': [self.reference, vrp]}
+                    )  # Set AS name
 
             # Push all links to IYP
             self.iyp.batch_add_links('ROUTE_ORIGIN_AUTHORIZATION', links)
@@ -114,7 +112,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

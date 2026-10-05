@@ -21,7 +21,7 @@ prop_formatters = {
     'ip': lambda s: ipaddress.ip_address(s).compressed,
     'prefix': lambda s: ipaddress.ip_network(s).compressed,
     # country code is kept in capital letter
-    'country_code': lambda s: str.upper(str.strip(s))
+    'country_code': lambda s: str.upper(str.strip(s)),
 }
 
 
@@ -54,10 +54,14 @@ def batch_format_link_properties(links: list, inplace=True) -> Optional[list]:
             for idx, prop_dict in enumerate(link['props']):
                 link['props'][idx] = format_properties(prop_dict)
         return None
-    return [{'src_id': link['src_id'],
-             'dst_id': link['dst_id'],
-             'props': [format_properties(d) for d in link['props']]}
-            for link in links]
+    return [
+        {
+            'src_id': link['src_id'],
+            'dst_id': link['dst_id'],
+            'props': [format_properties(d) for d in link['props']],
+        }
+        for link in links
+    ]
 
 
 def dict2str(d, eq=':', pfx=''):
@@ -98,8 +102,9 @@ def set_modification_time_from_last_modified_header(reference, response):
         last_modified_str = response.headers['Last-Modified']
         # All HTTP dates are in UTC:
         # https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1
-        last_modified = datetime.strptime(last_modified_str,
-                                          '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+        last_modified = datetime.strptime(last_modified_str, '%a, %d %b %Y %H:%M:%S %Z').replace(
+            tzinfo=timezone.utc
+        )
         reference['reference_time_modification'] = last_modified
     except KeyError:
         logging.warning('No Last-Modified header; will not set modification time.')
@@ -144,7 +149,6 @@ class DataNotAvailableError(Exception):
 
 
 class IYP(object):
-
     def __init__(self):
 
         logging.debug('IYP: Enter initialization')
@@ -160,9 +164,9 @@ class IYP(object):
 
         # Connect to the database
         uri = f'neo4j://{conf["neo4j"]["server"]}:{conf["neo4j"]["port"]}'
-        self.db = GraphDatabase.driver(uri,
-                                       auth=auth,
-                                       notifications_min_severity=NotificationMinimumSeverity.WARNING)
+        self.db = GraphDatabase.driver(
+            uri, auth=auth, notifications_min_severity=NotificationMinimumSeverity.WARNING
+        )
 
         if self.db is None:
             raise ConnectionError('Could not connect to the Neo4j database!')
@@ -251,7 +255,9 @@ class IYP(object):
             self.session.close()
             self.db.close()
 
-    def batch_get_nodes_by_single_prop(self, label, prop_name, prop_set=set(), all=True, create=True, batch_size=0):
+    def batch_get_nodes_by_single_prop(
+        self, label, prop_name, prop_set=set(), all=True, create=True, batch_size=0
+    ):
         """Find the ID of all nodes in the graph for the given label and check that a
         node exists for each value in prop_set for the property prop. Create these nodes
         if they don't exist.
@@ -296,7 +302,7 @@ class IYP(object):
             if batch_size > 0:
                 logging.info(f'Fetching in batches of {batch_size} nodes')
                 for i in range(0, len(list_prop), batch_size):
-                    batch = list_prop[i:i + batch_size]
+                    batch = list_prop[i : i + batch_size]
                     existing_nodes = self.tx.run(query, list_prop=batch)
                     ids.update({node[prop_name]: node['_id'] for node in existing_nodes})
             else:
@@ -310,7 +316,6 @@ class IYP(object):
         if create and missing_nodes:
             logging.info(f'Creating {len(missing_nodes)} {label_str} nodes.')
             for batch in itertools.batched(missing_nodes, BATCH_SIZE):
-
                 create_query = f"""WITH $batch AS batch
                 UNWIND batch AS item CREATE (n:{label_str})
                 SET n = item RETURN n.{prop_name} AS {prop_name}, elementId(n) AS _id"""
@@ -394,7 +399,9 @@ class IYP(object):
                 # here we return a map of id_properties to id. If there is more than one
                 # property, the order of the keys in the dictionary is not really clear,
                 # so the user should pass an explicit order in id_properties instead.
-                raise ValueError('batch_get_nodes only supports implicit id property if a single property is passed.')
+                raise ValueError(
+                    'batch_get_nodes only supports implicit id property if a single property is passed.'
+                )
             id_properties = list(example_props.keys())
 
         # Assemble "WHERE" and RETURN clauses.
@@ -485,7 +492,9 @@ class IYP(object):
             ).single()
         else:
             # MATCH node
-            result = self.tx.run(f'MATCH (a:{label_str} {dict2str(properties)}) RETURN elementId(a)').single()
+            result = self.tx.run(
+                f'MATCH (a:{label_str} {dict2str(properties)}) RETURN elementId(a)'
+            ).single()
 
         if result is not None:
             return result[0]
@@ -505,12 +514,13 @@ class IYP(object):
         logging.info(f'Adding label "{label_str}" to {len(node_ids)} nodes.')
 
         for batch in itertools.batched(node_ids, BATCH_SIZE):
-
-            self.tx.run(f"""WITH $batch AS batch
+            self.tx.run(
+                f"""WITH $batch AS batch
                         MATCH (n)
                         WHERE elementId(n) IN batch
                         SET n:{label_str}""",
-                        batch=batch)
+                batch=batch,
+            )
             self.commit()
 
     def batch_get_node_extid(self, id_type):
@@ -520,7 +530,9 @@ class IYP(object):
         Return None if the node does not exist.
         """
 
-        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, elementId(a) AS nodeid')
+        result = self.tx.run(
+            f'MATCH (a)-[:EXTERNAL_ID]->(i:{id_type}) RETURN i.id AS extid, elementId(a) AS nodeid'
+        )
 
         ids = {}
         for node in result:
@@ -535,7 +547,9 @@ class IYP(object):
         Return None if the node does not exist.
         """
 
-        result = self.tx.run(f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN elementId(a)').single()
+        result = self.tx.run(
+            f'MATCH (a)-[:EXTERNAL_ID]->(:{id_type} {{id:{id}}}) RETURN elementId(a)'
+        ).single()
 
         if result is not None:
             return result[0]
@@ -558,7 +572,6 @@ class IYP(object):
 
         # Create links in batches
         for batch in itertools.batched(links, BATCH_SIZE):
-
             batch_format_link_properties(batch, inplace=True)
 
             create_query = f"""WITH $batch AS batch
@@ -610,7 +623,6 @@ class IYP(object):
         merges = ''
 
         for i, (type, dst_node, prop) in enumerate(links):
-
             assert 'reference_org' in prop
             assert 'reference_url_data' in prop
             assert 'reference_name' in prop
@@ -632,10 +644,11 @@ class IYP(object):
         node id and the dict contains the properties that should be added to the node.
         """
         # Ensure proper formatting and transform into dict.
-        formatted_props = [{'id': node_id, 'props': format_properties(props)} for node_id, props in id_prop_list]
+        formatted_props = [
+            {'id': node_id, 'props': format_properties(props)} for node_id, props in id_prop_list
+        ]
 
         for batch in itertools.batched(formatted_props, BATCH_SIZE):
-
             add_query = """WITH $batch AS batch
             UNWIND batch AS item
             MATCH (n)
@@ -656,8 +669,10 @@ class BasePostProcess(object):
             'reference_org': 'Internet Yellow Pages',
             'reference_url_data': 'https://iyp.iijlab.net',
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0),
-            'reference_time_modification': None
+            'reference_time_fetch': datetime.now(tz=timezone.utc).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ),
+            'reference_time_modification': None,
         }
 
         # connection to IYP database
@@ -703,8 +718,10 @@ class BaseCrawler(object):
             'reference_org': organization,
             'reference_url_data': url,
             'reference_url_info': str(),
-            'reference_time_fetch': datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0),
-            'reference_time_modification': None
+            'reference_time_fetch': datetime.now(tz=timezone.utc).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ),
+            'reference_time_modification': None,
         }
 
         # connection to IYP database
@@ -753,7 +770,8 @@ class BaseCrawler(object):
         crawler."""
 
         result = self.iyp.tx.run(
-            f"MATCH ()-[r]->() WHERE r.reference_name = '{self.name}' RETURN count(r) AS count").single()
+            f"MATCH ()-[r]->() WHERE r.reference_name = '{self.name}' RETURN count(r) AS count"
+        ).single()
 
         return result['count']
 

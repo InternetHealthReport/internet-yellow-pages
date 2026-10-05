@@ -16,7 +16,6 @@ NAME = 'caida.ark_monitors'
 
 
 class Crawler(BaseCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://www.caida.org/projects/ark/'
@@ -49,16 +48,26 @@ class Crawler(BaseCrawler):
                 return None
             case 2:
                 if split[1] != 'min':
-                    raise ValueError(f'Failed to parse duration "{duration_str}": Expected value of form "x min".')
+                    raise ValueError(
+                        f'Failed to parse duration "{duration_str}": Expected value of form "x min".'
+                    )
                 return timedelta(minutes=int(split[0]))
             case 4:
                 if split[1] != 'hr' or split[3] != 'min':
-                    raise ValueError(f'Failed to parse duration "{duration_str}": Expected value of form "x hr y min".')
+                    raise ValueError(
+                        f'Failed to parse duration "{duration_str}": Expected value of form "x hr y min".'
+                    )
                 return timedelta(hours=int(split[0]), minutes=int(split[2]))
             case 6:
-                if (split[1] != 'day' and split[1] != 'days') or split[3] != 'hr' or split[5] != 'min':
-                    raise ValueError(f'Failed to parse duration "{duration_str}": Expected value '
-                                     'of form "x days y hr z min".')
+                if (
+                    (split[1] != 'day' and split[1] != 'days')
+                    or split[3] != 'hr'
+                    or split[5] != 'min'
+                ):
+                    raise ValueError(
+                        f'Failed to parse duration "{duration_str}": Expected value '
+                        'of form "x days y hr z min".'
+                    )
                 return timedelta(days=int(split[0]), hours=int(split[2]), minutes=int(split[4]))
             case _:
                 raise ValueError(f'Failed to parse duration "{duration_str}": Unknown format.')
@@ -80,7 +89,9 @@ class Crawler(BaseCrawler):
                 uptime.
         """
         l, r = ping_str.split(';')
-        last_seen_timedelta = Crawler.parse_duration(l.removeprefix('last sign of life').removesuffix('ago'))
+        last_seen_timedelta = Crawler.parse_duration(
+            l.removeprefix('last sign of life').removesuffix('ago')
+        )
         uptime = Crawler.parse_duration(r.removeprefix(' at that time uptime was'))
         return last_seen_timedelta, uptime
 
@@ -162,7 +173,9 @@ class Crawler(BaseCrawler):
         # for display on the website. Transform to more useable properties instead.
         last_seen, uptime = self.get_last_seen_and_uptime(mon.pop('ping'))
         if last_seen is None:
-            logging.warning(f'Failed to set last_seen time for monitor {mon["name"]}: Empty duration value.')
+            logging.warning(
+                f'Failed to set last_seen time for monitor {mon["name"]}: Empty duration value.'
+            )
         else:
             mon['last_seen'] = self.fetch_time - last_seen
         mon['uptime'] = uptime
@@ -189,13 +202,17 @@ class Crawler(BaseCrawler):
         most_recent_last_seen = None
         for mon in r['mons'].values():
             self.__transform_monitor_data(mon)
-            if 'last_seen' in mon and (most_recent_last_seen is None or mon['last_seen'] > most_recent_last_seen):
+            if 'last_seen' in mon and (
+                most_recent_last_seen is None or mon['last_seen'] > most_recent_last_seen
+            ):
                 # This is not precisely the last modification time, but the best
                 # signal we have for freshness of the API data.
                 most_recent_last_seen = mon['last_seen']
             monitors.append(mon)
         if most_recent_last_seen is None:
-            logging.warning('Failed to set modification time: No monitor with valid last_seen value found.')
+            logging.warning(
+                'Failed to set modification time: No monitor with valid last_seen value found.'
+            )
         else:
             self.reference['reference_time_modification'] = most_recent_last_seen
 
@@ -225,20 +242,28 @@ class Crawler(BaseCrawler):
         ark_monitor_id = self.iyp.batch_get_nodes('ArkMonitor', monitors, ['name'])
         as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
         point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points, all=False)
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
 
-        self.iyp.batch_add_links('LOCATED_IN',
-                                 self.link_generator(
-                                     self.__replace_link_values(located_in_as_links, ark_monitor_id, as_id)
-                                 ))
-        self.iyp.batch_add_links('LOCATED_IN',
-                                 self.link_generator(
-                                     self.__replace_link_values(located_in_point_links, ark_monitor_id, point_id)
-                                 ))
-        self.iyp.batch_add_links('COUNTRY',
-                                 self.link_generator(
-                                     self.__replace_link_values(country_links, ark_monitor_id, country_id)
-                                 ))
+        self.iyp.batch_add_links(
+            'LOCATED_IN',
+            self.link_generator(
+                self.__replace_link_values(located_in_as_links, ark_monitor_id, as_id)
+            ),
+        )
+        self.iyp.batch_add_links(
+            'LOCATED_IN',
+            self.link_generator(
+                self.__replace_link_values(located_in_point_links, ark_monitor_id, point_id)
+            ),
+        )
+        self.iyp.batch_add_links(
+            'COUNTRY',
+            self.link_generator(
+                self.__replace_link_values(country_links, ark_monitor_id, country_id)
+            ),
+        )
 
     def unit_test(self):
         return super().unit_test(['COUNTRY', 'LOCATED_IN'])
@@ -254,7 +279,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

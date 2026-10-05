@@ -18,9 +18,7 @@ class Crawler(BaseCrawler):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://bgp.tools/kb/api'
 
-        self.headers = {
-            'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
-        }
+        self.headers = {'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'}
 
     @staticmethod
     def replace_link_ids(links: list, src_id: dict = dict(), dst_id=dict()):
@@ -97,7 +95,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import docker
 import requests
@@ -142,11 +142,7 @@ def main():
     args = parser.parse_args()
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
-    logging.basicConfig(
-        format=FORMAT,
-        level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+    logging.basicConfig(format=FORMAT, level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
     logging.info(f'Started: {sys.argv}')
 
     with open(args.config, 'r') as f:
@@ -173,9 +169,9 @@ def main():
         if 'active_http' in ports:
             active_http = ports['active_http']
             month, day = get_port_date(active_http)
-            start_date = datetime.now(tz=timezone.utc).replace(month=month, day=day)
+            start_date = datetime.now(tz=UTC).replace(month=month, day=day)
         else:
-            start_date = datetime.now(tz=timezone.utc)
+            start_date = datetime.now(tz=UTC)
 
         # Download logs from ihr archive each day in the next week since
         # the previous release
@@ -228,9 +224,9 @@ def main():
         stdin_open=True,
         remove=True,
         volumes={
-                volume_name: {'bind': '/data', 'mode': 'rw'},
-                dump_dir: {'bind': '/dumps', 'mode': 'rw'},
-        }
+            volume_name: {'bind': '/data', 'mode': 'rw'},
+            dump_dir: {'bind': '/dumps', 'mode': 'rw'},
+        },
     )
 
     # Run neo4j based on data in volume just created
@@ -238,10 +234,7 @@ def main():
     client.containers.run(
         'neo4j:' + NEO4J_VERSION,
         name=container_name,
-        ports={
-            7474: int(http_port),
-            7687: int(bolt_port)
-        },
+        ports={7474: int(http_port), 7687: int(bolt_port)},
         volumes={
             volume_name: {'bind': '/data', 'mode': 'rw'},
         },
@@ -251,7 +244,7 @@ def main():
             'NEO4J_server_memory_heap_max__size': '16G',
         },
         detach=True,
-        remove=True
+        remove=True,
     )
 
     # Get currently active config
@@ -279,7 +272,11 @@ def main():
         caddy_template = caddy_template.replace('<PREV_HTTP_PORT>', ports['active_http'])
 
     # Update config
-    requests.post(config['caddy_post_url'], caddy_template, headers={'Content-Type': 'application/json'})
+    requests.post(
+        config['caddy_post_url'],
+        caddy_template,
+        headers={'Content-Type': 'application/json'},
+    )
 
 
 if __name__ == '__main__':

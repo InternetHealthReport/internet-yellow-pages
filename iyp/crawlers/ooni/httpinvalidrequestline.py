@@ -13,7 +13,6 @@ label = 'OONI HTTP Invalid Request Line Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'httpinvalidrequestline')
         self.categories = ['tampering', 'no_tampering']
@@ -45,7 +44,11 @@ class Crawler(OoniCrawler):
             props['total_count'] = result_dict['total_count']
             props['country_code'] = country
             censored_links.append(
-                {'src_id': asn_id, 'dst_id': httpinvalidrequestline_id, 'props': [props, self.reference]}
+                {
+                    'src_id': asn_id,
+                    'dst_id': httpinvalidrequestline_id,
+                    'props': [props, self.reference],
+                }
             )
 
         self.iyp.batch_add_links('CENSORED', censored_links)

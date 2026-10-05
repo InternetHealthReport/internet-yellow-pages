@@ -49,8 +49,10 @@ class OpenIntelCrawler(BaseCrawler):
     def fetch_crux_country_codes():
         """Fetch the list of available country codes for the CrUX dataset by scraping
         the public website."""
-        r = requests.get('https://openintel.nl/download/forward-dns/basis=toplist/source=crux/',
-                         cookies={'openintel-data-agreement-accepted': 'true'})
+        r = requests.get(
+            'https://openintel.nl/download/forward-dns/basis=toplist/source=crux/',
+            cookies={'openintel-data-agreement-accepted': 'true'},
+        )
         r.raise_for_status()
         soup = BeautifulSoup(r.text, features='html.parser')
         country_codes = list()
@@ -69,13 +71,13 @@ class OpenIntelCrawler(BaseCrawler):
             's3',
             'nl-utwente',
             endpoint_url=S3A_OPENINTEL_ENDPOINT,
-            config=botocore.config.Config(
-                signature_version=botocore.UNSIGNED
-            )
+            config=botocore.config.Config(signature_version=botocore.UNSIGNED),
         )
 
         # Prevent some request going to AWS instead of the OpenINTEL server
-        S3R_OPENINTEL.meta.client.meta.events.unregister('before-sign.s3', botocore.utils.fix_s3_host)
+        S3R_OPENINTEL.meta.client.meta.events.unregister(
+            'before-sign.s3', botocore.utils.fix_s3_host
+        )
 
         # The OpenINTEL bucket
         self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel-public')
@@ -101,13 +103,13 @@ class OpenIntelCrawler(BaseCrawler):
             aws_access_key_id=OPENINTEL_ACCESS_KEY,
             aws_secret_access_key=OPENINTEL_SECRET_KEY,
             endpoint_url=S3A_OPENINTEL_ENDPOINT,
-            config=botocore.config.Config(
-                signature_version='v4'
-            )
+            config=botocore.config.Config(signature_version='v4'),
         )
 
         # Prevent some request going to AWS instead of the OpenINTEL server
-        S3R_OPENINTEL.meta.client.meta.events.unregister('before-sign.s3', botocore.utils.fix_s3_host)
+        S3R_OPENINTEL.meta.client.meta.events.unregister(
+            'before-sign.s3', botocore.utils.fix_s3_host
+        )
 
         # The OpenINTEL bucket
         self.warehouse_bucket = S3R_OPENINTEL.Bucket('openintel')
@@ -156,13 +158,10 @@ class OpenIntelCrawler(BaseCrawler):
                     prefix,
                     'year={}'.format(date.year),
                     'month={:02d}'.format(date.month),
-                    'day={:02d}'.format(date.day)
+                    'day={:02d}'.format(date.day),
                 )
             else:
-                tmp_prefix = os.path.join(
-                    prefix,
-                    f'date={date.date().isoformat()}'
-                )
+                tmp_prefix = os.path.join(prefix, f'date={date.date().isoformat()}')
             objects = list(self.warehouse_bucket.objects.filter(Prefix=tmp_prefix).all())
             if len(objects) > 0:
                 break
@@ -173,55 +172,69 @@ class OpenIntelCrawler(BaseCrawler):
                 logging.warning('Failed to find data within the specified lookback interval.')
                 return
             logging.error('Failed to find data within the specified lookback interval.')
-            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
-        self.reference['reference_time_modification'] = \
-            date.datetime.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+            raise DataNotAvailableError(
+                'Failed to find data within the specified lookback interval.'
+            )
+        self.reference['reference_time_modification'] = date.datetime.replace(
+            hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+        )
 
         if dataset in ['tranco', 'umbrella']:
             # Set data URL for public datasets.
-            self.reference['reference_url_data'] = date.strftime(REF_URL_DATA.format(dataset=dataset))
+            self.reference['reference_url_data'] = date.strftime(
+                REF_URL_DATA.format(dataset=dataset)
+            )
         elif dataset == 'crux':
             # This dataset combines multiple countries, so point to high-level
             # directory.
-            self.reference['reference_url_data'] = \
+            self.reference['reference_url_data'] = (
                 'https://openintel.nl/download/forward-dns/basis=toplist/source=crux/'
+            )
 
         logging.info(f'Fetching data for {date.strftime("%Y-%m-%d")}')
 
         # Iterate objects in bucket with given (source, date)-partition prefix
         for i_obj in objects:
-
             # Open a temporary file to download the Parquet object into
-            with tempfile.NamedTemporaryFile(mode='w+b',
-                                             dir=self.get_tmp_dir(),
-                                             prefix='{}.'.format(date.date().isoformat()),
-                                             suffix='.parquet',
-                                             delete=False) as tempFile:
-                logging.info("Opened temporary file for object download: '{}'.".format(tempFile.name))
-                self.warehouse_bucket.download_fileobj(
-                    Key=i_obj.key, Fileobj=tempFile,
-                    Config=boto3.s3.transfer.TransferConfig(multipart_chunksize=128 * 1024 * 1024)
+            with tempfile.NamedTemporaryFile(
+                mode='w+b',
+                dir=self.get_tmp_dir(),
+                prefix='{}.'.format(date.date().isoformat()),
+                suffix='.parquet',
+                delete=False,
+            ) as tempFile:
+                logging.info(
+                    "Opened temporary file for object download: '{}'.".format(tempFile.name)
                 )
-                logging.info("Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
-                    os.path.join(S3A_OPENINTEL_ENDPOINT, self.warehouse_bucket.name, i_obj.key),
-                    os.path.getsize(tempFile.name) / (1024 * 1024),
-                    tempFile.name
-                ))
+                self.warehouse_bucket.download_fileobj(
+                    Key=i_obj.key,
+                    Fileobj=tempFile,
+                    Config=boto3.s3.transfer.TransferConfig(multipart_chunksize=128 * 1024 * 1024),
+                )
+                logging.info(
+                    "Downloaded '{}' [{:.2f}MiB] into '{}'.".format(
+                        os.path.join(S3A_OPENINTEL_ENDPOINT, self.warehouse_bucket.name, i_obj.key),
+                        os.path.getsize(tempFile.name) / (1024 * 1024),
+                        tempFile.name,
+                    )
+                )
                 # For some files read_parquet() fails without this...
                 tempFile.flush()
                 # Use Pandas to read file into a DF and append to list
                 self.pandas_df_list.append(
-                    pd.read_parquet(tempFile.name,
-                                    columns=[
-                                        'query_type',
-                                        'query_name',
-                                        'response_type',
-                                        'response_name',
-                                        'ip4_address',
-                                        'ip6_address',
-                                        'ns_address',
-                                        'cname_name',
-                                    ])
+                    pd.read_parquet(
+                        tempFile.name,
+                        columns=[
+                            'query_type',
+                            'query_name',
+                            'response_type',
+                            'response_name',
+                            'ip4_address',
+                            'ip6_address',
+                            'ns_address',
+                            'cname_name',
+                        ],
+                    )
                 )
 
     def run(self):
@@ -247,7 +260,9 @@ class OpenIntelCrawler(BaseCrawler):
 
         if self.name == 'openintel.toplist':
             # This crawler combines multiple toplists, so no single data URL.
-            self.reference['reference_url_data'] = 'https://openintel.nl/download/forward-dns/basis=toplist/'
+            self.reference['reference_url_data'] = (
+                'https://openintel.nl/download/forward-dns/basis=toplist/'
+            )
 
         # Concatenate Parquet file-specific DFs
         pandas_df = pd.concat(self.pandas_df_list)
@@ -255,33 +270,39 @@ class OpenIntelCrawler(BaseCrawler):
         # Select A, AAAA, and NS mappings from the measurement data
         df = pandas_df[
             (
-                (pandas_df.query_type == 'A') |
-                (pandas_df.query_type == 'AAAA') |
-                (pandas_df.query_type == 'NS')
-
-            ) &
-            (
-                (pandas_df.response_type == 'A') |
-                (pandas_df.response_type == 'AAAA') |
-                (pandas_df.response_type == 'NS') |
-                (pandas_df.response_type == 'CNAME')
-            ) &
+                (pandas_df.query_type == 'A')
+                | (pandas_df.query_type == 'AAAA')
+                | (pandas_df.query_type == 'NS')
+            )
+            & (
+                (pandas_df.response_type == 'A')
+                | (pandas_df.response_type == 'AAAA')
+                | (pandas_df.response_type == 'NS')
+                | (pandas_df.response_type == 'CNAME')
+            )
+            &
             # Filter missing addresses (there is at least one...)
             (
-                (pandas_df.ip4_address.notnull()) |
-                (pandas_df.ip6_address.notnull()) |
-                (pandas_df.ns_address.notnull()) |
-                (pandas_df.cname_name.notnull())
+                (pandas_df.ip4_address.notnull())
+                | (pandas_df.ip6_address.notnull())
+                | (pandas_df.ns_address.notnull())
+                | (pandas_df.cname_name.notnull())
             )
         ].drop_duplicates()
 
         # Remove root '.' from fields.
         df.query_name = df.query_name.str[:-1]
         df.response_name = df.response_name.str[:-1]
-        df.ns_address = df.ns_address.astype('string').map(lambda x: x[:-1] if not pd.isna(x) else None)
-        df.cname_name = df.cname_name.astype('string').map(lambda x: x[:-1] if not pd.isna(x) else None)
+        df.ns_address = df.ns_address.astype('string').map(
+            lambda x: x[:-1] if not pd.isna(x) else None
+        )
+        df.cname_name = df.cname_name.astype('string').map(
+            lambda x: x[:-1] if not pd.isna(x) else None
+        )
 
-        logging.info(f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).')
+        logging.info(
+            f'Read {len(df)} unique records from {len(self.pandas_df_list)} Parquet file(s).'
+        )
 
         # response_names for NS records are domain names
         domain_names = set(df[df.response_type == 'NS']['response_name'])
@@ -290,7 +311,9 @@ class OpenIntelCrawler(BaseCrawler):
         name_servers = set(df[(df.ns_address.notnull()) & (df.response_type == 'NS')]['ns_address'])
 
         # response_name for A and AAAA records are host names
-        host_names = set(df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['response_name'])
+        host_names = set(
+            df[(df.response_type == 'A') | (df.response_type == 'AAAA')]['response_name']
+        )
 
         ipv6_addresses = set()
         # Normalize IPv6 addresses.
@@ -327,7 +350,9 @@ class OpenIntelCrawler(BaseCrawler):
         cnames = defaultdict(dict)
         # There are cases where NS queries receive a CNAME response, which we want to
         # ignore.
-        for row in df[(df.query_type.isin(['A', 'AAAA'])) & (df.response_type == 'CNAME')].itertuples():
+        for row in df[
+            (df.query_type.isin(['A', 'AAAA'])) & (df.response_type == 'CNAME')
+        ].itertuples():
             # Keep track of how to go back from a CNAME to the response / query name.
             # We use this to rebuild a CNAME chain from an A/AAAA record to its initial
             # query name.
@@ -341,21 +366,23 @@ class OpenIntelCrawler(BaseCrawler):
             host_names.add(row.cname_name)
 
         # Get/create all nodes:
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName',
-                                                            'name',
-                                                            domain_names,
-                                                            all=False,
-                                                            batch_size=100000)
-        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', host_names, all=False, batch_size=100000)
+        domain_id = self.iyp.batch_get_nodes_by_single_prop(
+            'DomainName', 'name', domain_names, all=False, batch_size=100000
+        )
+        host_id = self.iyp.batch_get_nodes_by_single_prop(
+            'HostName', 'name', host_names, all=False, batch_size=100000
+        )
         ns_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', name_servers, all=False)
         self.iyp.batch_add_node_label(list(ns_id.values()), 'AuthoritativeNameServer')
-        ip4_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip',
-                                                         set(df[df.ip4_address.notnull()]['ip4_address']),
-                                                         all=False)
+        ip4_id = self.iyp.batch_get_nodes_by_single_prop(
+            'IP', 'ip', set(df[df.ip4_address.notnull()]['ip4_address']), all=False
+        )
         ip6_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ipv6_addresses, all=False)
 
-        logging.info(f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, '
-                     f'{len(ip4_id)} IPv4, {len(ip6_id)} IPv6')
+        logging.info(
+            f'Got {len(domain_id)} domains, {len(ns_id)} nameservers, {len(host_id)} hosts, '
+            f'{len(ip4_id)} IPv4, {len(ip6_id)} IPv6'
+        )
 
         # Compute links
         mng_links = list()
@@ -368,12 +395,13 @@ class OpenIntelCrawler(BaseCrawler):
 
         # RESOLVES_TO and MANAGED_BY links
         for row in df[(df.response_type.isin(['NS', 'A', 'AAAA', 'CNAME']))].itertuples():
-
             # NS Record
             if row.response_type == 'NS' and row.ns_address:
                 domain_qid = domain_id[row.response_name]
                 ns_qid = ns_id[row.ns_address]
-                mng_links.append({'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]})
+                mng_links.append(
+                    {'src_id': domain_qid, 'dst_id': ns_qid, 'props': [self.reference]}
+                )
 
             # We first add the actual A/AAAA records, for which the host name is
             # indicated by the response name. This can be different from the query name
@@ -398,8 +426,10 @@ class OpenIntelCrawler(BaseCrawler):
                     cname = up
 
                 if cname != row.query_name:
-                    logging.warning(f'Broken CNAME chain for A record {row.query_name} -> {row.ip4_address}. '
-                                    f'Last CNAME: {cname}')
+                    logging.warning(
+                        f'Broken CNAME chain for A record {row.query_name} -> {row.ip4_address}. '
+                        f'Last CNAME: {cname}'
+                    )
 
             # AAAA Record
             elif row.response_type == 'AAAA' and row.ip6_address:
@@ -423,8 +453,10 @@ class OpenIntelCrawler(BaseCrawler):
                     cname = up
 
                 if cname != row.query_name:
-                    logging.warning(f'Broken CNAME chain for AAAA record {row.query_name} -> {row.ip6_address}. '
-                                    f'Last CNAME: {cname}')
+                    logging.warning(
+                        f'Broken CNAME chain for AAAA record {row.query_name} -> {row.ip6_address}. '
+                        f'Last CNAME: {cname}'
+                    )
 
             # CNAME Record
             elif row.response_type == 'CNAME' and row.query_type in ['A', 'AAAA']:
@@ -434,7 +466,9 @@ class OpenIntelCrawler(BaseCrawler):
 
         # PART_OF links between HostNames and DomainNames
         for hd in host_names.intersection(domain_names):
-            partof_links.append({'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]})
+            partof_links.append(
+                {'src_id': host_id[hd], 'dst_id': domain_id[hd], 'props': [self.reference]}
+            )
 
         # Push all links to IYP
         self.iyp.batch_add_links('MANAGED_BY', mng_links)
@@ -450,7 +484,6 @@ class OpenIntelCrawler(BaseCrawler):
 
 
 class DnsgraphCrawler(BaseCrawler):
-
     def __init__(self, organization, url, name, datasets):
         super().__init__(organization, url, name)
         self.reference['reference_url_info'] = 'https://dnsgraph.dacs.utwente.nl'
@@ -515,21 +548,24 @@ class DnsgraphCrawler(BaseCrawler):
                 probe_url = f'{base_url}/connections.json.gz'
                 if requests.head(probe_url).ok:
                     logging.info(base_url)
-                    logging.info(f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})')
+                    logging.info(
+                        f'Using year={year}/week={week} ({current_date.strftime("%Y-%m-%d")})'
+                    )
                     break
             else:
                 logging.error('Failed to find data within the specified lookback interval.')
                 return
 
             # Shift to Monday and set to midnight.
-            mod_date = (current_date - timedelta(days=current_date.weekday())).replace(hour=0,
-                                                                                       minute=0,
-                                                                                       second=0,
-                                                                                       microsecond=0)
+            mod_date = (current_date - timedelta(days=current_date.weekday())).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
         if self.reference['reference_time_modification'] is None:
             self.reference['reference_time_modification'] = mod_date
         else:
-            self.reference['reference_time_modification'] = max(mod_date, self.reference['reference_time_modification'])
+            self.reference['reference_time_modification'] = max(
+                mod_date, self.reference['reference_time_modification']
+            )
         logging.info('Reading connections')
         self.pandas_df_list.append(pd.read_json(f'{base_url}/connections.json.gz', lines=True))
         logging.info(f'Read {len(self.pandas_df_list[-1])} rows')
@@ -572,17 +608,21 @@ class DnsgraphCrawler(BaseCrawler):
                 'to_nodeType',
                 'to_nodeKey',
                 'relation_name',
-                'properties'])
+                'properties',
+            ],
+        )
         duplicate_rows = total_rows - len(reconstructed_df)
         logging.info(f'Removed {duplicate_rows} redundant rows.')
         return reconstructed_df
 
-    def link_generator(self, elems: pd.DataFrame, relationship_type: str, src_id_map: dict, dst_id_map: dict):
+    def link_generator(
+        self, elems: pd.DataFrame, relationship_type: str, src_id_map: dict, dst_id_map: dict
+    ):
         for connection in elems[elems['relation_name'] == relationship_type].itertuples():
             yield {
                 'src_id': src_id_map[connection.from_nodeKey],
                 'dst_id': dst_id_map[connection.to_nodeKey],
-                'props': [self.reference, connection.properties]
+                'props': [self.reference, connection.properties],
             }
 
     def run(self):
@@ -600,37 +640,50 @@ class DnsgraphCrawler(BaseCrawler):
         # Remove root "." from names that are not the root.
         # Currently there are only DOMAIN and HOSTNAME entries in from_nodeType, but
         # maybe that changes in the future.
-        connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'] = \
-            connections.loc[connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'].map(self.remove_root)  # noqa: E501
-        connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'] = \
-            connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'].map(self.remove_root)
+        connections.loc[
+            connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'
+        ] = connections.loc[
+            connections['from_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'from_nodeKey'
+        ].map(self.remove_root)  # noqa: E501
+        connections.loc[connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'] = (
+            connections.loc[
+                connections['to_nodeType'].isin(('DOMAIN', 'HOSTNAME')), 'to_nodeKey'
+            ].map(self.remove_root)
+        )
         # Normalize IPv6 addresses.
-        connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'] = \
-            connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'].map(self.normalize_ipv6)
-        connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'] = \
-            connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'].map(self.normalize_ipv6)
+        connections.loc[connections['from_nodeType'] == 'IP', 'from_nodeKey'] = connections.loc[
+            connections['from_nodeType'] == 'IP', 'from_nodeKey'
+        ].map(self.normalize_ipv6)
+        connections.loc[connections['to_nodeType'] == 'IP', 'to_nodeKey'] = connections.loc[
+            connections['to_nodeType'] == 'IP', 'to_nodeKey'
+        ].map(self.normalize_ipv6)
 
         # Pandas' unique is faster than plain set.
         unique_domain_names = set()
         unique_host_names = set()
         unique_ips = set()
         logging.info('Getting unique nodes')
-        for node_type, node_key in [('from_nodeType', 'from_nodeKey'), ('to_nodeType', 'to_nodeKey')]:
-            unique_domain_names.update(connections[connections[node_type] == 'DOMAIN'][node_key].unique())
-            unique_host_names.update(connections[connections[node_type] == 'HOSTNAME'][node_key].unique())
+        for node_type, node_key in [
+            ('from_nodeType', 'from_nodeKey'),
+            ('to_nodeType', 'to_nodeKey'),
+        ]:
+            unique_domain_names.update(
+                connections[connections[node_type] == 'DOMAIN'][node_key].unique()
+            )
+            unique_host_names.update(
+                connections[connections[node_type] == 'HOSTNAME'][node_key].unique()
+            )
             unique_ips.update(connections[connections[node_type] == 'IP'][node_key].unique())
 
-        domains_id = self.iyp.batch_get_nodes_by_single_prop('DomainName',
-                                                             'name',
-                                                             unique_domain_names,
-                                                             all=False,
-                                                             batch_size=100000)
-        hosts_id = self.iyp.batch_get_nodes_by_single_prop('HostName',
-                                                           'name',
-                                                           unique_host_names,
-                                                           all=False,
-                                                           batch_size=100000)
-        ips_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', unique_ips, all=False, batch_size=100000)
+        domains_id = self.iyp.batch_get_nodes_by_single_prop(
+            'DomainName', 'name', unique_domain_names, all=False, batch_size=100000
+        )
+        hosts_id = self.iyp.batch_get_nodes_by_single_prop(
+            'HostName', 'name', unique_host_names, all=False, batch_size=100000
+        )
+        ips_id = self.iyp.batch_get_nodes_by_single_prop(
+            'IP', 'ip', unique_ips, all=False, batch_size=100000
+        )
 
         resolves_to = defaultdict(set)
         cnames = defaultdict(set)
@@ -656,15 +709,27 @@ class DnsgraphCrawler(BaseCrawler):
             for ip in ips:
                 cname_resolves_to_links[(host_qid, ips_id[ip])] = {'source': 'CNAME'}
 
-        logging.info(f'Calculated {normal_resolve_to_links} A/AAAA and '
-                     f'{len(cname_resolves_to_links)} CNAME RESOLVES_TO links')
+        logging.info(
+            f'Calculated {normal_resolve_to_links} A/AAAA and '
+            f'{len(cname_resolves_to_links)} CNAME RESOLVES_TO links'
+        )
 
         # Push all links to IYP
-        self.iyp.batch_add_links('PARENT', self.link_generator(connections, 'PARENT', domains_id, domains_id))
-        self.iyp.batch_add_links('PART_OF', self.link_generator(connections, 'PART_OF', hosts_id, domains_id))
-        self.iyp.batch_add_links('ALIAS_OF', self.link_generator(connections, 'ALIAS_OF', hosts_id, hosts_id))
-        self.iyp.batch_add_links('MANAGED_BY', self.link_generator(connections, 'MANAGED_BY', domains_id, hosts_id))
-        self.iyp.batch_add_links('RESOLVES_TO', self.link_generator(connections, 'RESOLVES_TO', hosts_id, ips_id))
+        self.iyp.batch_add_links(
+            'PARENT', self.link_generator(connections, 'PARENT', domains_id, domains_id)
+        )
+        self.iyp.batch_add_links(
+            'PART_OF', self.link_generator(connections, 'PART_OF', hosts_id, domains_id)
+        )
+        self.iyp.batch_add_links(
+            'ALIAS_OF', self.link_generator(connections, 'ALIAS_OF', hosts_id, hosts_id)
+        )
+        self.iyp.batch_add_links(
+            'MANAGED_BY', self.link_generator(connections, 'MANAGED_BY', domains_id, hosts_id)
+        )
+        self.iyp.batch_add_links(
+            'RESOLVES_TO', self.link_generator(connections, 'RESOLVES_TO', hosts_id, ips_id)
+        )
         self.iyp.batch_add_links('RESOLVES_TO', super().link_generator(cname_resolves_to_links))
 
         # Push the Authoritative NS Label

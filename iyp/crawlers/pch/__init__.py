@@ -12,8 +12,7 @@ from requests.adapters import HTTPAdapter
 from requests_futures.sessions import FuturesSession
 from urllib3.util.retry import Retry
 
-from iyp import (AddressValueError, BaseCrawler, CacheHandler,
-                 DataNotAvailableError)
+from iyp import AddressValueError, BaseCrawler, CacheHandler, DataNotAvailableError
 from iyp.crawlers.pch.show_bgp_parser import ShowBGPParser
 
 PARALLEL_DOWNLOADS = 1
@@ -23,8 +22,12 @@ if os.path.exists('config.json'):
     PARALLEL_DOWNLOADS = config['pch']['parallel_downloads']
     PARALLEL_PARSERS = config['pch']['parallel_parsers']
 
-COLLECTOR_LIST_URL_FMT = 'http://downloads.pch.net/api/files/Routing_Data/IPv{af}_daily_snapshots/%Y/%m/'
-FILE_FMT = os.path.join(COLLECTOR_LIST_URL_FMT, '{collector}/{collector}-ipv{af}_bgp_routes.%Y.%m.%d.gz')
+COLLECTOR_LIST_URL_FMT = (
+    'http://downloads.pch.net/api/files/Routing_Data/IPv{af}_daily_snapshots/%Y/%m/'
+)
+FILE_FMT = os.path.join(
+    COLLECTOR_LIST_URL_FMT, '{collector}/{collector}-ipv{af}_bgp_routes.%Y.%m.%d.gz'
+)
 
 
 class RoutingSnapshotCrawler(BaseCrawler):
@@ -62,7 +65,9 @@ class RoutingSnapshotCrawler(BaseCrawler):
         self.collector_urls = dict()
         self.__initialize_session()
         super().__init__(organization, url, name)
-        self.reference['reference_url_data'] = self.curr_date.strftime(COLLECTOR_LIST_URL_FMT.format(af=self.af))
+        self.reference['reference_url_data'] = self.curr_date.strftime(
+            COLLECTOR_LIST_URL_FMT.format(af=self.af)
+        )
         self.reference['reference_url_info'] = 'https://www.pch.net/resources/Routing_Data/'
 
     def __initialize_session(self) -> None:
@@ -71,7 +76,7 @@ class RoutingSnapshotCrawler(BaseCrawler):
         retry = Retry(
             backoff_factor=0.1,
             status_forcelist=(429, 500, 502, 503, 504),
-            respect_retry_after_header=True
+            respect_retry_after_header=True,
         )
         adapter = HTTPAdapter(max_retries=retry)
         self.session.mount('http://', adapter)
@@ -130,14 +135,18 @@ class RoutingSnapshotCrawler(BaseCrawler):
                 continue
             mtime = entry['mtime']
             try:
-                mtime_dt = datetime.strptime(mtime, '%a, %d %b %Y %H:%M:%S GMT').replace(tzinfo=timezone.utc)
+                mtime_dt = datetime.strptime(mtime, '%a, %d %b %Y %H:%M:%S GMT').replace(
+                    tzinfo=timezone.utc
+                )
             except ValueError as e:
                 logging.warning(f'Failed to parse mtime "{mtime}" for collector {collector}: {e}')
                 continue
             if mtime_dt < self.max_lookback_dt:
                 print(f'Ignoring collector {collector} due to stale entry: {mtime_dt.isoformat()}')
                 continue
-            self.collector_urls[collector] = mtime_dt.strftime(FILE_FMT.format(af=self.af, collector=collector))
+            self.collector_urls[collector] = mtime_dt.strftime(
+                FILE_FMT.format(af=self.af, collector=collector)
+            )
             if self.latest_available_date is None or self.latest_available_date < mtime_dt:
                 self.latest_available_date = mtime_dt
 
@@ -186,8 +195,10 @@ class RoutingSnapshotCrawler(BaseCrawler):
         # Fetch remaining files from PCH.
         attempt = 1
         while to_fetch and attempt <= 10:
-            logging.info(f' Attempt {attempt}: {len(self.collector_files)}/{len(self.collector_urls)} collector files '
-                         f'in cache, fetching {len(to_fetch)}')
+            logging.info(
+                f' Attempt {attempt}: {len(self.collector_files)}/{len(self.collector_urls)} collector files '
+                f'in cache, fetching {len(to_fetch)}'
+            )
             for ok, content, name in self.fetch_urls(to_fetch):
                 if not ok:
                     continue
@@ -197,7 +208,9 @@ class RoutingSnapshotCrawler(BaseCrawler):
                 self.cache_handler.save_cached_object(name, content)
 
             missing_collectors = set(self.collector_urls.keys()) - self.collector_files.keys()
-            to_fetch = [(collector, self.collector_urls[collector]) for collector in missing_collectors]
+            to_fetch = [
+                (collector, self.collector_urls[collector]) for collector in missing_collectors
+            ]
             attempt += 1
 
     def run(self) -> None:
@@ -236,17 +249,22 @@ class RoutingSnapshotCrawler(BaseCrawler):
 
         # Get/push nodes.
         as_ids = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
-        prefix_ids = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
+        prefix_ids = self.iyp.batch_get_nodes_by_single_prop(
+            'BGPPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_ids.values()), 'Prefix')
 
         # Push relationships.
         relationships = list()
         for (asn, prefix), collector_set in raw_links.items():
-            props = {'count': len(collector_set),
-                     'seen_by_collectors': list(collector_set)}
-            relationships.append({'src_id': as_ids[asn],
-                                  'dst_id': prefix_ids[prefix],
-                                  'props': [props, self.reference]})
+            props = {'count': len(collector_set), 'seen_by_collectors': list(collector_set)}
+            relationships.append(
+                {
+                    'src_id': as_ids[asn],
+                    'dst_id': prefix_ids[prefix],
+                    'props': [props, self.reference],
+                }
+            )
 
         self.iyp.batch_add_links('ORIGINATE', relationships)
 

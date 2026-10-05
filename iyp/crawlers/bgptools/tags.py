@@ -22,9 +22,7 @@ class Crawler(BaseCrawler):
         self.fetch_tags = list()
 
         self.session = requests.Session()
-        self.session.headers.update({
-            'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'
-        })
+        self.session.headers.update({'user-agent': 'IIJ/Internet Health Report - admin@ihr.live'})
 
     def __get_tag_labels(self):
         """Fetch the pretty-print label corresponding to each tag by scraping the
@@ -82,7 +80,9 @@ class Crawler(BaseCrawler):
                     raise ValueError(f'Invalid AS string in row: {row}')
                 asn = int(as_str.removeprefix('AS'))
                 asns.add(asn)
-                categorized_links.append({'src_id': asn, 'dst_id': tag_label, 'props': [tag_reference]})
+                categorized_links.append(
+                    {'src_id': asn, 'dst_id': tag_label, 'props': [tag_reference]}
+                )
 
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns, all=False)
         tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', tags, all=False)
@@ -107,7 +107,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

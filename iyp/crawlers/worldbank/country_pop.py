@@ -8,7 +8,9 @@ import requests
 
 from iyp import BaseCrawler
 
-URL = 'https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?per_page=400&mrv=1&format=json'
+URL = (
+    'https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?per_page=400&mrv=1&format=json'
+)
 ORG = 'WorldBank'
 NAME = 'worldbank.country_pop'
 
@@ -30,16 +32,18 @@ class Crawler(BaseCrawler):
         content = json.loads(req.content)
 
         # Set last time of modification
-        self.reference['reference_time_modification'] = datetime.strptime(content[0]['lastupdated'],
-                                                                          '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        self.reference['reference_time_modification'] = datetime.strptime(
+            content[0]['lastupdated'], '%Y-%m-%d'
+        ).replace(tzinfo=timezone.utc)
 
         # Get countries present in IYP cc to id mapping
-        country_ids = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', create=False, all=True)
+        country_ids = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', create=False, all=True
+        )
 
         # Get countries and population from World Bank
         lines = set()
         for entry in content[1]:
-
             country = entry['country']['id']
             if country not in country_ids or not entry['value']:
                 continue
@@ -48,16 +52,22 @@ class Crawler(BaseCrawler):
             lines.add((country, population))
 
         # Get `Estimate` node ID
-        estimate_qid = self.iyp.get_node('Estimate', properties={'name': 'World Bank Population Estimate'})
+        estimate_qid = self.iyp.get_node(
+            'Estimate', properties={'name': 'World Bank Population Estimate'}
+        )
 
         # Compute links
         links = []
-        for (country, population) in lines:
-
+        for country, population in lines:
             country_qid = country_ids[country]
 
-            links.append({'src_id': country_qid, 'dst_id': estimate_qid,
-                         'props': [self.reference, {'value': population}]})
+            links.append(
+                {
+                    'src_id': country_qid,
+                    'dst_id': estimate_qid,
+                    'props': [self.reference, {'value': population}],
+                }
+            )
 
         # Push all links to IYP
         self.iyp.batch_add_links('POPULATION', links)
@@ -76,7 +86,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

@@ -59,13 +59,9 @@ class LacesCrawler(BaseCrawler):
                 continue
             if bgp_prefix not in bgp_prefixes:
                 bgp_prefixes.add(bgp_prefix)
-                categorized_links.append({
-                    'src_id': bgp_prefix,
-                    'dst_id': anycast_tag_qid,
-                    'props': [
-                        self.reference
-                    ]
-                })
+                categorized_links.append(
+                    {'src_id': bgp_prefix, 'dst_id': anycast_tag_qid, 'props': [self.reference]}
+                )
 
             locations = ref_data.pop('locations')
             # Create a point and LOCATED_IN link for each location.
@@ -80,43 +76,43 @@ class LacesCrawler(BaseCrawler):
                 # Include location metadata in link properties, exclude None values.
                 ref_data.update({k: v for k, v in location.items() if v})
 
-                located_in_links.append({
-                    'src_id': prefix,
-                    'dst_id': point,
-                    'props': [
-                        self.reference,
-                        dict(ref_data),
-                    ],
-                })
+                located_in_links.append(
+                    {
+                        'src_id': prefix,
+                        'dst_id': point,
+                        'props': [
+                            self.reference,
+                            dict(ref_data),
+                        ],
+                    }
+                )
 
                 # Some entries only have WGS84 coordinates, but no country mapping.
                 if location['country_code']:
                     country = location['country_code']
                     countries.add(country)
-                    country_links.append({
-                        'src_id': prefix,
-                        'dst_id': country,
-                        'props': [
-                            self.reference,
-                            dict(ref_data),
-                        ],
-                    })
+                    country_links.append(
+                        {
+                            'src_id': prefix,
+                            'dst_id': country,
+                            'props': [
+                                self.reference,
+                                dict(ref_data),
+                            ],
+                        }
+                    )
 
         # Get all IYP prefix IDs for our anycast prefixes and points.
         bgp_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
-            'BGPPrefix',
-            'prefix',
-            bgp_prefixes,
-            all=False
+            'BGPPrefix', 'prefix', bgp_prefixes, all=False
         )
         geo_prefix_id = self.iyp.batch_get_nodes_by_single_prop(
-            'GeoPrefix',
-            'prefix',
-            geo_prefixes,
-            all=False
+            'GeoPrefix', 'prefix', geo_prefixes, all=False
         )
         point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points, all=False)
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
 
         # Add Prefix labels to AnycastPrefix and GeoPrefix nodes.
         self.iyp.batch_add_node_label(list(bgp_prefix_id.values()), 'Prefix')

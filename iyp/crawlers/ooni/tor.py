@@ -12,13 +12,14 @@ NAME = 'ooni.tor'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'tor')
         self.all_ip_tags = set()
         # Prepend "OONI Probe Tor Tag" to all tag labels
-        self.all_tags = {tag: f'OONI Probe Tor Tag {tag}'
-                         for tag in ['or_port_dirauth', 'dir_port', 'obfs4', 'or_port']}
+        self.all_tags = {
+            tag: f'OONI Probe Tor Tag {tag}'
+            for tag in ['or_port_dirauth', 'dir_port', 'obfs4', 'or_port']
+        }
         self.categories = ['ok', 'failure']
 
     def process_one_line(self, one_line):
@@ -66,9 +67,7 @@ class Crawler(OoniCrawler):
 
         self.node_ids.update(
             {
-                'ip': self.iyp.batch_get_nodes_by_single_prop(
-                    'IP', 'ip', ips, all=False
-                ),
+                'ip': self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False),
                 'tag': self.iyp.batch_get_nodes_by_single_prop(
                     'Tag', 'label', set(self.all_tags.values()), all=False
                 ),

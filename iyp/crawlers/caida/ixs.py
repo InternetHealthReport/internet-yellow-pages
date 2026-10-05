@@ -38,11 +38,15 @@ class Crawler(BaseCrawler):
         else:
             # for loop was not 'broken', no file available
             raise Exception('No recent CAIDA ix-asns file available')
-        date = date.datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        date = date.datetime.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+        )
 
         logging.info('going to use this URL: ' + url)
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://publicdata.caida.org/datasets/ixps/README.txt'
+        self.reference['reference_url_info'] = (
+            'https://publicdata.caida.org/datasets/ixps/README.txt'
+        )
         self.reference['reference_time_modification'] = date
 
     def __set_modification_time_from_metadata_line(self, line):
@@ -125,7 +129,9 @@ class Crawler(BaseCrawler):
         name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
         url_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', urls)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('PeeringLAN', 'prefix', prefixes, all=False)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'PeeringLAN', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
         # Compute links and add them to neo4j
@@ -148,11 +154,11 @@ class Crawler(BaseCrawler):
                 ixp_qid = self.iyp.get_node('IXP', {'name': ix['name']})
 
             # Compute new links
-            caida_id_links.append({'src_id': ixp_qid, 'dst_id': caida_qid,
-                                   'props': [self.reference]})
+            caida_id_links.append(
+                {'src_id': ixp_qid, 'dst_id': caida_qid, 'props': [self.reference]}
+            )
 
-            name_links.append({'src_id': ixp_qid, 'dst_id': name_qid,
-                               'props': [self.reference]})
+            name_links.append({'src_id': ixp_qid, 'dst_id': name_qid, 'props': [self.reference]})
 
             if 'country' in ix:
                 ixcc = ix.get('country')
@@ -162,15 +168,21 @@ class Crawler(BaseCrawler):
                         # country code. We can ignore non-standard names
                         try:
                             country_qid = country_id[cc_convert.get(cc).alpha2]
-                            country_links.append({'src_id': ixp_qid, 'dst_id': country_qid,
-                                                  'props': [self.reference]})
+                            country_links.append(
+                                {
+                                    'src_id': ixp_qid,
+                                    'dst_id': country_qid,
+                                    'props': [self.reference],
+                                }
+                            )
                         except BaseException:
                             logging.warning(f'Unknown country: {cc}')
                 else:
                     try:
                         country_qid = country_id[cc_convert.get(ix['country']).alpha2]
-                        country_links.append({'src_id': ixp_qid, 'dst_id': country_qid,
-                                              'props': [self.reference]})
+                        country_links.append(
+                            {'src_id': ixp_qid, 'dst_id': country_qid, 'props': [self.reference]}
+                        )
                     except BaseException:
                         logging.warning(f'Unknown country: {ix["country"]}')
 
@@ -179,20 +191,23 @@ class Crawler(BaseCrawler):
                 if isinstance(urls, list):
                     for url in urls:
                         url_qid = url_id[url]
-                        website_links.append({'src_id': ixp_qid, 'dst_id': url_qid,
-                                              'props': [self.reference]})
+                        website_links.append(
+                            {'src_id': ixp_qid, 'dst_id': url_qid, 'props': [self.reference]}
+                        )
                 else:
                     url_qid = url_id[ix['url']]
-                    website_links.append({'src_id': ixp_qid, 'dst_id': url_qid,
-                                          'props': [self.reference]})
+                    website_links.append(
+                        {'src_id': ixp_qid, 'dst_id': url_qid, 'props': [self.reference]}
+                    )
 
             if 'prefixes' in ix:
                 for pfx_af in ix['prefixes'].values():
                     for pfx in pfx_af:
                         pfx = ipaddress.ip_network(pfx).compressed
                         pfx_qid = prefix_id[pfx]
-                        prefix_links.append({'src_id': pfx_qid, 'dst_id': ixp_qid,
-                                             'props': [self.reference]})
+                        prefix_links.append(
+                            {'src_id': pfx_qid, 'dst_id': ixp_qid, 'props': [self.reference]}
+                        )
 
         # Push all links to IYP
         self.iyp.batch_add_links('EXTERNAL_ID', caida_id_links)
@@ -215,7 +230,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

@@ -61,7 +61,7 @@ class Crawler(BaseCrawler):
         category_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', categories, all=False)
 
         links = list()
-        for (url, category) in relationship_pairs:
+        for url, category in relationship_pairs:
             url_qid = url_id[url]
             category_qid = category_id[category]
             links.append({'src_id': url_qid, 'dst_id': category_qid, 'props': [self.reference]})
@@ -83,7 +83,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

@@ -20,40 +20,34 @@ class Crawler(BaseCrawler):
         # connect to IYP database
         super().__init__(organization, url, name)
 
-        self.manrs_qid = self.iyp.get_node(
-            'Organization',
-            {'name': 'MANRS'}
-        )
+        self.manrs_qid = self.iyp.get_node('Organization', {'name': 'MANRS'})
 
         # Actions defined by MANRS
         self.actions = [
             {
                 'label': 'MANRS Action 1: Filtering',
-                'description': 'Prevent propagation of incorrect routing information'
+                'description': 'Prevent propagation of incorrect routing information',
             },
             {
                 'label': 'MANRS Action 2: Anti-spoofing',
-                'description': 'Prevent traffic with spoofed source IP addresses'
+                'description': 'Prevent traffic with spoofed source IP addresses',
             },
             {
                 'label': 'MANRS Action 3: Coordination',
-                'description': 'Facilitate global operational communication and coordination'
+                'description': 'Facilitate global operational communication and coordination',
             },
             {
                 'label': 'MANRS Action 4: Global Validation',
-                'description': 'Facilitate routing information on a global scale'
-            }
+                'description': 'Facilitate routing information on a global scale',
+            },
         ]
 
         # Get the ID for the four items representing MANRS actions
         for action in self.actions:
             action['qid'] = self.iyp.get_node(
                 'ManrsAction',
-                {
-                    'name': action['label'],
-                    'description': action['description']
-                },
-                id_properties={'name'}
+                {'name': action['label'], 'description': action['description']},
+                id_properties={'name'},
             )
 
         # Reference information for data pushed to IYP
@@ -61,7 +55,7 @@ class Crawler(BaseCrawler):
             'reference_name': NAME,
             'reference_org': ORG,
             'reference_url_data': URL,
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc)
+            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
         }
 
     def run(self):
@@ -106,18 +100,18 @@ class Crawler(BaseCrawler):
         country_rels = list()
         implement_rels = list()
         for asn in asn_set:
-            member_of_rels.append({'src_id': asn_id[asn],
-                                   'dst_id': self.manrs_qid,
-                                   'props': [self.reference]})
+            member_of_rels.append(
+                {'src_id': asn_id[asn], 'dst_id': self.manrs_qid, 'props': [self.reference]}
+            )
         for asn, cc in country_rel_set:
-            country_rels.append({'src_id': asn_id[asn],
-                                 'dst_id': country_id[cc],
-                                 'props': [self.reference]})
+            country_rels.append(
+                {'src_id': asn_id[asn], 'dst_id': country_id[cc], 'props': [self.reference]}
+            )
         # Translate to QIDs.
         for asn, action_qid in implement_rel_set:
-            implement_rels.append({'src_id': asn_id[asn],
-                                   'dst_id': action_qid,
-                                   'props': [self.reference]})
+            implement_rels.append(
+                {'src_id': asn_id[asn], 'dst_id': action_qid, 'props': [self.reference]}
+            )
 
         # Push relationships.
         self.iyp.batch_add_links('MEMBER_OF', member_of_rels)
@@ -138,7 +132,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

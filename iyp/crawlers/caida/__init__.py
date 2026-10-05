@@ -14,8 +14,9 @@ class ASRelCrawler(BaseCrawler):
     def __init__(self, organization, url, name, af):
         super().__init__(organization, url, name)
         self.af = af
-        self.reference['reference_url_info'] = \
+        self.reference['reference_url_info'] = (
             'https://publicdata.caida.org/datasets/as-relationships/serial-1/README.txt'
+        )
 
     def __get_latest_file(self):
         index = requests.get(self.reference['reference_url_data'])
@@ -36,7 +37,9 @@ class ASRelCrawler(BaseCrawler):
         file_dates.sort()
         latest_file_date, latest_file_name = file_dates[-1]
         self.reference['reference_time_modification'] = latest_file_date
-        self.reference['reference_url_data'] = os.path.join(self.reference['reference_url_data'], latest_file_name)
+        self.reference['reference_url_data'] = os.path.join(
+            self.reference['reference_url_data'], latest_file_name
+        )
         logging.info(f'Fetching file: {self.reference["reference_url_data"]}')
 
     def run(self):
@@ -55,8 +58,13 @@ class ASRelCrawler(BaseCrawler):
             left_asn, right_asn, kind = map(int, line.split('|'))
             ases.add(left_asn)
             ases.add(right_asn)
-            peers_with_links.append({'src_id': left_asn, 'dst_id': right_asn,
-                                     'props': [self.reference, {'rel': kind, 'af': self.af}]})
+            peers_with_links.append(
+                {
+                    'src_id': left_asn,
+                    'dst_id': right_asn,
+                    'props': [self.reference, {'rel': kind, 'af': self.af}],
+                }
+            )
 
         as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases)
 

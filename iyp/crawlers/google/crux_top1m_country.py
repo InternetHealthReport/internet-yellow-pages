@@ -36,9 +36,15 @@ class Crawler(BaseCrawler):
 
     def __push_data(self):
         # Create/fetch corresponding nodes in IYP
-        ranking_id = self.iyp.batch_get_nodes_by_single_prop('Ranking', 'name', self.rankings, all=False)
-        hostname_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', self.hostnames, all=False)
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', self.countries, all=False)
+        ranking_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Ranking', 'name', self.rankings, all=False
+        )
+        hostname_id = self.iyp.batch_get_nodes_by_single_prop(
+            'HostName', 'name', self.hostnames, all=False
+        )
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', self.countries, all=False
+        )
 
         # Replace link ends with QIDs
         for link in self.country_links:
@@ -98,23 +104,21 @@ class Crawler(BaseCrawler):
             self.rankings.add(ranking_name)
             self.countries.add(country_code)
 
-            self.country_links.append({
-                'src_id': ranking_name,
-                'dst_id': country_code,
-                'props': [
-                    self.reference.copy()
-                ]
-            })
+            self.country_links.append(
+                {'src_id': ranking_name, 'dst_id': country_code, 'props': [self.reference.copy()]}
+            )
 
             for row in df.itertuples():
-                self.rank_links.append({
-                    'src_id': row.hostname,
-                    'dst_id': ranking_name,
-                    'props': [
-                        self.reference.copy(),
-                        {'rank': row.rank, 'origin': row.origin, 'country_code': country_code}
-                    ]
-                })
+                self.rank_links.append(
+                    {
+                        'src_id': row.hostname,
+                        'dst_id': ranking_name,
+                        'props': [
+                            self.reference.copy(),
+                            {'rank': row.rank, 'origin': row.origin, 'country_code': country_code},
+                        ],
+                    }
+                )
             count += 1
             if count == country_batch_size:
                 count = 0
@@ -139,7 +143,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

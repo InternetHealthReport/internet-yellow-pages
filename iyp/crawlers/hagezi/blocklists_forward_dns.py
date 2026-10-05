@@ -37,18 +37,26 @@ def get_latest_scan(github_repo: str, results_dir: str):
     Return a tuple (scan date, list of download URLs).
     """
     repo = Github().get_repo(github_repo)
-    scan_dirs = sorted(entry.path for entry in repo.get_contents(results_dir) if entry.type == 'dir')
+    scan_dirs = sorted(
+        entry.path for entry in repo.get_contents(results_dir) if entry.type == 'dir'
+    )
     if not scan_dirs:
         logging.error(f'No scan directory found in {github_repo}/{results_dir}')
         raise DataNotAvailableError('Failed to find any scan directory.')
 
     latest_dir = scan_dirs[-1]
-    scan_date = datetime.strptime(latest_dir.split('/')[-1], '%Y-%m-%d').replace(tzinfo=timezone.utc)
+    scan_date = datetime.strptime(latest_dir.split('/')[-1], '%Y-%m-%d').replace(
+        tzinfo=timezone.utc
+    )
     if scan_date < datetime.now(tz=timezone.utc) - timedelta(days=MAX_AGE_IN_DAYS):
         logging.error(f'Latest scan is from {scan_date.date()}, which is too old.')
         raise DataNotAvailableError('Failed to find a recent scan.')
 
-    urls = [entry.download_url for entry in repo.get_contents(latest_dir) if entry.path.endswith('.json.gz')]
+    urls = [
+        entry.download_url
+        for entry in repo.get_contents(latest_dir)
+        if entry.path.endswith('.json.gz')
+    ]
     if not urls:
         logging.error(f'No result file found in {latest_dir}')
         raise DataNotAvailableError('Failed to find any result file.')
@@ -76,7 +84,7 @@ class Crawler(BaseCrawler):
         # Relationships. The DNS data describes one measurement and is independent of
         # the list a name was taken from, so these are deduplicated globally and use the
         # crawler-wide reference.
-        self.part_of = set()     # (host name, domain name)
+        self.part_of = set()  # (host name, domain name)
         self.managed_by = set()  # (domain name, name server)
         # Record type -> set of (host name, IP). Kept separate instead of in a single
         # dict to save memory, since this is by far the largest structure.
@@ -155,7 +163,9 @@ class Crawler(BaseCrawler):
         list_reference['reference_org'] = HAGEZI_ORG
         list_reference['reference_url_data'] = url
         list_reference['reference_url_info'] = HAGEZI_URL_INFO
-        list_reference['reference_time_modification'] = self.get_list_modification_time(header, url, generated_at)
+        list_reference['reference_time_modification'] = self.get_list_modification_time(
+            header, url, generated_at
+        )
         self.list_reference[list_name] = list_reference
         list_hosts = self.list_hosts.setdefault(list_name, set())
 
@@ -196,8 +206,10 @@ class Crawler(BaseCrawler):
                     expected_type = 'AAAA' if ':' in ip else 'A'
                     if expected_type != record_type:
                         # Keep the data as reported, but this should not happen.
-                        logging.warning(f'{record_type} record of "{host_name}" contains the '
-                                        f'{expected_type} address "{ip}"')
+                        logging.warning(
+                            f'{record_type} record of "{host_name}" contains the '
+                            f'{expected_type} address "{ip}"'
+                        )
                     self.resolves_to[record_type].add((host_name, ip))
 
             for name_server in record['nameserver_ips']:
@@ -217,8 +229,10 @@ class Crawler(BaseCrawler):
                     continue
                 self.resolves_to['AAAA' if ':' in ip else 'A'].add((ns_name, ip))
 
-        logging.info(f'Processed list "{list_name}": {records} records, '
-                     f'{failed_resolutions} failed resolutions, {missing_zones} records without zone')
+        logging.info(
+            f'Processed list "{list_name}": {records} records, '
+            f'{failed_resolutions} failed resolutions, {missing_zones} records without zone'
+        )
         if records == 0:
             logging.warning(f'List "{list_name}" contains no record.')
         elif failed_resolutions == records:
@@ -246,9 +260,7 @@ class Crawler(BaseCrawler):
     def resolves_to_link_generator(self, host_id: dict, ip_id: dict):
         for pairs in self.resolves_to.values():
             for host_name, ip in pairs:
-                yield {'src_id': host_id[host_name],
-                       'dst_id': ip_id[ip],
-                       'props': [self.reference]}
+                yield {'src_id': host_id[host_name], 'dst_id': ip_id[ip], 'props': [self.reference]}
 
     def run(self):
         """Fetch the latest scan of all blocklists and push the results to IYP."""
@@ -269,18 +281,30 @@ class Crawler(BaseCrawler):
                 self.ips.add(ip)
 
         # Get/create nodes.
-        host_id = self.iyp.batch_get_nodes_by_single_prop('HostName', 'name', self.host_names,
-                                                          all=False, batch_size=100000)
-        domain_id = self.iyp.batch_get_nodes_by_single_prop('DomainName', 'name', self.domain_names,
-                                                            all=False, batch_size=100000)
-        ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', self.ips, all=False, batch_size=100000)
-        tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', set(self.list_hosts), all=False)
-        self.iyp.batch_add_node_label([host_id[ns] for ns in self.name_servers], 'AuthoritativeNameServer')
+        host_id = self.iyp.batch_get_nodes_by_single_prop(
+            'HostName', 'name', self.host_names, all=False, batch_size=100000
+        )
+        domain_id = self.iyp.batch_get_nodes_by_single_prop(
+            'DomainName', 'name', self.domain_names, all=False, batch_size=100000
+        )
+        ip_id = self.iyp.batch_get_nodes_by_single_prop(
+            'IP', 'ip', self.ips, all=False, batch_size=100000
+        )
+        tag_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Tag', 'label', set(self.list_hosts), all=False
+        )
+        self.iyp.batch_add_node_label(
+            [host_id[ns] for ns in self.name_servers], 'AuthoritativeNameServer'
+        )
 
         # Push all links to IYP.
         self.iyp.batch_add_links('CATEGORIZED', self.categorized_link_generator(host_id, tag_id))
-        self.iyp.batch_add_links('PART_OF', self.generic_link_generator(self.part_of, host_id, domain_id))
-        self.iyp.batch_add_links('MANAGED_BY', self.generic_link_generator(self.managed_by, domain_id, host_id))
+        self.iyp.batch_add_links(
+            'PART_OF', self.generic_link_generator(self.part_of, host_id, domain_id)
+        )
+        self.iyp.batch_add_links(
+            'MANAGED_BY', self.generic_link_generator(self.managed_by, domain_id, host_id)
+        )
         self.iyp.batch_add_links('RESOLVES_TO', self.resolves_to_link_generator(host_id, ip_id))
 
     def unit_test(self):
@@ -297,7 +321,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

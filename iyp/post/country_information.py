@@ -21,15 +21,16 @@ class PostProcess(BasePostProcess):
                 logging.error(f'Country code "{country_code}" is not ISO 3166-1 alpha-2 conform.')
                 continue
             country_info = iso3166.countries_by_alpha2[country_code]
-            new_props = {'name': country_info.apolitical_name,
-                         'alpha3': country_info.alpha3}
-            self.iyp.tx.run("""
+            new_props = {'name': country_info.apolitical_name, 'alpha3': country_info.alpha3}
+            self.iyp.tx.run(
+                """
                             MATCH (n:Country)
                             WHERE elementId(n) = $id
                             SET n += $props
                             """,
-                            id=country_id[country_code],
-                            props=new_props)
+                id=country_id[country_code],
+                props=new_props,
+            )
         self.iyp.commit()
 
     def unit_test(self):
@@ -51,7 +52,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/post.' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

@@ -52,22 +52,26 @@ class Crawler(BaseCrawler):
             nodes.add(node2)
             # Add relationship. We need to replace the source and destination IDs with
             # the appropriate QID once we fetched/created the nodes.
-            links.append({
-                'src_id': node1,
-                'dst_id': node2,
-                # List of properties to add to the relationship. Should be a list of
-                # dicts that will be merged.
-                'props': [
-                    self.reference,  # Always include the reference data.
-                    {'property_value': value}  # Optionally add your own properties.
-                ]
-            })
+            links.append(
+                {
+                    'src_id': node1,
+                    'dst_id': node2,
+                    # List of properties to add to the relationship. Should be a list of
+                    # dicts that will be merged.
+                    'props': [
+                        self.reference,  # Always include the reference data.
+                        {'property_value': value},  # Optionally add your own properties.
+                    ],
+                }
+            )
 
         # Get/create nodes. In most cases nodes are identified by a single property
         # (called "id" in this example) and have no additional properties.
         # This function gets/creates nodes for all values in the "nodes" set.
         # For more complex scenarios check the batch_get_nodes function.
-        node_id = self.iyp.batch_get_nodes_by_single_prop('EXAMPLE_NODE_LABEL', 'id', nodes, all=False)
+        node_id = self.iyp.batch_get_nodes_by_single_prop(
+            'EXAMPLE_NODE_LABEL', 'id', nodes, all=False
+        )
         # Replace node IDs with actual QIDs
         for link in links:
             link['src_id'] = node_id[link['src_id']]
@@ -90,7 +94,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

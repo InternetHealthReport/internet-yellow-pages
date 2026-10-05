@@ -27,19 +27,17 @@ class Crawler(BaseCrawler):
     # See https://blog.cloudflare.com/radar-domain-rankings/
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/'  # noqa: E501
+        )
 
     def run(self):
         """Fetch data and push to IYP."""
 
-        self.cf_qid = self.iyp.get_node(
-            'Ranking', {'name': 'Cloudflare top 100 domains'})
+        self.cf_qid = self.iyp.get_node('Ranking', {'name': 'Cloudflare top 100 domains'})
 
         # Fetch data
-        headers = {
-            'Authorization': 'Bearer ' + API_KEY,
-            'Content-Type': 'application/json'
-        }
+        headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json'}
 
         req = requests.get(self.reference['reference_url_data'], headers=headers)
         req.raise_for_status()
@@ -82,7 +80,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

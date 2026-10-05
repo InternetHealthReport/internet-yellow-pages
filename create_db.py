@@ -28,7 +28,9 @@ def log_commit_info():
         logging.warning(tag.stderr.strip())
         return
     try:
-        commit_info = sp.run(['git', 'show', '--no-patch', '--format=%H %cI'], capture_output=True, text=True)
+        commit_info = sp.run(
+            ['git', 'show', '--no-patch', '--format=%H %cI'], capture_output=True, text=True
+        )
         commit_info.check_returncode()
     except sp.CalledProcessError as e:
         logging.warning(e)
@@ -44,7 +46,9 @@ def log_commit_info():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--archive', action='store_true', help='push dump to archive server')
-    parser.add_argument('-d', '--directory', help='store database in a bind mount instead of a volume')
+    parser.add_argument(
+        '-d', '--directory', help='store database in a bind mount instead of a volume'
+    )
     args = parser.parse_args()
 
     today = datetime.now(tz=timezone.utc)
@@ -67,7 +71,7 @@ def main():
         format=FORMAT,
         filename=os.path.join(dump_dir, f'iyp-{date}.log'),
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
     logging.info(f'Started: {sys.argv}')
     log_commit_info()
@@ -97,9 +101,7 @@ def main():
     container = client.containers.run(
         'neo4j:' + NEO4J_VERSION,
         name=f'iyp-{date}',
-        ports={
-            7687: conf['neo4j']['port']
-        },
+        ports={7687: conf['neo4j']['port']},
         volumes={
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
         },
@@ -110,7 +112,7 @@ def main():
         },
         user=os.getuid(),
         remove=True,
-        detach=True
+        detach=True,
     )
 
     # Wait for the container to be ready
@@ -233,7 +235,7 @@ def main():
             neo4j_volume: {'bind': '/data', 'mode': 'rw'},
             dump_dir: {'bind': '/dumps', 'mode': 'rw'},
         },
-        user=os.getuid()
+        user=os.getuid(),
     )
 
     # Delete the data volume once the dump been created

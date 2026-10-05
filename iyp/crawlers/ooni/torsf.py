@@ -13,7 +13,6 @@ label = 'OONI Tor Snowflake Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'torsf')
         self.categories = ['ok', 'failure']

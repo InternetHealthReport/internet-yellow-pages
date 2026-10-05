@@ -21,9 +21,7 @@ class PostProcess(BasePostProcess):
         destination nodes.
         """
         prop_conditions = (
-            ' AND '.join([f"r.{k} = '{v}'" for k, v in prop_dict.items()])
-            if prop_dict
-            else 'TRUE'
+            ' AND '.join([f"r.{k} = '{v}'" for k, v in prop_dict.items()]) if prop_dict else 'TRUE'
         )
         prop_str = ', '.join([f'r.{k}' for k in prop_dict.keys()]) if prop_dict else '*'
 

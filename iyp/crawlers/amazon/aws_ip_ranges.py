@@ -15,7 +15,9 @@ ORG = 'Amazon'
 NAME = 'amazon.aws_ip_ranges'
 
 # AWS documentation page with region-to-country mapping
-AWS_REGIONS_DOC_URL = 'https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html'
+AWS_REGIONS_DOC_URL = (
+    'https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html'
+)
 
 # Manual mapping for country names that do not match iso3166 exactly.
 # These are edge cases where AWS uses different naming conventions.
@@ -97,7 +99,9 @@ def fetch_region_to_country_mapping():
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://docs.aws.amazon.com/vpc/latest/userguide/aws-ip-ranges.html'
+        self.reference['reference_url_info'] = (
+            'https://docs.aws.amazon.com/vpc/latest/userguide/aws-ip-ranges.html'
+        )
 
     def run(self):
         """Fetch AWS IP ranges and push to IYP."""
@@ -118,7 +122,7 @@ class Crawler(BaseCrawler):
                 dt = datetime.strptime(data['createDate'], '%Y-%m-%d-%H-%M-%S')
                 self.reference['reference_time_modification'] = dt.replace(tzinfo=timezone.utc)
             except ValueError:
-                logging.warning(f"Could not parse createDate: {data['createDate']}")
+                logging.warning(f'Could not parse createDate: {data["createDate"]}')
 
         # Parse prefixes
         items = list()
@@ -128,23 +132,27 @@ class Crawler(BaseCrawler):
             if region not in region_to_country:
                 unknown_regions.add(region)
             country_code = region_to_country.get(region)
-            items.append({
-                'prefix': IPv4Network(item['ip_prefix']).compressed,
-                'region': item['region'],
-                'service': item['service'],
-                'country_code': country_code,
-            })
+            items.append(
+                {
+                    'prefix': IPv4Network(item['ip_prefix']).compressed,
+                    'region': item['region'],
+                    'service': item['service'],
+                    'country_code': country_code,
+                }
+            )
         for item in data['ipv6_prefixes']:
             region = item['region']
             if region not in region_to_country:
                 unknown_regions.add(region)
             country_code = region_to_country.get(region)
-            items.append({
-                'prefix': IPv6Network(item['ipv6_prefix']).compressed,
-                'region': item['region'],
-                'service': item['service'],
-                'country_code': country_code,
-            })
+            items.append(
+                {
+                    'prefix': IPv6Network(item['ipv6_prefix']).compressed,
+                    'region': item['region'],
+                    'service': item['service'],
+                    'country_code': country_code,
+                }
+            )
 
         if unknown_regions:
             logging.warning(f'Regions without country mapping: {unknown_regions}')
@@ -170,9 +178,7 @@ class Crawler(BaseCrawler):
         # Add Prefix label to all GeoPrefix nodes
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
-        tag_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Tag', 'label', services, all=False
-        )
+        tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', services, all=False)
 
         country_id = self.iyp.batch_get_nodes_by_single_prop(
             'Country', 'country_code', countries, all=False
@@ -189,21 +195,25 @@ class Crawler(BaseCrawler):
             prefix = item['prefix']
             prefix_qid = prefix_id[prefix]
             # CATEGORIZED -> Tag (service)
-            categorized_links.append({
-                'src_id': prefix_qid,
-                'dst_id': tag_id[item['service']],
-                'props': [self.reference, {'region': item['region']}]
-            })
+            categorized_links.append(
+                {
+                    'src_id': prefix_qid,
+                    'dst_id': tag_id[item['service']],
+                    'props': [self.reference, {'region': item['region']}],
+                }
+            )
 
             # COUNTRY -> Country
             country_code = item['country_code']
             prefix_country_pair = (prefix, country_code)
             if country_code and prefix_country_pair not in prefix_country_pairs:
-                country_links.append({
-                    'src_id': prefix_qid,
-                    'dst_id': country_id[country_code],
-                    'props': [self.reference, {'region': item['region']}]
-                })
+                country_links.append(
+                    {
+                        'src_id': prefix_qid,
+                        'dst_id': country_id[country_code],
+                        'props': [self.reference, {'region': item['region']}],
+                    }
+                )
                 prefix_country_pairs.add(prefix_country_pair)
 
         # Create relationships
@@ -224,7 +234,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

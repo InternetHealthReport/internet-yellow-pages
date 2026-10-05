@@ -11,7 +11,6 @@ from iyp.crawlers.ooni.utils import grabber
 
 # OONI Crawler base class
 class OoniCrawler(BaseCrawler):
-
     def __init__(self, organization, url, name, dataset):
         """OoniCrawler initialization requires the dataset name."""
         super().__init__(organization, url, name)
@@ -116,9 +115,7 @@ class OoniCrawler(BaseCrawler):
 
         # First, add the nodes and store their IDs directly as returned dictionaries
         self.node_ids = {
-            'asn': self.iyp.batch_get_nodes_by_single_prop(
-                'AS', 'asn', self.all_asns, all=False
-            ),
+            'asn': self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', self.all_asns, all=False),
             'country': self.iyp.batch_get_nodes_by_single_prop(
                 'Country', 'country_code', self.all_countries
             ),
@@ -149,9 +146,7 @@ class OoniCrawler(BaseCrawler):
             self.iyp.batch_add_links('COUNTRY', country_links)
 
         # Batch add node labels
-        self.iyp.batch_add_node_label(
-            list(self.node_ids['dns_resolver'].values()), 'Resolver'
-        )
+        self.iyp.batch_add_node_label(list(self.node_ids['dns_resolver'].values()), 'Resolver')
 
     def aggregate_results(self):
         """Populate the self.all_percentages dict by aggregating results and calculating
@@ -172,9 +167,7 @@ class OoniCrawler(BaseCrawler):
             counts[category] = counts.get(category, 0)
 
         percentages = {
-            category: (
-                (counts[category] / total_count) * 100 if total_count > 0 else 0
-            )
+            category: ((counts[category] / total_count) * 100 if total_count > 0 else 0)
             for category in self.categories
         }
 

@@ -21,7 +21,9 @@ NAME = 'nro.delegated_stats'
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt'
+        self.reference['reference_url_info'] = (
+            'https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt'
+        )
 
     @staticmethod
     def ffs(x):
@@ -35,7 +37,11 @@ class Crawler(BaseCrawler):
         start = IPv4Address(ip)
         # Last address of this range
         stop = start + hosts - 1
-        remaining = int.from_bytes(stop.packed, byteorder='big') - int.from_bytes(start.packed, byteorder='big') + 1
+        remaining = (
+            int.from_bytes(stop.packed, byteorder='big')
+            - int.from_bytes(start.packed, byteorder='big')
+            + 1
+        )
         next_address = start
         while remaining > 0:
             # Get the largest possible prefix length by checking the last bit set.
@@ -64,7 +70,16 @@ class Crawler(BaseCrawler):
 
         # Read delegated-stats file. see documentation:
         # https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt
-        self.fields_name = ['registry', 'cc', 'type', 'start', 'value', 'date', 'status', 'opaque-id']
+        self.fields_name = [
+            'registry',
+            'cc',
+            'type',
+            'start',
+            'value',
+            'date',
+            'status',
+            'opaque-id',
+        ]
 
         opaqueids = set()
         prefixes = set()
@@ -124,12 +139,20 @@ class Crawler(BaseCrawler):
                     opaqueids.add(rec['opaque-id'])
                     for i in asns_to_link:
                         asn_qid = asn_id[i]
-                        asn_country_links.append({'src_id': asn_qid,
-                                                  'dst_id': rec['cc'],
-                                                  'props': [self.reference, additional_props]})
-                        asn_status_links[rec['status']].append({'src_id': asn_qid,
-                                                                'dst_id': rec['opaque-id'],
-                                                                'props': [self.reference, additional_props]})
+                        asn_country_links.append(
+                            {
+                                'src_id': asn_qid,
+                                'dst_id': rec['cc'],
+                                'props': [self.reference, additional_props],
+                            }
+                        )
+                        asn_status_links[rec['status']].append(
+                            {
+                                'src_id': asn_qid,
+                                'dst_id': rec['opaque-id'],
+                                'props': [self.reference, additional_props],
+                            }
+                        )
             elif rec['type'] == 'ipv4' or rec['type'] == 'ipv6':
                 countries.add(rec['cc'])
                 opaqueids.add(rec['opaque-id'])
@@ -156,7 +179,9 @@ class Crawler(BaseCrawler):
                             needs_decomposition = True
                     if needs_decomposition:
                         # Decompose into CIDR prefixes.
-                        record_prefixes = [prefix for prefix in self.decompose_prefix(start, rec['value'])]
+                        record_prefixes = [
+                            prefix for prefix in self.decompose_prefix(start, rec['value'])
+                        ]
                     else:
                         # Valid prefix, no decomposition required.
                         record_prefixes = [prefix]
@@ -168,18 +193,32 @@ class Crawler(BaseCrawler):
                 prefixes.update(record_prefixes)
                 for prefix in record_prefixes:
                     # Create links for prefix(es)
-                    prefix_country_links.append({'src_id': prefix,
-                                                 'dst_id': rec['cc'],
-                                                 'props': [self.reference, additional_props]})
-                    prefix_status_links[rec['status']].append({'src_id': prefix,
-                                                               'dst_id': rec['opaque-id'],
-                                                               'props': [self.reference, additional_props]})
+                    prefix_country_links.append(
+                        {
+                            'src_id': prefix,
+                            'dst_id': rec['cc'],
+                            'props': [self.reference, additional_props],
+                        }
+                    )
+                    prefix_status_links[rec['status']].append(
+                        {
+                            'src_id': prefix,
+                            'dst_id': rec['opaque-id'],
+                            'props': [self.reference, additional_props],
+                        }
+                    )
 
         # Create all nodes
-        opaqueid_id = self.iyp.batch_get_nodes_by_single_prop('OpaqueID', 'id', opaqueids, all=False)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('RIRPrefix', 'prefix', prefixes, all=False)
+        opaqueid_id = self.iyp.batch_get_nodes_by_single_prop(
+            'OpaqueID', 'id', opaqueids, all=False
+        )
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'RIRPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
 
         # Replace with QIDs
         for link in asn_country_links:
@@ -217,7 +256,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

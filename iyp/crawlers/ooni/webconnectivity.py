@@ -17,7 +17,6 @@ label = 'OONI Web Connectivity Test'
 
 
 class Crawler(OoniCrawler):
-
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name, 'webconnectivity')
         self.all_urls = set()
@@ -118,9 +117,7 @@ class Crawler(OoniCrawler):
 
         self.node_ids.update(
             {
-                'ip': self.iyp.batch_get_nodes_by_single_prop(
-                    'IP', 'ip', ips, all=False
-                ),
+                'ip': self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False),
                 'hostname': self.iyp.batch_get_nodes_by_single_prop(
                     'HostName', 'name', hostnames, all=False
                 ),

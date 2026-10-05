@@ -11,8 +11,7 @@ import requests_cache
 from neo4j.spatial import WGS84Point
 
 from iyp import BaseCrawler
-from iyp.crawlers.peeringdb.ix import (handle_social_media,
-                                       set_reference_time_from_metadata)
+from iyp.crawlers.peeringdb.ix import handle_social_media, set_reference_time_from_metadata
 
 ORG = 'PeeringDB'
 
@@ -40,10 +39,14 @@ class Crawler(BaseCrawler):
         """Initialisation for pushing peeringDB organizations to IYP."""
 
         self.headers = {'Authorization': 'Api-Key ' + API_KEY}
-        self.requests = requests_cache.CachedSession(os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION)
+        self.requests = requests_cache.CachedSession(
+            os.path.join(CACHE_DIR, ORG), expire_after=CACHE_DURATION
+        )
 
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20org'
+        self.reference['reference_url_info'] = (
+            'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20org'
+        )
 
     def run(self):
         """Fetch organizations information from PeeringDB and push to IYP."""
@@ -84,7 +87,9 @@ class Crawler(BaseCrawler):
         self.org_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', orgs)
         self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names)
         self.website_id = self.iyp.batch_get_nodes_by_single_prop('URL', 'url', websites, all=False)
-        self.country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
+        self.country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
         self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
         self.orgid_id = self.iyp.batch_get_nodes_by_single_prop(ORGID_LABEL, 'id', orgids)
 
@@ -96,7 +101,6 @@ class Crawler(BaseCrawler):
         orgid_links = []
 
         for org in organizations:
-
             flat_org = {}
             try:
                 flat_org = dict(flatdict.FlatDict(org))
@@ -105,23 +109,31 @@ class Crawler(BaseCrawler):
 
             orgid_qid = self.orgid_id[org['id']]
             org_qid = self.org_id[org['name'].strip()]
-            orgid_links.append({'src_id': org_qid, 'dst_id': orgid_qid, 'props': [self.reference, flat_org]})
+            orgid_links.append(
+                {'src_id': org_qid, 'dst_id': orgid_qid, 'props': [self.reference, flat_org]}
+            )
 
             name_qid = self.name_id[org['name'].strip()]
             name_links.append({'src_id': org_qid, 'dst_id': name_qid, 'props': [self.reference]})
 
             if 'website' in org and org['website'] in self.website_id:
                 website_qid = self.website_id[org['website'].strip()]
-                website_links.append({'src_id': org_qid, 'dst_id': website_qid, 'props': [self.reference]})
+                website_links.append(
+                    {'src_id': org_qid, 'dst_id': website_qid, 'props': [self.reference]}
+                )
 
             if 'country' in org and org['country'] in self.country_id:
                 country_qid = self.country_id[org['country']]
-                country_links.append({'src_id': org_qid, 'dst_id': country_qid, 'props': [self.reference]})
+                country_links.append(
+                    {'src_id': org_qid, 'dst_id': country_qid, 'props': [self.reference]}
+                )
 
             if org['latitude'] and org['longitude']:
                 position = WGS84Point((org['longitude'], org['latitude']))
                 point_qid = self.point_id[position]
-                point_links.append({'src_id': org_qid, 'dst_id': point_qid, 'props': [self.reference]})
+                point_links.append(
+                    {'src_id': org_qid, 'dst_id': point_qid, 'props': [self.reference]}
+                )
 
         # Push all links to IYP
         self.iyp.batch_add_links('NAME', name_links)
@@ -144,7 +156,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

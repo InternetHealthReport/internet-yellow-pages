@@ -36,7 +36,8 @@ class DnsTopCrawler(BaseCrawler):
             """MATCH (dn:DomainName)-[r:RANK]-(:Ranking)
                 WHERE r.rank <= $rank_threshold
                 RETURN elementId(dn) AS _id, dn.name AS dname""",
-            rank_threshold=RANK_THRESHOLD)
+            rank_threshold=RANK_THRESHOLD,
+        )
 
         self.domain_names_id = {node['dname']: node['_id'] for node in existing_dn}
 
@@ -70,9 +71,7 @@ class DnsTopCrawler(BaseCrawler):
         self.session.headers['Authorization'] = 'Bearer ' + API_KEY
         self.session.headers['Content-Type'] = 'application/json'
 
-        retries = Retry(total=10,
-                        backoff_factor=0.1,
-                        status_forcelist=[500, 502, 503, 504])
+        retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
 
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
@@ -158,17 +157,21 @@ class DnsTopCrawler(BaseCrawler):
                             invalid_domain = domains.pop(pop_idx)
                             if len(domains) == 0:
                                 # No domains left in batch.
-                                logging.warning(f'Ignoring invalid hostname "{invalid_domain}", no domains left in '
-                                                'batch.')
+                                logging.warning(
+                                    f'Ignoring invalid hostname "{invalid_domain}", no domains left in '
+                                    'batch.'
+                                )
                                 self.batches.pop[query.batch_id]
                                 continue
                             fpaths = batch_info['fpaths']
                             fpaths.pop(invalid_domain)
-                            logging.warning(f'Ignoring invalid hostname "{invalid_domain}" and trying again.')
+                            logging.warning(
+                                f'Ignoring invalid hostname "{invalid_domain}" and trying again.'
+                            )
                             self.batches[query.batch_id] = {
                                 'url': self.make_url(domains),
                                 'domains': domains,
-                                'fpaths': fpaths
+                                'fpaths': fpaths,
                             }
                             continue
 
@@ -184,7 +187,9 @@ class DnsTopCrawler(BaseCrawler):
                         # Get the reference time from the first file.
                         try:
                             date_str = data['meta']['dateRange'][0]['endTime']
-                            date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+                            date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').replace(
+                                tzinfo=timezone.utc
+                            )
                             self.reference['reference_time_modification'] = date
                         except (KeyError, ValueError, TypeError) as e:
                             logging.warning(f'Failed to get modification time: {e}')
@@ -199,7 +204,9 @@ class DnsTopCrawler(BaseCrawler):
                             json.dump({domain: result}, fp)
 
                 except Exception as e:
-                    logging.error(f'Failed to fetch data for domains: {self.batches[query.batch_id]["domains"]}: {e}')
+                    logging.error(
+                        f'Failed to fetch data for domains: {self.batches[query.batch_id]["domains"]}: {e}'
+                    )
                     continue
             num_retries += 1
         if self.batches:

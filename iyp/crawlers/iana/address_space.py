@@ -23,20 +23,36 @@ class Crawler(BaseCrawler):
     def run(self):
         """Fetch and process all IANA address space data."""
         # Fetch data from all four sources
-        self.reference['reference_url_info'] = 'https://www.iana.org/assignments/ipv4-address-space/'
-        self.reference['reference_url_data'] = 'https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://www.iana.org/assignments/ipv4-address-space/'
+        )
+        self.reference['reference_url_data'] = (
+            'https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv'  # noqa: E501
+        )
         self._process_general(is_ipv6=False)
 
-        self.reference['reference_url_info'] = 'https://www.iana.org/assignments/ipv6-unicast-address-assignments/'
-        self.reference['reference_url_data'] = 'https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://www.iana.org/assignments/ipv6-unicast-address-assignments/'
+        )
+        self.reference['reference_url_data'] = (
+            'https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv'  # noqa: E501
+        )
         self._process_general(is_ipv6=True)
 
         # Process special-purpose addresses
-        self.reference['reference_url_info'] = 'https://www.iana.org/assignments/iana-ipv4-special-registry/'
-        self.reference['reference_url_data'] = 'https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://www.iana.org/assignments/iana-ipv4-special-registry/'
+        )
+        self.reference['reference_url_data'] = (
+            'https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv'  # noqa: E501
+        )
         self._process_special()
-        self.reference['reference_url_info'] = 'https://www.iana.org/assignments/iana-ipv6-special-registry/'
-        self.reference['reference_url_data'] = 'https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry-1.csv'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://www.iana.org/assignments/iana-ipv6-special-registry/'
+        )
+        self.reference['reference_url_data'] = (
+            'https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry-1.csv'  # noqa: E501
+        )
         self._process_special()
 
     def _fetch_csv(self):
@@ -94,20 +110,23 @@ class Crawler(BaseCrawler):
             prefixes.add(normalized_prefix)
             organizations.add(org_name)
 
-            rel_props = {
-                'Designation': designation,
-                'Date': row['Date']
-            }
+            rel_props = {'Designation': designation, 'Date': row['Date']}
 
-            links_by_type[rel_type].append({
-                'src_id': normalized_prefix,
-                'dst_id': org_name,
-                'props': [self.reference, rel_props]
-            })
+            links_by_type[rel_type].append(
+                {
+                    'src_id': normalized_prefix,
+                    'dst_id': org_name,
+                    'props': [self.reference, rel_props],
+                }
+            )
 
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('IANAPrefix', 'prefix', prefixes, all=False)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'IANAPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
-        org_id = self.iyp.batch_get_nodes_by_single_prop('Organization', 'name', organizations, all=False)
+        org_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Organization', 'name', organizations, all=False
+        )
 
         for rel_type, links in links_by_type.items():
             if not links:
@@ -140,7 +159,13 @@ class Crawler(BaseCrawler):
         for row in csv_data:
             # Cast boolean properties. Some contain footnotes, some are "N/A" so require
             # special handling.
-            for prop in ['Source', 'Destination', 'Forwardable', 'Globally Reachable', 'Reserved-by-Protocol']:
+            for prop in [
+                'Source',
+                'Destination',
+                'Forwardable',
+                'Globally Reachable',
+                'Reserved-by-Protocol',
+            ]:
                 row[prop] = self._parse_bool_property(row[prop])
 
             ip_prefix_str = row.pop('Address Block')
@@ -149,16 +174,12 @@ class Crawler(BaseCrawler):
             if ip_prefix_str == '192.0.0.170/32, 192.0.0.171/32':
                 prefixes.add('192.0.0.170/32')
                 prefixes.add('192.0.0.171/32')
-                links.append({
-                    'src_id': '192.0.0.170/32',
-                    'dst_id': iana_qid,
-                    'props': [self.reference, row]
-                })
-                links.append({
-                    'src_id': '192.0.0.171/32',
-                    'dst_id': iana_qid,
-                    'props': [self.reference, row]
-                })
+                links.append(
+                    {'src_id': '192.0.0.170/32', 'dst_id': iana_qid, 'props': [self.reference, row]}
+                )
+                links.append(
+                    {'src_id': '192.0.0.171/32', 'dst_id': iana_qid, 'props': [self.reference, row]}
+                )
                 continue
 
             # Some entries contain a footnote, e.g., "192.0.0.0/24 [2]"
@@ -168,13 +189,13 @@ class Crawler(BaseCrawler):
             normalized_prefix = ip_network(ip_prefix_str).compressed
             prefixes.add(normalized_prefix)
 
-            links.append({
-                'src_id': normalized_prefix,
-                'dst_id': iana_qid,
-                'props': [self.reference, row]
-            })
+            links.append(
+                {'src_id': normalized_prefix, 'dst_id': iana_qid, 'props': [self.reference, row]}
+            )
 
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('IANAPrefix', 'prefix', prefixes, all=False)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'IANAPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
         for link in links:
@@ -196,7 +217,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

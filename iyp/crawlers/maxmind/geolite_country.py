@@ -17,7 +17,9 @@ ORG = 'MaxMind'
 URL = 'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip'
 NAME = 'maxmind.geolite_country'
 
-SHA256_URL = 'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip.sha256'
+SHA256_URL = (
+    'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip.sha256'
+)
 
 MAXMIND_ACCOUNT_ID = ''
 MAXMIND_LICENSE_KEY = ''
@@ -29,7 +31,9 @@ if os.path.exists('config.json'):
 class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/'
+        self.reference['reference_url_info'] = (
+            'https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/'
+        )
 
     def run(self):
         """Fetch data and push to IYP."""
@@ -62,7 +66,9 @@ class Crawler(BaseCrawler):
             raise ValueError('Validation of SHA256 hash or filename failed.')
 
         set_modification_time_from_last_modified_header(self.reference, db_res)
-        logging.info(f'Downloaded file:  {filename} Last-Modified: {self.reference["reference_time_modification"]}')
+        logging.info(
+            f'Downloaded file:  {filename} Last-Modified: {self.reference["reference_time_modification"]}'
+        )
 
         logging.info('Parsing data...')
 
@@ -123,15 +129,19 @@ class Crawler(BaseCrawler):
                             'country_iso_code': r.country_iso_code,
                             'country_name': r.country_name,
                             'is_in_european_union': r.is_in_european_union,
-                        }
-                    ]
+                        },
+                    ],
                 }
             )
 
         logging.info('Pushing data...')
 
-        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries, all=False)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('GeoPrefix', 'prefix', prefixes, all=False)
+        country_id = self.iyp.batch_get_nodes_by_single_prop(
+            'Country', 'country_code', countries, all=False
+        )
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'GeoPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
 
         for link in links:

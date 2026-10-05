@@ -24,7 +24,9 @@ class Crawler(BaseCrawler):
     def __init__(self, organization, url, name):
         self.__initialize_session()
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://atlas.ripe.net/docs/apis/rest-api-manual/probes/'
+        self.reference['reference_url_info'] = (
+            'https://atlas.ripe.net/docs/apis/rest-api-manual/probes/'
+        )
         # Atlas API is real-time, i.e., we can use the same timestamp.
         self.reference['reference_time_modification'] = self.reference['reference_time_fetch']
 
@@ -33,7 +35,7 @@ class Crawler(BaseCrawler):
         retry = Retry(
             backoff_factor=0.1,
             status_forcelist=(429, 500, 502, 503, 504),
-            respect_retry_after_header=True
+            respect_retry_after_header=True,
         )
         adapter = HTTPAdapter(max_retries=retry)
         self.session.mount('http://', adapter)
@@ -42,11 +44,15 @@ class Crawler(BaseCrawler):
     @staticmethod
     def __process_response(response: requests.Response):
         if response.status_code != requests.codes.ok:
-            raise RequestStatusError(f'Request to {response.url} failed with status: {response.status_code}')
+            raise RequestStatusError(
+                f'Request to {response.url} failed with status: {response.status_code}'
+            )
         try:
             data = response.json()
         except json.decoder.JSONDecodeError as e:
-            raise RequestStatusError(f'Decoding JSON reply from {response.url} failed with exception: {e}')
+            raise RequestStatusError(
+                f'Decoding JSON reply from {response.url} failed with exception: {e}'
+            )
         if 'next' not in data or 'results' not in data:
             raise MissingKeyError('"next" or "results" key missing from response data.')
 
@@ -67,9 +73,7 @@ class Crawler(BaseCrawler):
             s.add(v)
 
     def run(self):
-        params = {'format': 'json',
-                  'is_public': True,
-                  'page_size': 500}
+        params = {'format': 'json', 'is_public': True, 'page_size': 500}
         r = self.session.get(URL, params=params)
         next_url, data = self.__process_response(r)
         while next_url:
@@ -93,8 +97,10 @@ class Crawler(BaseCrawler):
                 logging.error(f'Probe without ID. Should never happen: {probe}')
                 continue
             if probe_id in probe_ids:
-                logging.warning(f'Duplicate probe ID: {probe_id}. Probably caused by changing probe connectivity while '
-                                'fetching.')
+                logging.warning(
+                    f'Duplicate probe ID: {probe_id}. Probably caused by changing probe connectivity while '
+                    'fetching.'
+                )
                 continue
 
             ipv4 = probe['address_v4']
@@ -118,8 +124,10 @@ class Crawler(BaseCrawler):
                 if country_code in iso3166.countries_by_alpha2:
                     countries.add(country_code)
                 else:
-                    logging.warning(f'Skipping creation of COUNTRY relationship of probe {probe["id"]} due to non-ISO '
-                                    f'country code: {country_code}')
+                    logging.warning(
+                        f'Skipping creation of COUNTRY relationship of probe {probe["id"]} due to non-ISO '
+                        f'country code: {country_code}'
+                    )
             else:
                 # Our country_code property formatter does not like None objects, so
                 # remove the property instead.
@@ -132,7 +140,9 @@ class Crawler(BaseCrawler):
                     # There is at least one probe with invalid coordinates.
                     if long < -180 or long > 180 or lat < -90 or lat > 90:
                         probe['geometry'] = None
-                        logging.warning(f'Ignoring invalid geo coordinates of probe {probe_id}: {lat=} {long=}')
+                        logging.warning(
+                            f'Ignoring invalid geo coordinates of probe {probe_id}: {lat=} {long=}'
+                        )
                     else:
                         points.add(WGS84Point((long, lat)))
 
@@ -144,7 +154,9 @@ class Crawler(BaseCrawler):
         # push nodes
         probe_id = dict()
         # Each probe is a JSON object with nested fields, so we need to flatten it.
-        flattened_probes = [dict(flatdict.FlatterDict(probe, delimiter='_')) for probe in valid_probes]
+        flattened_probes = [
+            dict(flatdict.FlatterDict(probe, delimiter='_')) for probe in valid_probes
+        ]
         probe_id = self.iyp.batch_get_nodes('AtlasProbe', flattened_probes, ['id'])
         ip_id = self.iyp.batch_get_nodes_by_single_prop('IP', 'ip', ips, all=False)
         as_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', ases, all=False)
@@ -163,38 +175,48 @@ class Crawler(BaseCrawler):
             ipv4 = probe['address_v4']
             if ipv4:
                 ip_qid = ip_id[ipv4]
-                assigned_links.append({'src_id': ip_qid, 'dst_id': probe_qid, 'props': [self.reference]})
+                assigned_links.append(
+                    {'src_id': ip_qid, 'dst_id': probe_qid, 'props': [self.reference]}
+                )
 
             ipv6 = probe['address_v6']
             if ipv6:
                 ip_qid = ip_id[ipv6]
-                assigned_links.append({'src_id': ip_qid, 'dst_id': probe_qid, 'props': [self.reference]})
+                assigned_links.append(
+                    {'src_id': ip_qid, 'dst_id': probe_qid, 'props': [self.reference]}
+                )
 
             asv4 = probe['asn_v4']
             if asv4:
                 as_qid = as_id[asv4]
                 located_in_as_links.append(
-                    {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]})
+                    {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 4}]}
+                )
 
             asv6 = probe['asn_v6']
             if asv6:
                 as_qid = as_id[asv6]
                 located_in_as_links.append(
-                    {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]})
+                    {'src_id': probe_qid, 'dst_id': as_qid, 'props': [self.reference, {'af': 6}]}
+                )
 
-            if ('country_code' in probe
+            if (
+                'country_code' in probe
                 and (country_code := probe['country_code'])
-                    and country_code in iso3166.countries_by_alpha2):
+                and country_code in iso3166.countries_by_alpha2
+            ):
                 country_qid = country_id[country_code]
-                country_links.append({'src_id': probe_qid, 'dst_id': country_qid,
-                                     'props': [self.reference]})
+                country_links.append(
+                    {'src_id': probe_qid, 'dst_id': country_qid, 'props': [self.reference]}
+                )
             if probe['geometry']:
                 geo_coordinates = probe['geometry']['coordinates']
                 if geo_coordinates:
                     position = WGS84Point((geo_coordinates[0], geo_coordinates[1]))
                     point_qid = point_id[position]
                     located_in_point_links.append(
-                        {'src_id': probe_qid, 'dst_id': point_qid, 'props': [self.reference]})
+                        {'src_id': probe_qid, 'dst_id': point_qid, 'props': [self.reference]}
+                    )
 
         # Push all links to IYP
         self.iyp.batch_add_links('ASSIGNED', assigned_links)
@@ -216,7 +238,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

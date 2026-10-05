@@ -57,16 +57,14 @@ def download_and_extract(repo: str, tmpdir: str, test_name: str):
     s3 = boto3.resource(
         's3',
         region_name='ap-northeast-1',
-        config=botocore.client.Config(
-            signature_version=botocore.UNSIGNED
-        )
+        config=botocore.client.Config(signature_version=botocore.UNSIGNED),
     ).Bucket(repo)
 
     # Get the dates for the last 7 days.
     dates = [
-        (
-            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=i)
-        ).strftime('%Y%m%d')
+        (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=i)).strftime(
+            '%Y%m%d'
+        )
         for i in range(7)
     ]
 
@@ -90,7 +88,9 @@ def download_and_extract(repo: str, tmpdir: str, test_name: str):
             dest_file = os.path.join(tmpdir, object_name)
             files.append((key, dest_file))
 
-    logging.info(f'Fetching {len(files)} objects with {PARALLEL_DOWNLOADS} processes in parallel...')
+    logging.info(
+        f'Fetching {len(files)} objects with {PARALLEL_DOWNLOADS} processes in parallel...'
+    )
     # Download and extract the files.
     with Pool(PARALLEL_DOWNLOADS) as p:
         p.map(process, files)

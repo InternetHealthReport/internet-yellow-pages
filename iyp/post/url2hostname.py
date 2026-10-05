@@ -29,11 +29,7 @@ class PostProcess(BasePostProcess):
             hostname_qid = hostname_id.get(hostname)
 
             if hostname_qid is not None:
-                links.append({
-                    'src_id': url_qid,
-                    'dst_id': hostname_qid,
-                    'props': [self.reference]
-                })
+                links.append({'src_id': url_qid, 'dst_id': hostname_qid, 'props': [self.reference]})
 
         # push links to IYP
         self.iyp.batch_add_links('PART_OF', links)
@@ -64,7 +60,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/post.' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

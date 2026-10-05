@@ -42,14 +42,14 @@ class Crawler(BaseCrawler):
             req = requests.head(url)
         if req.status_code != 200:
             logging.error('Failed to find data within the specified lookback interval.')
-            raise DataNotAvailableError('Failed to find data within the specified lookback interval.')
+            raise DataNotAvailableError(
+                'Failed to find data within the specified lookback interval.'
+            )
 
         self.reference['reference_url_data'] = url
-        self.reference['reference_time_modification'] = today.replace(hour=0,
-                                                                      minute=0,
-                                                                      second=0,
-                                                                      microsecond=0,
-                                                                      tzinfo=timezone.utc)
+        self.reference['reference_time_modification'] = today.replace(
+            hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+        )
 
         logging.info(f'Fetching data from: {url}')
         req = requests.get(url)
@@ -96,36 +96,28 @@ class Crawler(BaseCrawler):
                 tags.add(irr_status)
 
                 # Compute links
-                orig_links.append({
-                    'src_id': originasn,
-                    'dst_id': prefix,
-                    'props': [self.reference, rec]
-                })
+                orig_links.append(
+                    {'src_id': originasn, 'dst_id': prefix, 'props': [self.reference, rec]}
+                )
 
-                tag_links.append({
-                    'src_id': prefix,
-                    'dst_id': rpki_status,
-                    'props': [self.reference, rec]
-                })
+                tag_links.append(
+                    {'src_id': prefix, 'dst_id': rpki_status, 'props': [self.reference, rec]}
+                )
 
-                tag_links.append({
-                    'src_id': prefix,
-                    'dst_id': irr_status,
-                    'props': [self.reference, rec]
-                })
+                tag_links.append(
+                    {'src_id': prefix, 'dst_id': irr_status, 'props': [self.reference, rec]}
+                )
 
             # Dependency links
             asn = int(rec['asn_id'])
             asns.add(asn)
 
-            dep_links.append({
-                'src_id': prefix,
-                'dst_id': asn,
-                'props': [self.reference, rec]
-            })
+            dep_links.append({'src_id': prefix, 'dst_id': asn, 'props': [self.reference, rec]})
 
         asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        prefix_id = self.iyp.batch_get_nodes_by_single_prop('BGPPrefix', 'prefix', prefixes, all=False)
+        prefix_id = self.iyp.batch_get_nodes_by_single_prop(
+            'BGPPrefix', 'prefix', prefixes, all=False
+        )
         self.iyp.batch_add_node_label(list(prefix_id.values()), 'Prefix')
         tag_id = self.iyp.batch_get_nodes_by_single_prop('Tag', 'label', tags, all=False)
 
@@ -151,7 +143,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')

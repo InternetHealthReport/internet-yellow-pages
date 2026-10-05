@@ -28,15 +28,15 @@ class Crawler(BaseCrawler):
         self.countries = iso3166.countries_by_alpha2
 
         # Session object to fetch peeringdb data
-        retries = Retry(total=15,
-                        backoff_factor=0.2,
-                        status_forcelist=[104, 500, 502, 503, 504])
+        retries = Retry(total=15, backoff_factor=0.2, status_forcelist=[104, 500, 502, 503, 504])
 
         self.http_session = requests.Session()
         self.http_session.mount('https://', HTTPAdapter(max_retries=retries))
 
         super().__init__(organization, url, name)
-        self.reference['reference_url_info'] = 'https://ihr.iijlab.net/ihr/en-us/documentation#Country_s_network_dependency'  # noqa: E501
+        self.reference['reference_url_info'] = (
+            'https://ihr.iijlab.net/ihr/en-us/documentation#Country_s_network_dependency'  # noqa: E501
+        )
 
     def run(self):
         """Fetch data from API and push to IYP."""
@@ -52,11 +52,12 @@ class Crawler(BaseCrawler):
                 continue
 
             # Setup rankings' node
-            country_qid = self.iyp.get_node('Country',
-                                            {
-                                                'country_code': cc,
-                                            }
-                                            )
+            country_qid = self.iyp.get_node(
+                'Country',
+                {
+                    'country_code': cc,
+                },
+            )
 
             # Find the latest timebin in the data
             last_timebin = '1970-01-01'
@@ -66,7 +67,9 @@ class Crawler(BaseCrawler):
             self.reference['reference_url_data'] = self.url + f'&timebin={last_timebin}'
             self.reference['reference_time_modification'] = None
             try:
-                date = datetime.strptime(last_timebin, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+                date = datetime.strptime(last_timebin, '%Y-%m-%dT%H:%M:%SZ').replace(
+                    tzinfo=timezone.utc
+                )
                 self.reference['reference_time_modification'] = date
             except ValueError as e:
                 logging.warning(f'Failed to get modification time: {e}')
@@ -78,19 +81,22 @@ class Crawler(BaseCrawler):
             # Make ranking and push data
             links = []
             for metric, weight in [('Total eyeball', 'eyeball'), ('Total AS', 'as')]:
-
-                self.countryrank_qid = self.iyp.get_node('Ranking',
-                                                         {'name': f'IHR country ranking: {metric} ({cc})'}
-                                                         )
+                self.countryrank_qid = self.iyp.get_node(
+                    'Ranking', {'name': f'IHR country ranking: {metric} ({cc})'}
+                )
                 self.iyp.add_links(self.countryrank_qid, countryrank_statements)
 
                 # Filter out unnecessary data
-                selected = [r for r in ranking
-                            if (r['weightscheme'] == weight
-                                and r['transitonly'] is False
-                                and r['hege'] > MIN_HEGE
-                                and r['timebin'] == last_timebin)
-                            ]
+                selected = [
+                    r
+                    for r in ranking
+                    if (
+                        r['weightscheme'] == weight
+                        and r['transitonly'] is False
+                        and r['hege'] > MIN_HEGE
+                        and r['timebin'] == last_timebin
+                    )
+                ]
 
                 # Make sure the ranking is sorted and add rank field
                 selected.sort(key=lambda x: x['hege'], reverse=True)
@@ -103,11 +109,13 @@ class Crawler(BaseCrawler):
 
                 # Compute links
                 for asn in selected:
-                    links.append({
-                        'src_id': self.asn_id[asn['asn']],
-                        'dst_id': self.countryrank_qid,
-                        'props': [self.reference.copy(), asn]
-                    })
+                    links.append(
+                        {
+                            'src_id': self.asn_id[asn['asn']],
+                            'dst_id': self.countryrank_qid,
+                            'props': [self.reference.copy(), asn],
+                        }
+                    )
 
             # Push links to IYP
             self.iyp.batch_add_links('RANK', links)
@@ -127,7 +135,7 @@ def main() -> None:
         format=FORMAT,
         filename='log/' + NAME + '.log',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
     logging.info(f'Started: {sys.argv}')
