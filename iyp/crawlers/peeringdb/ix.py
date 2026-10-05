@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from ipaddress import ip_network
 
 import flatdict
@@ -62,7 +62,7 @@ def handle_social_media(d: dict, website_set: set = None):
 def set_reference_time_from_metadata(reference_dict, data):
     try:
         generated_timestamp = data['meta']['generated']
-        date = datetime.fromtimestamp(generated_timestamp, tz=timezone.utc)
+        date = datetime.fromtimestamp(generated_timestamp, tz=UTC)
         reference_dict['reference_time_modification'] = date
     except (KeyError, ValueError) as e:
         logging.warning(f'Failed to set modification time: {e}')
@@ -79,7 +79,9 @@ class Crawler(BaseCrawler):
             'reference_name': NAME,
             'reference_url_data': URL_PDB_IXS,
             'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20ix',
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.now(tz=UTC).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ),
             'reference_time_modification': None,
         }
 
@@ -88,7 +90,9 @@ class Crawler(BaseCrawler):
             'reference_name': NAME,
             'reference_url_data': URL_PDB_LANS,
             'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20ixlan',
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.now(tz=UTC).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ),
             'reference_time_modification': None,
         }
 
@@ -97,7 +101,9 @@ class Crawler(BaseCrawler):
             'reference_name': NAME,
             'reference_url_data': URL_PDB_NETFAC,
             'reference_url_info': 'https://www.peeringdb.com/apidocs/#tag/api/operation/list%20netfac',
-            'reference_time_fetch': datetime.combine(datetime.utcnow(), time.min, timezone.utc),
+            'reference_time_fetch': datetime.now(tz=UTC).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ),
             'reference_time_modification': None,
         }
 
@@ -275,6 +281,10 @@ class Crawler(BaseCrawler):
                     # Add networks found for the LAN
                     for network in lan['net_set']:
                         net_asn = int(network['asn'])
+                        if 'meta' in network and not network['meta']:
+                            # Can be an empty dict, remove if this is the case
+                            # so no flatdict makes it into the properties.
+                            network.pop('meta')
                         flat_net = dict(flatdict.FlatDict(network))
                         network_qid = self.asn_id[int(network['asn'])]
 
