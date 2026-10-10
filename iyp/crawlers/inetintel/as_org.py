@@ -2,7 +2,7 @@ import argparse
 import logging
 import sys
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from itertools import combinations
 
 import requests
@@ -56,10 +56,10 @@ class Crawler(BaseCrawler):
         # Reference data is included as metadata.
         self.reference['reference_url_info'] = data['metadata']['documentation_url']
         data_creation_time = datetime.strptime(data['metadata']['snapshot_month'], '%Y-%m').replace(
-            tzinfo=timezone.utc
+            tzinfo=UTC
         )
         # Dataset is produced monthly.
-        if data_creation_time < datetime.now(tz=timezone.utc) - timedelta(days=60):
+        if data_creation_time < datetime.now(tz=UTC) - timedelta(days=60):
             logging.error(f'Failed to find recent dataset. Latest available: {data_creation_time}')
             raise DataNotAvailableError(
                 f'Failed to find recent dataset. Latest available: {data_creation_time}'
@@ -91,8 +91,7 @@ class Crawler(BaseCrawler):
             pdb_org = as_data['PDB.Org']
             if pdb_org in iyp_org_id:
                 org_siblings[org_id].add(pdb_org)
-            website = as_data['Website']
-            if website:
+            if website := as_data.get('Website', ''):
                 asns.add(asn)
                 urls.add(website)
                 website_links.append((asn, website))
@@ -124,7 +123,7 @@ class Crawler(BaseCrawler):
         self.iyp.batch_add_links('SIBLING_OF', super().link_generator(org_sibling_of_links))
 
     def unit_test(self):
-        return super().unit_test(['SIBLING_OF', 'WEBSITE'])
+        return super().unit_test(['SIBLING_OF'])
 
 
 def main() -> None:
