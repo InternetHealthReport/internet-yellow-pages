@@ -2,7 +2,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import flatdict
 import requests
@@ -28,11 +28,19 @@ class Crawler(BaseCrawler):
             ]['date']
             self.reference['reference_time_modification'] = datetime.strptime(
                 date, '%Y-%m-%d'
-            ).replace(tzinfo=timezone.utc)
+            ).replace(tzinfo=UTC)
             logging.info(f'Dataset modification time: {date}')
         except Exception as e:
             logging.warning(f'Failed to set modification time: {e}')
             return
+
+    def generic_link_generator(self, pairs, src_id: dict, dst_id: dict):
+        for src, dst in pairs:
+            yield {'src_id': src_id[src], 'dst_id': dst_id[dst], 'props': [self.reference]}
+
+    def rank_link_generator(self, pairs: dict, src_id: dict):
+        for (src, dst), props in pairs.items():
+            yield {'src_id': src_id[src], 'dst_id': dst, 'props': [self.reference, props]}
 
     def run(self):
         """Fetch networks information from ASRank and push to IYP."""
@@ -57,79 +65,53 @@ class Crawler(BaseCrawler):
         self.__set_modification_time()
 
         # Collect all ASNs, names, and countries
+        asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'})
         asns = set()
         names = set()
         countries = set()
         points = set()
+
+        country_links = set()
+        located_in_links = set()
+        name_links = set()
+        rank_links = dict()
         for node in nodes:
-            asn = node['node']
-            if asn['asnName']:
-                names.add(asn['asnName'])
-            country_code = asn['country']['iso']
+            as_node = node['node']
+            asn = int(as_node['asn'])
+            asns.add(asn)
+            rank_links[(asn, asrank_qid)] = dict(flatdict.FlatDict(as_node))
+            if as_node['asnName']:
+                names.add(as_node['asnName'])
+                name_links.add((asn, as_node['asnName']))
+            country_code = as_node['country']['iso']
             if country_code:
                 countries.add(country_code)
-            if asn['latitude'] and asn['longitude']:
-                points.add(WGS84Point((asn['longitude'], asn['latitude'])))
-            asns.add(int(asn['asn']))
+                country_links.add((asn, country_code))
+            if as_node['latitude'] and as_node['longitude']:
+                lat = as_node['latitude']
+                long = as_node['longitude']
+                if long < -180 or long > 180 or lat < -90 or lat > 90:
+                    logging.warning(f'Ignoring invalid geo coordinates of AS: {as_node}')
+                else:
+                    point = WGS84Point((as_node['longitude'], as_node['latitude']))
+                    points.add(point)
+                    located_in_links.add((asn, point))
 
         # Get/create ASNs, names, and country nodes
-        self.asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
-        self.country_id = self.iyp.batch_get_nodes_by_single_prop(
-            'Country', 'country_code', countries
-        )
-        self.name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names, all=False)
-        self.asrank_qid = self.iyp.get_node('Ranking', {'name': 'CAIDA ASRank'})
-        self.point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
-
-        # Compute links
-        country_links = list()
-        located_in_links = list()
-        name_links = list()
-        rank_links = list()
-
-        for node in nodes:
-            asn = node['node']
-
-            asn_qid = self.asn_id[int(asn['asn'])]
-
-            # Some ASes do not have a country.
-            country_code = asn['country']['iso']
-            if country_code:
-                country_qid = self.country_id[country_code]
-                country_links.append(
-                    {'src_id': asn_qid, 'dst_id': country_qid, 'props': [self.reference]}
-                )
-
-            # Some ASes do not have a name.
-            name = asn['asnName']
-            if name:
-                name_qid = self.name_id[name]
-                name_links.append(
-                    {'src_id': asn_qid, 'dst_id': name_qid, 'props': [self.reference]}
-                )
-
-            # flatten all attributes into one dictionary
-            flat_asn = dict(flatdict.FlatDict(asn))
-
-            rank_links.append(
-                {'src_id': asn_qid, 'dst_id': self.asrank_qid, 'props': [self.reference, flat_asn]}
-            )
-
-            if asn['latitude'] and asn['longitude']:
-                position = WGS84Point((asn['longitude'], asn['latitude']))
-                located_in_links.append(
-                    {
-                        'src_id': asn_qid,
-                        'dst_id': self.point_id[position],
-                        'props': [self.reference],
-                    }
-                )
+        asn_id = self.iyp.batch_get_nodes_by_single_prop('AS', 'asn', asns)
+        country_id = self.iyp.batch_get_nodes_by_single_prop('Country', 'country_code', countries)
+        name_id = self.iyp.batch_get_nodes_by_single_prop('Name', 'name', names, all=False)
+        point_id = self.iyp.batch_get_nodes_by_single_prop('Point', 'position', points)
 
         # Push all links to IYP
-        self.iyp.batch_add_links('NAME', name_links)
-        self.iyp.batch_add_links('COUNTRY', country_links)
-        self.iyp.batch_add_links('RANK', rank_links)
-        self.iyp.batch_add_links('LOCATED_IN', located_in_links)
+        self.iyp.batch_add_links('NAME', self.generic_link_generator(name_links, asn_id, name_id))
+        self.iyp.batch_add_links(
+            'COUNTRY', self.generic_link_generator(country_links, asn_id, country_id)
+        )
+        self.iyp.batch_add_links('RANK', self.rank_link_generator(rank_links, asn_id))
+        self.iyp.batch_add_links(
+            'LOCATED_IN', self.generic_link_generator(located_in_links, asn_id, point_id)
+        )
 
     def unit_test(self):
         return super().unit_test(['NAME', 'COUNTRY', 'RANK', 'LOCATED_IN'])
