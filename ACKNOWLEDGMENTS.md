@@ -279,7 +279,7 @@ Twente.
 > ACM Internet Measurement Conference (IMC), November 2025.
 
 Since 2026-10-03 LACeS includes [GeoNames](https://www.geonames.org/) data, which is
-licensed under a [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) license.
+licensed under a [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license.
 
 ## Virginia Tech
 
