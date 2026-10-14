@@ -43,6 +43,7 @@
 | | Country Dependency| https://www.ihr.live/en/documentation#Country-s-network-dependency | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.country_dependency |
 | | ROV| https://www.ihr.live/en/documentation#Route-Origin-Validation | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ihr#readme) | ihr.rov |
 | Internet Intelligence Lab | AS to Organization Mapping| https://github.com/InetIntel/Dataset-AS-to-Organization-Mapping | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/inetintel#readme)| inetintel.as_org |
+| | AS2Biz | https://github.com/InetIntel/Dataset-AS2Biz | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/inetintel#readme)| inetintel.as2biz |
 | Internet Assigned Numbers Authority (IANA) | DNS Root Zone File | https://www.iana.org/domains/root/files | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.root_zone |
 | | IPv4/IPv6 Address Allocations (extract) | https://www.iana.org/numbers | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.address_space |
 | IPinfo | IP to Country Mapping| https://ipinfo.io | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ipinfo#readme) | ipinfo.ip_country |

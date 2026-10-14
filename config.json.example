@@ -89,6 +89,7 @@
             "iyp.crawlers.cisco.umbrella_top1m",
             "iyp.crawlers.citizenlab.urldb",
             "iyp.crawlers.inetintel.as_org",
+            "iyp.crawlers.inetintel.as2biz",
             "iyp.crawlers.pch.daily_routing_snapshots_v4",
             "iyp.crawlers.pch.daily_routing_snapshots_v6",
             "iyp.crawlers.emileaben.as_names",
