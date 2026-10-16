@@ -67,6 +67,8 @@
             "iyp.crawlers.bgpkit.as2rel_v6",
             "iyp.crawlers.bgpkit.peerstats",
             "iyp.crawlers.nro.delegated_stats",
+            "iyp.crawlers.mlab.stats_country",
+            "iyp.crawlers.mlab.stats_country_asn",
             "iyp.crawlers.ripe.roa",
             "iyp.crawlers.ihr.local_hegemony_v4",
             "iyp.crawlers.ihr.local_hegemony_v6",

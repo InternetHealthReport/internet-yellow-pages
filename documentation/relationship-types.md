@@ -29,6 +29,7 @@
 | RESOLVES_TO                | Relate a HostName to an IP address, meaning that a DNS resolution resolved the corresponding IP.                                                                                                                 |
 | ROUTE_ORIGIN_AUTHORIZATION | Relate an AS and a Prefix, meaning that the AS is authorized to originate the Prefix according to RPKI.                                                                                                          |
 | SIBLING_OF                 | Relate ASes or Organization together, meaning that they represent the same entity.                                                                                                                               |
+| SPEED_TEST                 | Relate ASes or Countries to an Estimate note, representing a speed test result from clients in that AS or country.                                                                                               |
 | TARGET                     | Relate an AtlasMeasurement to an IP, HostName, or AS, meaning that an Atlas measurement is setup to probe that resource.                                                                                         |
 | WEBSITE                    | Relate a URL to an Organization, Facility, IXP, AS, representing a common website for the resource.                                                                                                              |
 
