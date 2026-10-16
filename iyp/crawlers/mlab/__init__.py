@@ -21,14 +21,14 @@ class MLabStatsCrawler(BaseCrawler):
         self.parquet_files = dict()
 
     @staticmethod
-    def decrement_moth(date: datetime) -> datetime:
+    def decrement_month(date: datetime) -> datetime:
         if date.month == 1:
             return date.replace(year=date.year - 1, month=12)
         return date.replace(month=date.month - 1)
 
     def __probe_available_data(self):
         self.end_ts = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        self.start_ts = self.decrement_moth(self.end_ts)
+        self.start_ts = self.decrement_month(self.end_ts)
         lookback = 0
         while lookback < MAX_LOOKBACK_INTERVAL_MONTHS:
             url = URL_FMT.format(
@@ -41,8 +41,8 @@ class MLabStatsCrawler(BaseCrawler):
             r = requests.head(url)
             if r.status_code == 200:
                 break
-            self.start_ts = self.decrement_moth(self.start_ts)
-            self.end_ts = self.decrement_moth(self.end_ts)
+            self.start_ts = self.decrement_month(self.start_ts)
+            self.end_ts = self.decrement_month(self.end_ts)
             lookback += 1
         else:
             raise DataNotAvailableError(
