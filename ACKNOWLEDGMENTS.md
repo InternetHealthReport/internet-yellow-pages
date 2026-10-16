@@ -142,8 +142,7 @@ Tech](https://inetintel.notion.site/Internet-Intelligence-Research-Lab-d18618456
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS-to-Organization-Mapping/master/LICENSE).
 
-We also use the [AS2Biz dataset](https://github.com/InetIntel/Dataset-AS2Biz) from the
-Internet Intelligence Lab at Georgia Tech.
+We also use the [AS2Biz dataset](https://github.com/InetIntel/Dataset-AS2Biz).
 
 > Z. Chen, Z. Bischof, C. Testart, A. Dainotti, "AS2Biz: Leveraging Web Presence and AI
 > to Improve AS Business Classification," Proceedings of the 2026 ACM Internet
