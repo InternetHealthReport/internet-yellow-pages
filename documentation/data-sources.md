@@ -47,6 +47,9 @@
 | | IPv4/IPv6 Address Allocations (extract) | https://www.iana.org/numbers | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/iana#readme) | iana.address_space |
 | IPinfo | IP to Country Mapping| https://ipinfo.io | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ipinfo#readme) | ipinfo.ip_country |
 | MaxMind | IP to Country Mapping| https://www.maxmind.com/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/maxmind#readme) | maxmind.geolite_country |
+| M-Lab | Aggregated Speed Test Statistics | https://www.measurementlab.net/data/stats/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/mlab#readme) | |
+| | Country-level Aggregates | https://www.measurementlab.net/data/stats/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/mlab#readme) | mlab.stats_country |
+| | Country + AS Level Aggregates | https://www.measurementlab.net/data/stats/ | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/mlab#readme) | mlab.stats_country_asn |
 | NRO | Extended allocation and assignment reports| https://www.nro.net/about/rirs/statistics | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/nro#readme) | nro.delegated_stats |
 | OONI | Facebook Messenger | https://github.com/ooni/spec/blob/master/nettests/ts-019-facebook-messenger.md | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ooni#readme) | ooni.facebookmessenger |
 |  | Header Field Manipulation Test | https://github.com/ooni/spec/blob/master/nettests/ts-006-header-field-manipulation.md | [README](https://github.com/InternetHealthReport/internet-yellow-pages/tree/main/iyp/crawlers/ooni#readme) | ooni.httpheaderfieldmanipulation |
