@@ -1,7 +1,7 @@
 import argparse
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 
 import requests
 from github import Github
@@ -29,11 +29,11 @@ def get_latest_dataset_url(github_repo: str, data_dir: str):
     repo = Github().get_repo(github_repo)
     all_data_dir = sorted(d.path for d in repo.get_contents(data_dir) if d.type == 'dir')
     if not all_data_dir:
-        return str()
+        return ''
     for file in repo.get_contents(all_data_dir[-1]):
         if file.name.startswith('as2biz.') and file.name.endswith('.json'):
             return file.download_url
-    return str()
+    return ''
 
 
 class Crawler(BaseCrawler):
@@ -57,7 +57,15 @@ class Crawler(BaseCrawler):
         snapshot_month = data['metadata']['snapshot_month']
         self.reference['reference_time_modification'] = datetime.strptime(
             snapshot_month, '%Y-%m'
-        ).replace(tzinfo=timezone.utc)
+        ).replace(tzinfo=UTC)
+        # Set staleness for (approximately) seven months. Dataset should be
+        # created every six months.
+        if self.reference['reference_time_modification'] < datetime.now(UTC) - timedelta(
+            days=7 * 30
+        ):
+            raise DataNotAvailableError(
+                f'Failed to find fresh data. Latest available: {snapshot_month}'
+            )
         logging.info(f'Using snapshot {snapshot_month}')
 
         asns = set()
