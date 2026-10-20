@@ -185,6 +185,15 @@ Country](https://www.maxmind.com/en/geolite-free-ip-geolocation-data) database
 provided by [MaxMind](https://www.maxmind.com) and released under the
 [GeoLite End User License Agreement](https://www.maxmind.com/en/geolite/eula).
 
+## M-Lab
+
+We use the [Aggregated Stats](https://www.measurementlab.net/data/stats/)
+provided by [M-Lab](https://www.measurementlab.net/) and released under the
+[Creative Commons Zero 1.0
+Universal](https://creativecommons.org/publicdomain/zero/1.0/) license.
+
+> The M-Lab Stats Data Set 2026-06-. https://www.measurementlab.net/data/stats/
+
 ## Number Resource Organization
 
 We use the [extended allocation and assignment
