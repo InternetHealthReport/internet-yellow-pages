@@ -142,6 +142,16 @@ Tech](https://inetintel.notion.site/Internet-Intelligence-Research-Lab-d18618456
 Use of this data is authorized under their [Acceptable Use
 Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS-to-Organization-Mapping/master/LICENSE).
 
+We also use the [AS2Biz dataset](https://github.com/InetIntel/Dataset-AS2Biz).
+
+> Z. Chen, Z. Bischof, C. Testart, A. Dainotti, "AS2Biz: Leveraging Web Presence and AI
+> to Improve AS Business Classification," Proceedings of the 2026 ACM Internet
+> Measurement Conference (IMC '26), 2026. https://doi.org/10.1145/3777912.3809155
+> Dataset DOI: https://doi.org/10.5281/zenodo.19646990
+
+Use of this data is authorized under their [Acceptable Use
+Agreement](https://raw.githubusercontent.com/InetIntel/Dataset-AS2Biz/main/LICENSE).
+
 ## Internet Assigned Numbers Authority (IANA)
 
 We use multiple authoritative registries published by the
