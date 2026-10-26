@@ -70,6 +70,3 @@ class MLabStatsCrawler(BaseCrawler):
         self.__probe_available_data()
         self.fetch()
         self.process_data()
-
-    def unit_test(self):
-        return super().unit_test(['SPEED_TEST'])

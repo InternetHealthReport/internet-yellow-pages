@@ -48,6 +48,9 @@ class Crawler(MLabStatsCrawler):
             'SPEED_TEST', self.__speed_test_link_generator(speed_test_links, country_id)
         )
 
+    def unit_test(self):
+        return super().unit_test(['SPEED_TEST'])
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
